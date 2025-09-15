@@ -26,13 +26,16 @@ export async function GET(request: NextRequest) {
 
       // 사용자 정보를 users 테이블에 업서트
       if (data.user) {
+        // 관리자 계정 자동 설정
+        const isAdmin = data.user.email === 'taylorr@gclass.ice.go.kr'
+
         const { error: upsertError } = await supabase
           .from('users')
           .upsert({
             id: data.user.id,
             email: data.user.email!,
             name: data.user.user_metadata?.name || data.user.email!.split('@')[0],
-            role: 'student', // 기본값, 관리자가 수동으로 변경
+            role: isAdmin ? 'admin' : 'student', // taylorr@gclass.ice.go.kr은 자동으로 admin
           }, {
             onConflict: 'id'
           })

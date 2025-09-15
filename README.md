@@ -56,7 +56,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # 학교 도메인 제한 (Google OAuth)
-NEXT_PUBLIC_ALLOWED_DOMAIN=ichungjungsan.kr
+NEXT_PUBLIC_ALLOWED_DOMAIN=gclass.ice.go.kr
 
 # 시간대
 # TZ=Asia/Seoul  # Vercel에서 지원하지 않음, 코드에서 직접 처리
