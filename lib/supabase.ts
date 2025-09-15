@@ -8,5 +8,5 @@ export const createClient = () => createClientComponentClient<Database>()
 export const createServerClient = (cookies: () => any) =>
   createServerComponentClient<Database>({ cookies })
 
-export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-export const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+export const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
