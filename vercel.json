@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "regions": ["icn1"],
+  "env": {
+    "TZ": "Asia/Seoul"
+  }
+}
