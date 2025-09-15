@@ -57,7 +57,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 NEXT_PUBLIC_ALLOWED_DOMAIN=ichungjungsan.kr
 
 # 시간대 (필수)
-TZ=Asia/Seoul
+# TZ=Asia/Seoul  # Vercel에서 지원하지 않음, 코드에서 직접 처리
 
 # 기능 플래그 (선택사항)
 FEATURE_CALENDAR_ENABLED=false

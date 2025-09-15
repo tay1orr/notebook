@@ -59,7 +59,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 NEXT_PUBLIC_ALLOWED_DOMAIN=ichungjungsan.kr
 
 # 시간대
-TZ=Asia/Seoul
+# TZ=Asia/Seoul  # Vercel에서 지원하지 않음, 코드에서 직접 처리
 
 # 기능 플래그
 FEATURE_CALENDAR_ENABLED=false
@@ -220,7 +220,7 @@ WHERE status = 'picked_up'
    SUPABASE_SERVICE_ROLE_KEY
    NEXT_PUBLIC_ALLOWED_DOMAIN
    NEXT_PUBLIC_SITE_URL
-   TZ=Asia/Seoul
+   # TZ=Asia/Seoul  # Vercel에서 지원하지 않음, 코드에서 직접 처리
    ```
 3. 배포 완료
 
