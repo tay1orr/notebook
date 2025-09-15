@@ -13,7 +13,7 @@ export interface AuthUser {
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const supabase = createServerClient()
+  const supabase = createServerClient(cookies)
 
   try {
     const { data: { user } } = await supabase.auth.getUser()
@@ -118,7 +118,7 @@ export function hasPermission(userRole: UserRole, action: string, resource?: str
 }
 
 export async function signInWithGoogle() {
-  const supabase = createServerClient()
+  const supabase = createServerClient(cookies)
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -138,7 +138,7 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
-  const supabase = createServerClient()
+  const supabase = createServerClient(cookies)
 
   const { error } = await supabase.auth.signOut()
 
