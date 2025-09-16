@@ -32,9 +32,11 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
     const loadLoanData = () => {
       if (typeof window !== 'undefined') {
         const storedLoans = localStorage.getItem('loanApplications')
+        console.log('Raw stored loans:', storedLoans) // 디버깅용
         if (storedLoans) {
           try {
             const loans = JSON.parse(storedLoans)
+            console.log('Parsed loans:', loans) // 디버깅용
 
             // 역할별 필터링 - 도우미는 자기 반만, 관리자는 전체
             let filteredLoans = loans
@@ -47,10 +49,14 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
               filteredLoans = loans.filter((loan: any) => loan.className === helperClass)
             }
 
+            console.log('Filtered loans:', filteredLoans) // 디버깅용
+
             // 상태별로 분류
             const pending = filteredLoans.filter((loan: any) => loan.status === 'requested')
             const active = filteredLoans.filter((loan: any) => ['approved', 'picked_up'].includes(loan.status))
             const overdue = filteredLoans.filter((loan: any) => loan.status === 'overdue')
+
+            console.log('Categorized loans:', { pending, active, overdue }) // 디버깅용
 
             setPendingLoans(pending)
             setActiveLoans(active)
@@ -58,6 +64,8 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
           } catch (error) {
             console.error('Failed to parse loan data:', error)
           }
+        } else {
+          console.log('No stored loans found') // 디버깅용
         }
       }
     }
