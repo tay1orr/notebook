@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,47 @@ interface StudentDashboardProps {
 export function StudentDashboard({ student, currentLoans: initialCurrentLoans, loanHistory }: StudentDashboardProps) {
   const [showLoanRequest, setShowLoanRequest] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [currentLoans, setCurrentLoans] = useState(initialCurrentLoans)
+  const [currentLoans, setCurrentLoans] = useState<any[]>([])
+  const [loanHistoryData, setLoanHistoryData] = useState(loanHistory)
+
+  // 로컬스토리지에서 현재 학생의 대여 데이터 로드
+  useEffect(() => {
+    const loadStudentLoans = () => {
+      if (typeof window !== 'undefined') {
+        const storedLoans = localStorage.getItem('loanApplications')
+        if (storedLoans) {
+          try {
+            const loans = JSON.parse(storedLoans)
+
+            // 현재 학생의 대여만 필터링
+            const studentLoans = loans.filter((loan: any) =>
+              loan.email === student.email &&
+              ['requested', 'approved', 'picked_up'].includes(loan.status)
+            )
+
+            const studentHistory = loans.filter((loan: any) =>
+              loan.email === student.email &&
+              ['returned', 'rejected'].includes(loan.status)
+            )
+
+            console.log('Loaded student loans:', studentLoans) // 디버깅용
+            console.log('Loaded student history:', studentHistory) // 디버깅용
+
+            setCurrentLoans(studentLoans)
+            setLoanHistoryData(studentHistory)
+          } catch (error) {
+            console.error('Failed to parse loan data:', error)
+          }
+        }
+      }
+    }
+
+    loadStudentLoans()
+
+    // 1초마다 체크하여 상태 변경사항 반영
+    const interval = setInterval(loadStudentLoans, 1000)
+    return () => clearInterval(interval)
+  }, [student.email])
 
   const handleLoanRequest = async (requestData: any) => {
     setIsSubmitting(true)
@@ -58,6 +98,8 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         const loans = existingLoans ? JSON.parse(existingLoans) : []
         loans.push(newLoanRequest)
         localStorage.setItem('loanApplications', JSON.stringify(loans))
+        console.log('Student - Saved loan request:', newLoanRequest) // 디버깅용
+        console.log('Student - All loans in storage:', loans) // 디버깅용
       }
 
       // 로컬 상태 즉시 업데이트
@@ -232,9 +274,9 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loanHistory.length > 0 ? (
+          {loanHistoryData.length > 0 ? (
             <div className="space-y-3">
-              {loanHistory.slice(0, 5).map((loan) => (
+              {loanHistoryData.slice(0, 5).map((loan) => (
                 <div key={loan.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
@@ -253,10 +295,10 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                   </div>
                 </div>
               ))}
-              {loanHistory.length > 5 && (
+              {loanHistoryData.length > 5 && (
                 <div className="text-center pt-4">
                   <Button variant="ghost" size="sm">
-                    더 보기 ({loanHistory.length - 5}개 더)
+                    더 보기 ({loanHistoryData.length - 5}개 더)
                   </Button>
                 </div>
               )}

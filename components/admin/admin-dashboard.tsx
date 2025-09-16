@@ -22,10 +22,15 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
         const storedLoans = localStorage.getItem('loanApplications')
         if (storedLoans) {
           try {
-            setLoans(JSON.parse(storedLoans))
+            const loans = JSON.parse(storedLoans)
+            console.log('AdminDashboard - Raw stored loans:', storedLoans) // 디버깅용
+            console.log('AdminDashboard - Parsed loans:', loans) // 디버깅용
+            setLoans(loans)
           } catch (error) {
             console.error('Failed to parse loan data:', error)
           }
+        } else {
+          console.log('AdminDashboard - No stored loans found') // 디버깅용
         }
       }
     }
@@ -40,6 +45,14 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
   const tomorrowReturns = loans.filter(loan => loan.status === 'picked_up').length
   const overdueLoans = loans.filter(loan => loan.status === 'overdue').length
   const pendingLoans = loans.filter(loan => loan.status === 'requested').length
+
+  console.log('AdminDashboard - Statistics:', {
+    total: loans.length,
+    pending: pendingLoans,
+    approved: todayPickups,
+    pickedUp: tomorrowReturns,
+    overdue: overdueLoans
+  }) // 디버깅용
 
   // 최근 대여 현황 (최근 5개)
   const recentLoans = loans
