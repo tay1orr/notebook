@@ -324,12 +324,10 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <Select onValueChange={(value) => handleStatusChange(device.id, value)}>
-                          <SelectTrigger asChild>
-                            <Button variant="ghost" size="sm" title="상태 변경">
-                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </Button>
+                          <SelectTrigger className="w-8 h-8 p-0 border-none bg-transparent hover:bg-muted">
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="available">대여 가능</SelectItem>
