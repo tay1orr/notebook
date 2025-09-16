@@ -123,6 +123,26 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         } catch (error) {
           console.log('BroadcastChannel failed:', error)
         }
+
+        // 강제로 storage 이벤트 발생시키기 (다른 방법)
+        try {
+          // localStorage를 임시로 다른 값으로 변경했다가 원래 값으로 돌리기
+          const tempKey = 'loan-update-trigger'
+          localStorage.setItem(tempKey, Date.now().toString())
+          localStorage.removeItem(tempKey)
+
+          // dispatchEvent를 통해 수동으로 storage 이벤트 발생
+          const storageEvent = new StorageEvent('storage', {
+            key: 'loanApplications',
+            newValue: JSON.stringify(loans),
+            oldValue: JSON.stringify(existingLoans ? JSON.parse(existingLoans) : []),
+            url: window.location.href
+          })
+          window.dispatchEvent(storageEvent)
+          console.log('Manual storage event dispatched')
+        } catch (error) {
+          console.log('Manual storage event failed:', error)
+        }
       }
 
       // 로컬 상태 즉시 업데이트

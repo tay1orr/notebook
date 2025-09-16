@@ -52,19 +52,44 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
     loadLoans()
     const interval = setInterval(loadLoans, 500)
 
-    // BroadcastChannel 리스너 추가
-    const channel = new BroadcastChannel('loan-applications')
-    channel.onmessage = (event) => {
-      console.log('AdminDashboard - Received broadcast:', event.data)
-      if (event.data.type === 'NEW_LOAN_APPLICATION') {
-        setLoans(event.data.allLoans)
-        localStorage.setItem('loanApplications', JSON.stringify(event.data.allLoans))
+    // localStorage 변경 감지 리스너 추가 (더 확실한 방법)
+    const handleStorageChange = (e: StorageEvent) => {
+      console.log('AdminDashboard - Storage change detected:', e)
+      if (e.key === 'loanApplications' && e.newValue) {
+        try {
+          const loans = JSON.parse(e.newValue)
+          console.log('AdminDashboard - Storage updated with loans:', loans)
+          setLoans(loans)
+        } catch (error) {
+          console.error('Failed to parse storage update:', error)
+        }
       }
     }
 
+    // BroadcastChannel 리스너도 함께 사용
+    let channel: BroadcastChannel | null = null
+    try {
+      channel = new BroadcastChannel('loan-applications')
+      channel.onmessage = (event) => {
+        console.log('AdminDashboard - Received broadcast:', event.data)
+        if (event.data.type === 'NEW_LOAN_APPLICATION') {
+          setLoans(event.data.allLoans)
+          localStorage.setItem('loanApplications', JSON.stringify(event.data.allLoans))
+        }
+      }
+    } catch (error) {
+      console.log('BroadcastChannel not supported or failed:', error)
+    }
+
+    // storage 이벤트 리스너 등록
+    window.addEventListener('storage', handleStorageChange)
+
     return () => {
       clearInterval(interval)
-      channel.close()
+      window.removeEventListener('storage', handleStorageChange)
+      if (channel) {
+        channel.close()
+      }
     }
   }, [])
 
