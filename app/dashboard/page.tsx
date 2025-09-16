@@ -9,31 +9,10 @@ import { AdminDashboard } from '@/components/admin/admin-dashboard'
 export default async function DashboardPage() {
   const user = await requireAuth()
 
-  // 학생용 임시 데이터
-  const studentCurrentLoans = [
-    // 테스트용 임시 데이터 - 신청 후 상태 확인용
-    // {
-    //   id: 'temp1',
-    //   status: 'requested',
-    //   requestedAt: new Date().toISOString(),
-    //   purpose: '과제 작성',
-    //   purposeDetail: '국어 독서감상문 작성',
-    //   returnDate: '2024-09-18',
-    //   studentContact: '010-1234-5678'
-    // }
-  ]
+  // 학생용 임시 데이터 - 모두 제거
+  const studentCurrentLoans: any[] = []
 
-  const studentLoanHistory = [
-    // 임시 이력 데이터
-    {
-      id: '1',
-      deviceTag: 'NB-2024-001',
-      status: 'returned',
-      requestedAt: '2024-09-01 14:30',
-      returnedAt: '2024-09-05 08:30',
-      purpose: '과제 작성'
-    }
-  ]
+  const studentLoanHistory: any[] = []
 
   // 학생인 경우 학생용 대시보드 표시
   if (user.role === 'student') {

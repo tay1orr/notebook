@@ -13,112 +13,21 @@ export default async function AdminPage() {
 
   // 임시 데이터 (실제로는 데이터베이스에서 가져와야 함)
   const systemStats = {
-    totalUsers: 127,
-    totalDevices: 45,
-    totalLoans: 234,
-    activeLoans: 8,
-    overdueLoans: 1,
+    totalUsers: 0,
+    totalDevices: 0,
+    totalLoans: 0,
+    activeLoans: 0,
+    overdueLoans: 0,
     systemUptime: '99.8%',
     lastBackup: '2024-09-16 02:00:00',
-    dbSize: '2.3MB'
+    dbSize: '0KB'
   }
 
-  const users = [
-    {
-      id: '1',
-      name: 'taylorr',
-      email: 'taylorr@gclass.ice.go.kr',
-      role: 'admin',
-      createdAt: '2024-09-16',
-      lastLogin: '2024-09-16 10:30'
-    },
-    {
-      id: '2',
-      name: '김담임',
-      email: 'teacher01@gclass.ice.go.kr',
-      role: 'homeroom',
-      createdAt: '2024-09-16',
-      lastLogin: '2024-09-15 16:45'
-    },
-    {
-      id: '3',
-      name: '이도우미',
-      email: 'helper01@gclass.ice.go.kr',
-      role: 'helper',
-      createdAt: '2024-09-16',
-      lastLogin: '2024-09-15 17:20'
-    },
-    {
-      id: '4',
-      name: '김학생',
-      email: 'student10101@gclass.ice.go.kr',
-      role: 'student',
-      createdAt: '2024-09-16',
-      lastLogin: '2024-09-15 15:30'
-    }
-  ]
+  const users: any[] = []
 
-  const auditLogs = [
-    {
-      id: '1',
-      action: 'LOAN_APPROVED',
-      user: 'taylorr',
-      details: '김학생의 NB-2024-001 대여 승인',
-      timestamp: '2024-09-16 10:30:00',
-      ipAddress: '192.168.1.100'
-    },
-    {
-      id: '2',
-      action: 'DEVICE_UPDATED',
-      user: 'taylorr',
-      details: 'NB-2024-003 상태를 점검중으로 변경',
-      timestamp: '2024-09-16 10:25:00',
-      ipAddress: '192.168.1.100'
-    },
-    {
-      id: '3',
-      action: 'USER_LOGIN',
-      user: '김담임',
-      details: '시스템 로그인',
-      timestamp: '2024-09-15 16:45:00',
-      ipAddress: '192.168.1.101'
-    },
-    {
-      id: '4',
-      action: 'LOAN_RETURNED',
-      user: '이도우미',
-      details: '박학생의 NB-2024-005 반납 처리',
-      timestamp: '2024-09-15 16:30:00',
-      ipAddress: '192.168.1.102'
-    }
-  ]
+  const auditLogs: any[] = []
 
-  const backupHistory = [
-    {
-      id: '1',
-      date: '2024-09-16',
-      time: '02:00:00',
-      type: 'AUTO',
-      size: '2.3MB',
-      status: 'success'
-    },
-    {
-      id: '2',
-      date: '2024-09-15',
-      time: '02:00:00',
-      type: 'AUTO',
-      size: '2.2MB',
-      status: 'success'
-    },
-    {
-      id: '3',
-      date: '2024-09-14',
-      time: '02:00:00',
-      type: 'AUTO',
-      size: '2.1MB',
-      status: 'success'
-    }
-  ]
+  const backupHistory: any[] = []
 
   const getRoleText = (role: string) => {
     const roleMap = {
