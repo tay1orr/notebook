@@ -15,6 +15,7 @@ export function ClearStorageButton() {
     const data = localStorage.getItem('loanApplications')
     console.log('localStorage 원본 데이터:', data)
     console.log('localStorage 모든 키:', Object.keys(localStorage))
+    console.log('현재 URL:', window.location.href)
 
     if (data) {
       try {
@@ -30,6 +31,30 @@ export function ClearStorageButton() {
     }
   }
 
+  const addTestData = () => {
+    const testData = [{
+      id: 'test-' + Date.now(),
+      studentName: 'coding1 코딩동아리1',
+      studentNo: 'kko92-coding1',
+      className: '1-1',
+      email: 'kko92-coding1@gclass.ice.go.kr',
+      studentContact: '010-1234-5678',
+      purpose: '보고서 준비',
+      purposeDetail: '과제 준비용',
+      returnDate: '2025-09-17',
+      returnTime: '09:00',
+      dueDate: '2025-09-17 09:00',
+      status: 'approved',
+      requestedAt: new Date().toISOString(),
+      approvedAt: new Date().toISOString(),
+      signature: 'data:image/png;base64,test'
+    }]
+
+    localStorage.setItem('loanApplications', JSON.stringify(testData))
+    alert('테스트 데이터가 추가되었습니다!')
+    window.location.reload()
+  }
+
   // 디버깅용으로 모든 환경에서 표시
 
   return (
@@ -41,6 +66,14 @@ export function ClearStorageButton() {
         className="bg-blue-100 hover:bg-blue-200"
       >
         데이터 확인
+      </Button>
+      <Button
+        onClick={addTestData}
+        variant="outline"
+        size="sm"
+        className="bg-green-100 hover:bg-green-200"
+      >
+        테스트 데이터 추가
       </Button>
       <Button
         onClick={clearData}
