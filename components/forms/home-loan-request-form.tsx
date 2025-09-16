@@ -40,6 +40,8 @@ export function HomeLoanRequestForm({
     studentContact: '',
     notes: '',
     currentClass: '',
+    currentGrade: '',
+    currentClassNumber: '',
     currentStudentNumber: ''
   })
 
@@ -60,8 +62,12 @@ export function HomeLoanRequestForm({
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.currentClass) {
-      newErrors.currentClass = '현재 반을 선택해주세요.'
+    if (!formData.currentGrade) {
+      newErrors.currentGrade = '학년을 선택해주세요.'
+    }
+
+    if (!formData.currentClassNumber) {
+      newErrors.currentClassNumber = '반을 선택해주세요.'
     }
 
     if (!formData.currentStudentNumber) {
@@ -133,13 +139,15 @@ export function HomeLoanRequestForm({
 
     // 학생이 입력한 정보로 기기 번호 생성
     const paddedStudentNum = formData.currentStudentNumber.padStart(2, '0')
-    const deviceNumber = `${formData.currentClass}-${paddedStudentNum}`
+    const currentClass = `${formData.currentGrade}-${formData.currentClassNumber}`
+    const deviceNumber = `${currentClass}-${paddedStudentNum}`
 
     const requestData = {
       ...formData,
       studentName: studentInfo.name,
       studentNo: paddedStudentNum,
-      className: formData.currentClass,
+      className: currentClass,
+      currentClass: currentClass,
       email: studentInfo.email,
       requestType: 'home_loan',
       status: 'requested',
@@ -161,6 +169,8 @@ export function HomeLoanRequestForm({
         studentContact: '',
         notes: '',
         currentClass: '',
+        currentGrade: '',
+        currentClassNumber: '',
         currentStudentNumber: ''
       })
       setErrors({})
@@ -208,27 +218,44 @@ export function HomeLoanRequestForm({
             </div>
 
             {/* 현재 학급 정보 입력 */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="currentClass">현재 학급 *</Label>
+                <Label htmlFor="currentGrade">학년 *</Label>
                 <Select
-                  value={formData.currentClass}
-                  onValueChange={(value) => setFormData({...formData, currentClass: value})}
+                  value={formData.currentGrade}
+                  onValueChange={(value) => setFormData({...formData, currentGrade: value, currentClass: `${value}-${formData.currentClassNumber}`})}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="학급을 선택하세요" />
+                    <SelectValue placeholder="학년 선택" />
                   </SelectTrigger>
                   <SelectContent>
-                    {[1, 2, 3].map(grade =>
-                      Array.from({length: 13}, (_, i) => i + 1).map(classNum => (
-                        <SelectItem key={`${grade}-${classNum}`} value={`${grade}-${classNum}`}>
-                          {grade}학년 {classNum}반
-                        </SelectItem>
-                      ))
-                    )}
+                    <SelectItem value="1">1학년</SelectItem>
+                    <SelectItem value="2">2학년</SelectItem>
+                    <SelectItem value="3">3학년</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.currentClass && <p className="text-sm text-red-500">{errors.currentClass}</p>}
+                {errors.currentGrade && <p className="text-sm text-red-500">{errors.currentGrade}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="currentClassNumber">반 *</Label>
+                <Select
+                  value={formData.currentClassNumber}
+                  onValueChange={(value) => setFormData({...formData, currentClassNumber: value, currentClass: `${formData.currentGrade}-${value}`})}
+                  disabled={!formData.currentGrade}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="반 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({length: 13}, (_, i) => i + 1).map(classNum => (
+                      <SelectItem key={classNum} value={classNum.toString()}>
+                        {classNum}반
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.currentClassNumber && <p className="text-sm text-red-500">{errors.currentClassNumber}</p>}
               </div>
 
               <div className="space-y-2">
@@ -246,9 +273,9 @@ export function HomeLoanRequestForm({
               </div>
             </div>
 
-            {formData.currentClass && formData.currentStudentNumber && (
+            {formData.currentGrade && formData.currentClassNumber && formData.currentStudentNumber && (
               <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
-                대여 기기: <strong>{formData.currentClass}-{formData.currentStudentNumber.padStart(2, '0')}</strong>번 노트북
+                대여 기기: <strong>{formData.currentGrade}-{formData.currentClassNumber}-{formData.currentStudentNumber.padStart(2, '0')}</strong>번 노트북
               </div>
             )}
           </div>

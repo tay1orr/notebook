@@ -114,12 +114,12 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         dueDate: `${requestData.returnDate} 09:00`,
         studentContact: requestData.studentContact,
         notes: requestData.notes || '',
-        deviceTag: null, // 아직 기기 배정 안됨
-        studentName: student.name,
-        studentNo: student.studentNo,
-        className: student.className,
+        deviceTag: requestData.deviceTag || null,
+        studentName: requestData.studentName || student.name,
+        studentNo: requestData.studentNo || student.studentNo,
+        className: requestData.className || student.className,
         email: student.email,
-        signature: requestData.signature || null
+        signature: requestData.studentSignature || requestData.signature || null
       }
 
       // API 시도 (실패해도 localStorage 사용)
@@ -130,9 +130,9 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            student_name: student.name,
-            student_no: student.studentNo,
-            class_name: student.className,
+            student_name: requestData.studentName || student.name,
+            student_no: requestData.studentNo || student.studentNo,
+            class_name: requestData.className || student.className,
             email: student.email,
             student_contact: requestData.studentContact,
             purpose: newLoanRequest.purpose,
@@ -140,7 +140,8 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             return_date: requestData.returnDate,
             return_time: '09:00',
             due_date: newLoanRequest.dueDate,
-            signature: requestData.signature || null,
+            device_tag: requestData.deviceTag,
+            signature: requestData.studentSignature || requestData.signature || null,
             notes: requestData.notes || ''
           })
         })
