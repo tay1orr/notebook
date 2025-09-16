@@ -18,78 +18,58 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
   const [loans, setLoans] = useState<any[]>([])
 
   useEffect(() => {
-    const loadLoans = () => {
-      if (typeof window !== 'undefined') {
-        // localStorage에서 먼저 시도
-        let storedLoans = localStorage.getItem('loanApplications')
-
-        // localStorage가 비어있으면 sessionStorage에서 시도
-        if (!storedLoans) {
-          storedLoans = sessionStorage.getItem('loanApplications')
-          console.log('AdminDashboard - Trying sessionStorage:', storedLoans) // 디버깅용
-        }
-
-        if (storedLoans) {
-          try {
-            const loans = JSON.parse(storedLoans)
-            console.log('AdminDashboard - Raw stored loans:', storedLoans) // 디버깅용
-            console.log('AdminDashboard - Parsed loans:', loans) // 디버깅용
-            setLoans(loans)
-
-            // sessionStorage에서 가져온 데이터라면 localStorage에도 저장
-            if (!localStorage.getItem('loanApplications') && storedLoans) {
-              localStorage.setItem('loanApplications', storedLoans)
-            }
-          } catch (error) {
-            console.error('Failed to parse loan data:', error)
-          }
+    const loadLoans = async () => {
+      try {
+        const response = await fetch('/api/loans')
+        if (response.ok) {
+          const { loans } = await response.json()
+          console.log('AdminDashboard - Loaded loans from API:', loans) // 디버깅용
+          setLoans(loans)
         } else {
-          console.log('AdminDashboard - No stored loans found') // 디버깅용
+          console.error('AdminDashboard - Failed to fetch loans:', response.statusText)
+
+          // API 실패 시 localStorage 폴백
+          if (typeof window !== 'undefined') {
+            let storedLoans = localStorage.getItem('loanApplications')
+            if (!storedLoans) {
+              storedLoans = sessionStorage.getItem('loanApplications')
+              console.log('AdminDashboard - Trying sessionStorage fallback:', storedLoans)
+            }
+            if (storedLoans) {
+              try {
+                const loans = JSON.parse(storedLoans)
+                setLoans(loans)
+                console.log('AdminDashboard - Using fallback data')
+              } catch (error) {
+                console.error('Failed to parse fallback data:', error)
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('AdminDashboard - API request failed:', error)
+
+        // 네트워크 오류 시 localStorage 폴백
+        if (typeof window !== 'undefined') {
+          const storedLoans = localStorage.getItem('loanApplications') || sessionStorage.getItem('loanApplications')
+          if (storedLoans) {
+            try {
+              const loans = JSON.parse(storedLoans)
+              setLoans(loans)
+              console.log('AdminDashboard - Using fallback after network error')
+            } catch (error) {
+              console.error('Failed to parse fallback data:', error)
+            }
+          }
         }
       }
     }
 
     loadLoans()
-    const interval = setInterval(loadLoans, 500)
-
-    // localStorage 변경 감지 리스너 추가 (더 확실한 방법)
-    const handleStorageChange = (e: StorageEvent) => {
-      console.log('AdminDashboard - Storage change detected:', e)
-      if (e.key === 'loanApplications' && e.newValue) {
-        try {
-          const loans = JSON.parse(e.newValue)
-          console.log('AdminDashboard - Storage updated with loans:', loans)
-          setLoans(loans)
-        } catch (error) {
-          console.error('Failed to parse storage update:', error)
-        }
-      }
-    }
-
-    // BroadcastChannel 리스너도 함께 사용
-    let channel: BroadcastChannel | null = null
-    try {
-      channel = new BroadcastChannel('loan-applications')
-      channel.onmessage = (event) => {
-        console.log('AdminDashboard - Received broadcast:', event.data)
-        if (event.data.type === 'NEW_LOAN_APPLICATION') {
-          setLoans(event.data.allLoans)
-          localStorage.setItem('loanApplications', JSON.stringify(event.data.allLoans))
-        }
-      }
-    } catch (error) {
-      console.log('BroadcastChannel not supported or failed:', error)
-    }
-
-    // storage 이벤트 리스너 등록
-    window.addEventListener('storage', handleStorageChange)
+    const interval = setInterval(loadLoans, 3000) // API는 3초마다
 
     return () => {
       clearInterval(interval)
-      window.removeEventListener('storage', handleStorageChange)
-      if (channel) {
-        channel.close()
-      }
     }
   }, [])
 

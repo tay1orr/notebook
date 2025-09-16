@@ -25,33 +25,56 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   const [currentLoans, setCurrentLoans] = useState<any[]>([])
   const [loanHistoryData, setLoanHistoryData] = useState(loanHistory)
 
-  // 로컬스토리지에서 현재 학생의 대여 데이터 로드
+  // API에서 현재 학생의 대여 데이터 로드
   useEffect(() => {
-    const loadStudentLoans = () => {
-      if (typeof window !== 'undefined') {
-        const storedLoans = localStorage.getItem('loanApplications')
-        if (storedLoans) {
-          try {
-            const loans = JSON.parse(storedLoans)
+    const loadStudentLoans = async () => {
+      try {
+        const response = await fetch('/api/loans')
+        if (response.ok) {
+          const { loans } = await response.json()
 
-            // 현재 학생의 대여만 필터링
-            const studentLoans = loans.filter((loan: any) =>
-              loan.email === student.email &&
-              ['requested', 'approved', 'picked_up'].includes(loan.status)
-            )
+          // 현재 학생의 대여만 필터링
+          const studentLoans = loans.filter((loan: any) =>
+            loan.email === student.email &&
+            ['requested', 'approved', 'picked_up'].includes(loan.status)
+          )
 
-            const studentHistory = loans.filter((loan: any) =>
-              loan.email === student.email &&
-              ['returned', 'rejected'].includes(loan.status)
-            )
+          const studentHistory = loans.filter((loan: any) =>
+            loan.email === student.email &&
+            ['returned', 'rejected'].includes(loan.status)
+          )
 
-            console.log('Loaded student loans:', studentLoans) // 디버깅용
-            console.log('Loaded student history:', studentHistory) // 디버깅용
+          console.log('Loaded student loans from API:', studentLoans) // 디버깅용
+          console.log('Loaded student history from API:', studentHistory) // 디버깅용
 
-            setCurrentLoans(studentLoans)
-            setLoanHistoryData(studentHistory)
-          } catch (error) {
-            console.error('Failed to parse loan data:', error)
+          setCurrentLoans(studentLoans)
+          setLoanHistoryData(studentHistory)
+        } else {
+          console.error('Failed to fetch loans:', response.statusText)
+        }
+      } catch (error) {
+        console.error('Failed to load loans:', error)
+
+        // API 실패 시 localStorage 폴백
+        if (typeof window !== 'undefined') {
+          const storedLoans = localStorage.getItem('loanApplications')
+          if (storedLoans) {
+            try {
+              const loans = JSON.parse(storedLoans)
+              const studentLoans = loans.filter((loan: any) =>
+                loan.email === student.email &&
+                ['requested', 'approved', 'picked_up'].includes(loan.status)
+              )
+              const studentHistory = loans.filter((loan: any) =>
+                loan.email === student.email &&
+                ['returned', 'rejected'].includes(loan.status)
+              )
+              setCurrentLoans(studentLoans)
+              setLoanHistoryData(studentHistory)
+              console.log('Using localStorage fallback')
+            } catch (parseError) {
+              console.error('Failed to parse fallback data:', parseError)
+            }
           }
         }
       }
@@ -59,8 +82,8 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
     loadStudentLoans()
 
-    // 1초마다 체크하여 상태 변경사항 반영
-    const interval = setInterval(loadStudentLoans, 1000)
+    // 2초마다 체크 (API는 덜 자주 호출)
+    const interval = setInterval(loadStudentLoans, 2000)
     return () => clearInterval(interval)
   }, [student.email])
 
@@ -73,79 +96,40 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
     setIsSubmitting(true)
     try {
-      // TODO: 실제 API 호출
       console.log('Submitting loan request:', requestData)
 
-      // 임시로 성공 처리
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // API를 통해 대여 신청
+      const response = await fetch('/api/loans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          student_name: student.name,
+          student_no: student.studentNo,
+          class_name: student.className,
+          email: student.email,
+          student_contact: requestData.studentContact,
+          purpose: requestData.purpose === 'homework' ? '과제 작성' :
+                  requestData.purpose === 'report' ? '보고서 준비' :
+                  requestData.purpose,
+          purpose_detail: requestData.purposeDetail,
+          return_date: requestData.returnDate,
+          return_time: '09:00', // 기본값
+          due_date: `${requestData.returnDate} 09:00`,
+          signature: requestData.signature || null,
+          notes: requestData.notes || ''
+        })
+      })
 
-      // 새로운 대여 신청 객체 생성
-      const newLoanRequest = {
-        id: `temp-${Date.now()}`, // 임시 ID
-        status: 'requested',
-        requestedAt: new Date().toISOString(),
-        purpose: requestData.purpose === 'homework' ? '과제 작성' :
-                requestData.purpose === 'report' ? '보고서 준비' :
-                requestData.purpose,
-        purposeDetail: requestData.purposeDetail,
-        dueDate: requestData.returnDate,
-        studentContact: requestData.studentContact,
-        notes: requestData.notes || '',
-        deviceTag: null, // 아직 기기 배정 안됨
-        studentName: student.name,
-        studentNo: student.studentNo,
-        className: student.className,
-        email: student.email
+      if (!response.ok) {
+        throw new Error(`신청 실패: ${response.statusText}`)
       }
 
-      // 로컬스토리지에 저장 (관리자가 볼 수 있도록)
-      if (typeof window !== 'undefined') {
-        const existingLoans = localStorage.getItem('loanApplications')
-        const loans = existingLoans ? JSON.parse(existingLoans) : []
-        loans.push(newLoanRequest)
-        localStorage.setItem('loanApplications', JSON.stringify(loans))
-        console.log('Student - Saved loan request:', newLoanRequest) // 디버깅용
-        console.log('Student - All loans in storage:', loans) // 디버깅용
+      const { loan: newLoanRequest } = await response.json()
+      console.log('API response:', newLoanRequest)
 
-        // sessionStorage에도 저장 (브라우저 탭 간 공유용)
-        sessionStorage.setItem('loanApplications', JSON.stringify(loans))
-        sessionStorage.setItem('lastLoanUpdate', Date.now().toString())
-
-        // BroadcastChannel을 통한 실시간 동기화
-        try {
-          const channel = new BroadcastChannel('loan-applications')
-          channel.postMessage({
-            type: 'NEW_LOAN_APPLICATION',
-            data: newLoanRequest,
-            allLoans: loans
-          })
-          console.log('Broadcast message sent')
-        } catch (error) {
-          console.log('BroadcastChannel failed:', error)
-        }
-
-        // 강제로 storage 이벤트 발생시키기 (다른 방법)
-        try {
-          // localStorage를 임시로 다른 값으로 변경했다가 원래 값으로 돌리기
-          const tempKey = 'loan-update-trigger'
-          localStorage.setItem(tempKey, Date.now().toString())
-          localStorage.removeItem(tempKey)
-
-          // dispatchEvent를 통해 수동으로 storage 이벤트 발생
-          const storageEvent = new StorageEvent('storage', {
-            key: 'loanApplications',
-            newValue: JSON.stringify(loans),
-            oldValue: JSON.stringify(existingLoans ? JSON.parse(existingLoans) : []),
-            url: window.location.href
-          })
-          window.dispatchEvent(storageEvent)
-          console.log('Manual storage event dispatched')
-        } catch (error) {
-          console.log('Manual storage event failed:', error)
-        }
-      }
-
-      // 로컬 상태 즉시 업데이트
+      // 로컬 상태 즉시 업데이트 (API에서 받은 데이터 사용)
       setCurrentLoans(prev => [newLoanRequest, ...prev])
 
       alert(`가정대여 신청이 완료되었습니다!

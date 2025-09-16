@@ -196,6 +196,77 @@ export interface Database {
           updated_at?: string
         }
       }
+      loan_applications: {
+        Row: {
+          id: string
+          student_name: string
+          student_no: string
+          class_name: string
+          email: string
+          student_contact: string | null
+          purpose: string
+          purpose_detail: string | null
+          return_date: string
+          return_time: string | null
+          due_date: string | null
+          device_tag: string | null
+          status: 'requested' | 'approved' | 'picked_up' | 'returned' | 'overdue' | 'rejected'
+          signature: string | null
+          approved_by: string | null
+          approved_at: string | null
+          picked_up_at: string | null
+          returned_at: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_name: string
+          student_no: string
+          class_name: string
+          email: string
+          student_contact?: string | null
+          purpose: string
+          purpose_detail?: string | null
+          return_date: string
+          return_time?: string | null
+          due_date?: string | null
+          device_tag?: string | null
+          status?: 'requested' | 'approved' | 'picked_up' | 'returned' | 'overdue' | 'rejected'
+          signature?: string | null
+          approved_by?: string | null
+          approved_at?: string | null
+          picked_up_at?: string | null
+          returned_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_name?: string
+          student_no?: string
+          class_name?: string
+          email?: string
+          student_contact?: string | null
+          purpose?: string
+          purpose_detail?: string | null
+          return_date?: string
+          return_time?: string | null
+          due_date?: string | null
+          device_tag?: string | null
+          status?: 'requested' | 'approved' | 'picked_up' | 'returned' | 'overdue' | 'rejected'
+          signature?: string | null
+          approved_by?: string | null
+          approved_at?: string | null
+          picked_up_at?: string | null
+          returned_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       loan_summaries_daily: {
         Row: {
           id: string
