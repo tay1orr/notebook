@@ -27,27 +27,49 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
   const [overdueLoans, setOverdueLoans] = useState<any[]>(initialOverdueLoans)
   const [selectedClass, setSelectedClass] = useState<string>('all')
 
-  // 로컬스토리지에서 대여 신청 데이터 로드
+  // API에서 대여 신청 데이터 로드
   useEffect(() => {
-    const loadLoanData = () => {
-      if (typeof window !== 'undefined') {
-        const storedLoans = localStorage.getItem('loanApplications')
-        if (storedLoans) {
-          try {
-            const loans = JSON.parse(storedLoans)
+    const loadLoanData = async () => {
+      let loans: any[] = []
 
-            // 역할별 필터링 - 도우미는 자기 반만, 관리자는 전체
-            let filteredLoans = loans
-            if (userRole === 'helper') {
-              // 도우미의 경우 담당 반만 필터링 (실제로는 사용자 정보에서 담당 반을 가져와야 함)
-              // 지금은 임시로 userName을 기반으로 반을 추정
-              const helperClass = userName.includes('1-1') ? '1-1' :
-                                userName.includes('1-2') ? '1-2' :
-                                userName.includes('1-3') ? '1-3' : '1-1' // 기본값
-              filteredLoans = loans.filter((loan: any) => loan.className === helperClass)
+      // API 시도
+      try {
+        const response = await fetch('/api/loans')
+        if (response.ok) {
+          const { loans: apiLoans } = await response.json()
+          loans = apiLoans
+          console.log('LoansManagement - Loaded from API:', loans.length, 'loans')
+        } else {
+          throw new Error('API failed')
+        }
+      } catch (error) {
+        console.error('LoansManagement - API error, using localStorage:', error)
+
+        // localStorage 폴백
+        if (typeof window !== 'undefined') {
+          const storedLoans = localStorage.getItem('loanApplications')
+          if (storedLoans) {
+            try {
+              loans = JSON.parse(storedLoans)
+              console.log('LoansManagement - Using localStorage fallback:', loans.length, 'loans')
+            } catch (parseError) {
+              console.error('Failed to parse localStorage data:', parseError)
             }
+          }
+        }
+      }
 
-            // 상태별로 분류
+      // 역할별 필터링 - 도우미는 자기 반만, 관리자는 전체
+      let filteredLoans = loans
+      if (userRole === 'helper') {
+        // 도우미의 경우 담당 반만 필터링
+        const helperClass = userName.includes('1-1') ? '1-1' :
+                          userName.includes('1-2') ? '1-2' :
+                          userName.includes('1-3') ? '1-3' : '1-1' // 기본값
+        filteredLoans = loans.filter((loan: any) => loan.class_name === helperClass || loan.className === helperClass)
+      }
+
+      // 상태별로 분류
             const pending = filteredLoans.filter((loan: any) => loan.status === 'requested')
             const active = filteredLoans.filter((loan: any) => ['approved', 'picked_up'].includes(loan.status))
             const overdue = filteredLoans.filter((loan: any) => loan.status === 'overdue')

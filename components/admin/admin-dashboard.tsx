@@ -188,17 +188,17 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                 <div key={loan.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium">{loan.studentName}</span>
+                      <span className="font-medium">{loan.student_name || loan.studentName}</span>
                       <span className="text-sm text-muted-foreground">
-                        {loan.className} {loan.studentNo}번
+                        {loan.class_name || loan.className} {loan.student_no || loan.studentNo}번
                       </span>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {loan.purpose} • 신청: {formatDateTime(loan.requestedAt)}
+                      {loan.purpose} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
                     </div>
-                    {loan.dueDate && (
+                    {(loan.due_date || loan.dueDate) && (
                       <div className="text-sm text-muted-foreground">
-                        반납 예정: {loan.dueDate}
+                        반납 예정: {loan.due_date || loan.dueDate}
                       </div>
                     )}
                   </div>

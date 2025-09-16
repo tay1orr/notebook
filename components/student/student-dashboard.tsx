@@ -324,18 +324,18 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-gray-600">신청일:</span>
-                      <span className="ml-2">{formatDateTime(loan.requestedAt)}</span>
+                      <span className="ml-2">{formatDateTime(loan.created_at || loan.requestedAt)}</span>
                     </div>
-                    {loan.approvedAt && (
+                    {(loan.approved_at || loan.approvedAt) && (
                       <div>
                         <span className="text-gray-600">승인일:</span>
-                        <span className="ml-2">{formatDateTime(loan.approvedAt)}</span>
+                        <span className="ml-2">{formatDateTime(loan.approved_at || loan.approvedAt)}</span>
                       </div>
                     )}
-                    {loan.dueDate && (
+                    {(loan.due_date || loan.dueDate) && (
                       <div>
                         <span className="text-gray-600">반납 예정:</span>
-                        <span className="ml-2">{formatDateTime(loan.dueDate)}</span>
+                        <span className="ml-2">{formatDateTime(loan.due_date || loan.dueDate)}</span>
                       </div>
                     )}
                     {loan.purpose && (
