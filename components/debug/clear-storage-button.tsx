@@ -44,15 +44,31 @@ export function ClearStorageButton() {
       returnDate: '2025-09-17',
       returnTime: '09:00',
       dueDate: '2025-09-17 09:00',
-      status: 'approved',
+      status: 'requested', // requested 상태로 변경
       requestedAt: new Date().toISOString(),
-      approvedAt: new Date().toISOString(),
       signature: 'data:image/png;base64,test'
     }]
 
     localStorage.setItem('loanApplications', JSON.stringify(testData))
-    alert('테스트 데이터가 추가되었습니다!')
+    alert('테스트 대여 신청 데이터가 추가되었습니다!')
     window.location.reload()
+  }
+
+  const syncFromOtherTab = () => {
+    // 다른 탭에서 데이터 가져오기 시도
+    const prompt = window.prompt(
+      '학생 페이지에서 다음 명령어를 실행하고 결과를 붙여넣어주세요:\n\nlocalStorage.getItem("loanApplications")'
+    )
+
+    if (prompt && prompt.trim()) {
+      try {
+        localStorage.setItem('loanApplications', prompt.trim())
+        alert('데이터가 동기화되었습니다!')
+        window.location.reload()
+      } catch (error) {
+        alert('유효하지 않은 데이터입니다.')
+      }
+    }
   }
 
   // 디버깅용으로 모든 환경에서 표시
@@ -66,6 +82,14 @@ export function ClearStorageButton() {
         className="bg-blue-100 hover:bg-blue-200"
       >
         데이터 확인
+      </Button>
+      <Button
+        onClick={syncFromOtherTab}
+        variant="outline"
+        size="sm"
+        className="bg-purple-100 hover:bg-purple-200"
+      >
+        데이터 동기화
       </Button>
       <Button
         onClick={addTestData}
