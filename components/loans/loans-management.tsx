@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,11 +15,73 @@ interface LoansManagementProps {
   pendingLoans: any[]
   activeLoans: any[]
   overdueLoans: any[]
+  userRole: string
+  userName: string
 }
 
-export function LoansManagement({ pendingLoans, activeLoans, overdueLoans }: LoansManagementProps) {
+export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans: initialActiveLoans, overdueLoans: initialOverdueLoans, userRole, userName }: LoansManagementProps) {
   const [selectedLoan, setSelectedLoan] = useState<any>(null)
   const [modalType, setModalType] = useState<'pickup' | 'return' | null>(null)
+  const [pendingLoans, setPendingLoans] = useState<any[]>(initialPendingLoans)
+  const [activeLoans, setActiveLoans] = useState<any[]>(initialActiveLoans)
+  const [overdueLoans, setOverdueLoans] = useState<any[]>(initialOverdueLoans)
+  const [selectedClass, setSelectedClass] = useState<string>('all')
+
+  // 로컬스토리지에서 대여 신청 데이터 로드
+  useEffect(() => {
+    const loadLoanData = () => {
+      if (typeof window !== 'undefined') {
+        const storedLoans = localStorage.getItem('loanApplications')
+        if (storedLoans) {
+          try {
+            const loans = JSON.parse(storedLoans)
+
+            // 역할별 필터링 - 도우미는 자기 반만, 관리자는 전체
+            let filteredLoans = loans
+            if (userRole === 'helper') {
+              // 도우미의 경우 담당 반만 필터링 (실제로는 사용자 정보에서 담당 반을 가져와야 함)
+              // 지금은 임시로 userName을 기반으로 반을 추정
+              const helperClass = userName.includes('1-1') ? '1-1' :
+                                userName.includes('1-2') ? '1-2' :
+                                userName.includes('1-3') ? '1-3' : '1-1' // 기본값
+              filteredLoans = loans.filter((loan: any) => loan.className === helperClass)
+            }
+
+            // 상태별로 분류
+            const pending = filteredLoans.filter((loan: any) => loan.status === 'requested')
+            const active = filteredLoans.filter((loan: any) => ['approved', 'picked_up'].includes(loan.status))
+            const overdue = filteredLoans.filter((loan: any) => loan.status === 'overdue')
+
+            setPendingLoans(pending)
+            setActiveLoans(active)
+            setOverdueLoans(overdue)
+          } catch (error) {
+            console.error('Failed to parse loan data:', error)
+          }
+        }
+      }
+    }
+
+    loadLoanData()
+
+    // 1초마다 체크하여 새로운 신청이 있으면 업데이트
+    const interval = setInterval(loadLoanData, 1000)
+
+    return () => clearInterval(interval)
+  }, [userRole, userName])
+
+  // 관리자용 추가 필터링 (학급별)
+  const filterByClass = (loans: any[]) => {
+    if (userRole === 'admin' && selectedClass !== 'all') {
+      return loans.filter(loan => loan.className === selectedClass)
+    }
+    return loans
+  }
+
+  // 화면에 표시할 필터링된 데이터
+  const displayPendingLoans = filterByClass(pendingLoans)
+  const displayActiveLoans = filterByClass(activeLoans)
+  const displayOverdueLoans = filterByClass(overdueLoans)
 
   const handlePickupClick = (loan: any) => {
     setSelectedLoan(loan)
@@ -44,6 +106,45 @@ export function LoansManagement({ pendingLoans, activeLoans, overdueLoans }: Loa
   }) => {
     console.log('Return signature:', data, selectedLoan)
     // TODO: 실제 API 호출
+  }
+
+  const handleApprove = (loan: any) => {
+    if (typeof window !== 'undefined') {
+      const existingLoans = localStorage.getItem('loanApplications')
+      if (existingLoans) {
+        const loans = JSON.parse(existingLoans)
+        const updatedLoans = loans.map((l: any) =>
+          l.id === loan.id
+            ? { ...l, status: 'approved', approvedAt: new Date().toISOString() }
+            : l
+        )
+        localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
+
+        // 로컬 상태 업데이트
+        setPendingLoans(prev => prev.filter(l => l.id !== loan.id))
+        setActiveLoans(prev => [...prev, { ...loan, status: 'approved', approvedAt: new Date().toISOString() }])
+      }
+    }
+  }
+
+  const handleReject = (loan: any) => {
+    if (confirm('정말로 이 신청을 거절하시겠습니까?')) {
+      if (typeof window !== 'undefined') {
+        const existingLoans = localStorage.getItem('loanApplications')
+        if (existingLoans) {
+          const loans = JSON.parse(existingLoans)
+          const updatedLoans = loans.map((l: any) =>
+            l.id === loan.id
+              ? { ...l, status: 'rejected', rejectedAt: new Date().toISOString() }
+              : l
+          )
+          localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
+
+          // 로컬 상태 업데이트
+          setPendingLoans(prev => prev.filter(l => l.id !== loan.id))
+        }
+      }
+    }
   }
 
   const closeModal = () => {
@@ -73,13 +174,13 @@ export function LoansManagement({ pendingLoans, activeLoans, overdueLoans }: Loa
       <Tabs defaultValue="pending" className="space-y-4">
         <TabsList>
           <TabsTrigger value="pending">
-            승인 대기 ({pendingLoans.length})
+            승인 대기 ({displayPendingLoans.length})
           </TabsTrigger>
           <TabsTrigger value="active">
-            진행중 ({activeLoans.length})
+            진행중 ({displayActiveLoans.length})
           </TabsTrigger>
           <TabsTrigger value="overdue">
-            연체 ({overdueLoans.length})
+            연체 ({displayOverdueLoans.length})
           </TabsTrigger>
           <TabsTrigger value="history">
             전체 기록
@@ -92,17 +193,24 @@ export function LoansManagement({ pendingLoans, activeLoans, overdueLoans }: Loa
             placeholder="학생명, 학번, 기기번호로 검색..."
             className="max-w-sm"
           />
-          <Select>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="학급" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">전체</SelectItem>
-              <SelectItem value="1-1">1-1</SelectItem>
-              <SelectItem value="1-2">1-2</SelectItem>
-              <SelectItem value="1-3">1-3</SelectItem>
-            </SelectContent>
-          </Select>
+          {userRole === 'admin' && (
+            <Select value={selectedClass} onValueChange={setSelectedClass}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="학급" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체</SelectItem>
+                <SelectItem value="1-1">1-1</SelectItem>
+                <SelectItem value="1-2">1-2</SelectItem>
+                <SelectItem value="1-3">1-3</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          {userRole === 'helper' && (
+            <div className="text-sm text-muted-foreground px-3 py-2 border rounded">
+              담당반만 표시
+            </div>
+          )}
           <Select>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="상태" />
@@ -127,7 +235,7 @@ export function LoansManagement({ pendingLoans, activeLoans, overdueLoans }: Loa
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {pendingLoans.map((loan) => (
+                {displayPendingLoans.map((loan) => (
                   <div key={loan.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <div className="flex items-center space-x-4">
@@ -139,11 +247,19 @@ export function LoansManagement({ pendingLoans, activeLoans, overdueLoans }: Loa
                             </span>
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            요청 기기: {loan.requestedDevice} • 신청: {formatDateTime(loan.requestedAt)}
+                            사용 목적: {loan.purpose} • 신청: {formatDateTime(loan.requestedAt)}
                           </div>
-                          {loan.notes && (
+                          <div className="text-sm text-muted-foreground">
+                            반납 예정: {loan.dueDate} • 연락처: {loan.studentContact}
+                          </div>
+                          {loan.purposeDetail && (
                             <div className="text-sm text-blue-600 mt-1">
-                              사유: {loan.notes}
+                              상세 목적: {loan.purposeDetail}
+                            </div>
+                          )}
+                          {loan.notes && (
+                            <div className="text-sm text-gray-600 mt-1">
+                              추가 사항: {loan.notes}
                             </div>
                           )}
                         </div>
@@ -153,16 +269,16 @@ export function LoansManagement({ pendingLoans, activeLoans, overdueLoans }: Loa
                       <Badge className={getStatusColor(loan.status)}>
                         {getStatusText(loan.status)}
                       </Badge>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleReject(loan)}>
                         거절
                       </Button>
-                      <Button size="sm">
+                      <Button size="sm" onClick={() => handleApprove(loan)}>
                         승인
                       </Button>
                     </div>
                   </div>
                 ))}
-                {pendingLoans.length === 0 && (
+                {displayPendingLoans.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     승인 대기 중인 신청이 없습니다.
                   </div>
@@ -182,7 +298,7 @@ export function LoansManagement({ pendingLoans, activeLoans, overdueLoans }: Loa
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {activeLoans.map((loan) => (
+                {displayActiveLoans.map((loan) => (
                   <div key={loan.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
@@ -216,7 +332,7 @@ export function LoansManagement({ pendingLoans, activeLoans, overdueLoans }: Loa
                     </div>
                   </div>
                 ))}
-                {activeLoans.length === 0 && (
+                {displayActiveLoans.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     진행중인 대여가 없습니다.
                   </div>
@@ -236,7 +352,7 @@ export function LoansManagement({ pendingLoans, activeLoans, overdueLoans }: Loa
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {overdueLoans.map((loan) => (
+                {displayOverdueLoans.map((loan) => (
                   <div key={loan.id} className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
@@ -265,7 +381,7 @@ export function LoansManagement({ pendingLoans, activeLoans, overdueLoans }: Loa
                     </div>
                   </div>
                 ))}
-                {overdueLoans.length === 0 && (
+                {displayOverdueLoans.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     연체된 대여가 없습니다.
                   </div>

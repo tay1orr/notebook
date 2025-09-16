@@ -86,6 +86,12 @@ export function HomeLoanRequestForm({
 
     if (!formData.studentContact.trim()) {
       newErrors.studentContact = '연락처를 입력해주세요.'
+    } else {
+      // 연락처 형식 검증 (010-0000-0000 또는 01000000000)
+      const phoneRegex = /^010-?\d{4}-?\d{4}$/
+      if (!phoneRegex.test(formData.studentContact.replace(/\s/g, ''))) {
+        newErrors.studentContact = '올바른 연락처 형식으로 입력해주세요. (예: 010-1234-5678)'
+      }
     }
 
     setErrors(newErrors)

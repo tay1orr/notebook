@@ -45,7 +45,19 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         dueDate: requestData.returnDate,
         studentContact: requestData.studentContact,
         notes: requestData.notes || '',
-        deviceTag: null // 아직 기기 배정 안됨
+        deviceTag: null, // 아직 기기 배정 안됨
+        studentName: student.name,
+        studentNo: student.studentNo,
+        className: student.className,
+        email: student.email
+      }
+
+      // 로컬스토리지에 저장 (관리자가 볼 수 있도록)
+      if (typeof window !== 'undefined') {
+        const existingLoans = localStorage.getItem('loanApplications')
+        const loans = existingLoans ? JSON.parse(existingLoans) : []
+        loans.push(newLoanRequest)
+        localStorage.setItem('loanApplications', JSON.stringify(loans))
       }
 
       // 로컬 상태 즉시 업데이트
@@ -61,7 +73,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 ✅ 다음 단계:
 1. 승인 결과를 기다려 주세요 (보통 1일 이내)
 2. 승인되면 이메일로 알림을 받습니다
-3. 승인 후 노트북실에서 기기를 수령하세요
+3. 승인 후 교실 충전함에서 기기를 수령하세요
 
 ⚠️ 주의사항:
 • 반납 기한을 반드시 지켜주세요
@@ -192,7 +204,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                   {loan.status === 'approved' && (
                     <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                       <p className="text-sm text-blue-800">
-                        <strong>승인 완료!</strong> 노트북 관리실에서 기기를 수령하세요.
+                        <strong>승인 완료!</strong> 교실 충전함에서 기기를 수령하세요.
                       </p>
                     </div>
                   )}
