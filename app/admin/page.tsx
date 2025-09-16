@@ -1,0 +1,439 @@
+import { MainLayout } from '@/components/layout/main-layout'
+import { requireRole } from '@/lib/auth'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+export default async function AdminPage() {
+  const user = await requireRole(['admin'])
+
+  // 임시 데이터 (실제로는 데이터베이스에서 가져와야 함)
+  const systemStats = {
+    totalUsers: 127,
+    totalDevices: 45,
+    totalLoans: 234,
+    activeLoans: 8,
+    overdueLoans: 1,
+    systemUptime: '99.8%',
+    lastBackup: '2024-09-16 02:00:00',
+    dbSize: '2.3MB'
+  }
+
+  const users = [
+    {
+      id: '1',
+      name: 'taylorr',
+      email: 'taylorr@gclass.ice.go.kr',
+      role: 'admin',
+      createdAt: '2024-09-16',
+      lastLogin: '2024-09-16 10:30'
+    },
+    {
+      id: '2',
+      name: '김담임',
+      email: 'teacher01@gclass.ice.go.kr',
+      role: 'homeroom',
+      createdAt: '2024-09-16',
+      lastLogin: '2024-09-15 16:45'
+    },
+    {
+      id: '3',
+      name: '이도우미',
+      email: 'helper01@gclass.ice.go.kr',
+      role: 'helper',
+      createdAt: '2024-09-16',
+      lastLogin: '2024-09-15 17:20'
+    },
+    {
+      id: '4',
+      name: '김학생',
+      email: 'student10101@gclass.ice.go.kr',
+      role: 'student',
+      createdAt: '2024-09-16',
+      lastLogin: '2024-09-15 15:30'
+    }
+  ]
+
+  const auditLogs = [
+    {
+      id: '1',
+      action: 'LOAN_APPROVED',
+      user: 'taylorr',
+      details: '김학생의 NB-2024-001 대여 승인',
+      timestamp: '2024-09-16 10:30:00',
+      ipAddress: '192.168.1.100'
+    },
+    {
+      id: '2',
+      action: 'DEVICE_UPDATED',
+      user: 'taylorr',
+      details: 'NB-2024-003 상태를 점검중으로 변경',
+      timestamp: '2024-09-16 10:25:00',
+      ipAddress: '192.168.1.100'
+    },
+    {
+      id: '3',
+      action: 'USER_LOGIN',
+      user: '김담임',
+      details: '시스템 로그인',
+      timestamp: '2024-09-15 16:45:00',
+      ipAddress: '192.168.1.101'
+    },
+    {
+      id: '4',
+      action: 'LOAN_RETURNED',
+      user: '이도우미',
+      details: '박학생의 NB-2024-005 반납 처리',
+      timestamp: '2024-09-15 16:30:00',
+      ipAddress: '192.168.1.102'
+    }
+  ]
+
+  const backupHistory = [
+    {
+      id: '1',
+      date: '2024-09-16',
+      time: '02:00:00',
+      type: 'AUTO',
+      size: '2.3MB',
+      status: 'success'
+    },
+    {
+      id: '2',
+      date: '2024-09-15',
+      time: '02:00:00',
+      type: 'AUTO',
+      size: '2.2MB',
+      status: 'success'
+    },
+    {
+      id: '3',
+      date: '2024-09-14',
+      time: '02:00:00',
+      type: 'AUTO',
+      size: '2.1MB',
+      status: 'success'
+    }
+  ]
+
+  const getRoleText = (role: string) => {
+    const roleMap = {
+      'admin': '관리자',
+      'homeroom': '담임교사',
+      'helper': '노트북 도우미',
+      'teacher': '교사',
+      'student': '학생'
+    }
+    return roleMap[role as keyof typeof roleMap] || role
+  }
+
+  const getActionText = (action: string) => {
+    const actionMap = {
+      'LOAN_APPROVED': '대여 승인',
+      'LOAN_REJECTED': '대여 거절',
+      'LOAN_RETURNED': '반납 처리',
+      'DEVICE_UPDATED': '기기 수정',
+      'USER_LOGIN': '로그인',
+      'USER_LOGOUT': '로그아웃',
+      'ADMIN_ACTION': '관리자 작업'
+    }
+    return actionMap[action as keyof typeof actionMap] || action
+  }
+
+  return (
+    <MainLayout>
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">시스템 관리</h1>
+            <p className="text-muted-foreground">
+              시스템 설정, 사용자 관리 및 감사 로그
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline">
+              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              수동 백업
+            </Button>
+            <Button>
+              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              시스템 설정
+            </Button>
+          </div>
+        </div>
+
+        {/* 시스템 상태 카드 */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">총 사용자</CardTitle>
+              <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{systemStats.totalUsers}</div>
+              <p className="text-xs text-muted-foreground">등록된 사용자</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">전체 기기</CardTitle>
+              <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{systemStats.totalDevices}</div>
+              <p className="text-xs text-muted-foreground">관리 대상 기기</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">전체 대여</CardTitle>
+              <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{systemStats.totalLoans}</div>
+              <p className="text-xs text-muted-foreground">누적 대여 건수</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">시스템 가동률</CardTitle>
+              <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{systemStats.systemUptime}</div>
+              <p className="text-xs text-muted-foreground">지난 30일</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Tabs defaultValue="users" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="users">
+              사용자 관리 ({users.length})
+            </TabsTrigger>
+            <TabsTrigger value="audit">
+              감사 로그 ({auditLogs.length})
+            </TabsTrigger>
+            <TabsTrigger value="backup">
+              백업 관리
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              시스템 설정
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="users" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>사용자 관리</CardTitle>
+                <CardDescription>
+                  시스템에 등록된 모든 사용자를 관리합니다.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* 검색 및 필터 */}
+                <div className="flex items-center space-x-4 mb-4">
+                  <Input
+                    placeholder="이름, 이메일로 검색..."
+                    className="max-w-sm"
+                  />
+                  <Select>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="역할" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">전체</SelectItem>
+                      <SelectItem value="admin">관리자</SelectItem>
+                      <SelectItem value="homeroom">담임교사</SelectItem>
+                      <SelectItem value="helper">노트북 도우미</SelectItem>
+                      <SelectItem value="teacher">교사</SelectItem>
+                      <SelectItem value="student">학생</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 사용자 테이블 */}
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>이름</TableHead>
+                        <TableHead>이메일</TableHead>
+                        <TableHead>역할</TableHead>
+                        <TableHead>가입일</TableHead>
+                        <TableHead>최근 로그인</TableHead>
+                        <TableHead>작업</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                              {getRoleText(user.role)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{user.createdAt}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {user.lastLogin}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-1">
+                              <Button variant="ghost" size="sm">
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="audit" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>감사 로그</CardTitle>
+                <CardDescription>
+                  시스템에서 발생한 모든 중요 활동을 기록합니다.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {auditLogs.map((log) => (
+                    <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline">
+                            {getActionText(log.action)}
+                          </Badge>
+                          <span className="font-medium">{log.user}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {log.details}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {log.timestamp} • IP: {log.ipAddress}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="backup" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>백업 상태</CardTitle>
+                  <CardDescription>
+                    데이터베이스 백업 현황 및 설정
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">마지막 백업</span>
+                      <span className="text-sm text-muted-foreground">{systemStats.lastBackup}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">데이터베이스 크기</span>
+                      <span className="text-sm text-muted-foreground">{systemStats.dbSize}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">자동 백업</span>
+                      <Badge className="bg-green-100 text-green-800">활성화</Badge>
+                    </div>
+                    <div className="pt-4">
+                      <Button className="w-full">
+                        수동 백업 실행
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>백업 기록</CardTitle>
+                  <CardDescription>
+                    최근 백업 실행 기록
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {backupHistory.map((backup) => (
+                      <div key={backup.id} className="flex items-center justify-between p-3 border rounded">
+                        <div>
+                          <div className="text-sm font-medium">
+                            {backup.date} {backup.time}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {backup.type === 'AUTO' ? '자동' : '수동'} • {backup.size}
+                          </div>
+                        </div>
+                        <Badge className="bg-green-100 text-green-800">
+                          성공
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>시스템 설정</CardTitle>
+                <CardDescription>
+                  노트북 관리 시스템의 전반적인 설정을 관리합니다.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  시스템 설정 기능은 준비 중입니다.
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </MainLayout>
+  )
+}
