@@ -17,6 +17,10 @@ export default async function DevicesPage() {
         const deviceId = `${grade}-${classNum.toString().padStart(2, '0')}-${deviceNum.toString().padStart(2, '0')}`
         const assetNumber = `ICH-${grade}${classNum.toString().padStart(2, '0')}${deviceNum.toString().padStart(2, '0')}`
 
+        // 시리얼 번호를 10101부터 31335까지 순차적으로 배정
+        const totalDeviceIndex = (grade - 1) * 13 * 35 + (classNum - 1) * 35 + (deviceNum - 1)
+        const serialNumber = (10101 + totalDeviceIndex).toString()
+
         // 모든 기기는 기본적으로 대여 가능 상태
         let status = 'available'
         let currentUser = null
@@ -26,7 +30,7 @@ export default async function DevicesPage() {
           id: deviceId,
           assetNumber: assetNumber,
           model: 'Samsung Galaxy Book3',
-          serialNumber: `SN${grade}${classNum.toString().padStart(2, '0')}${deviceNum.toString().padStart(2, '0')}${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+          serialNumber: serialNumber,
           status: status,
           assignedClass: `${grade}-${classNum}`,
           deviceNumber: `${grade}-${classNum}-${deviceNum.toString().padStart(2, '0')}`,

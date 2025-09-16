@@ -33,7 +33,8 @@ export function formatDateTime(date: string | Date): string {
 
 export function getCurrentKoreaTime(): string {
   const now = new Date()
-  return new Date(now.getTime() + (9 * 60 * 60 * 1000)).toISOString()
+  const koreaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+  return koreaTime.toISOString()
 }
 
 export function parseStudentId(email: string): {

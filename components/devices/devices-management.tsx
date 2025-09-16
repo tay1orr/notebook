@@ -20,6 +20,10 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
   const [stats, setStats] = useState(initialStats)
   const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [gradeFilter, setGradeFilter] = useState('all')
+  const [classFilter, setClassFilter] = useState('all')
 
   const getDeviceStatusText = (status: string) => {
     const statusMap = {
@@ -82,6 +86,76 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
       alert('업로드 중 오류가 발생했습니다.')
     } finally {
       setIsUploading(false)
+    }
+  }
+
+  // 필터링된 기기 목록
+  const filteredDevices = devices.filter((device) => {
+    // 검색어 필터링
+    const matchesSearch = !searchTerm ||
+      device.assetNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      device.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      device.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      device.assignedClass?.toLowerCase().includes(searchTerm.toLowerCase())
+
+    // 상태 필터링
+    const matchesStatus = statusFilter === 'all' || device.status === statusFilter
+
+    // 학년 필터링
+    const deviceGrade = device.assignedClass?.split('-')[0]
+    const matchesGrade = gradeFilter === 'all' || deviceGrade === gradeFilter
+
+    // 반 필터링
+    const deviceClass = device.assignedClass?.split('-')[1]
+    const matchesClass = classFilter === 'all' || deviceClass === classFilter
+
+    return matchesSearch && matchesStatus && matchesGrade && matchesClass
+  })
+
+  // 기기 상태 변경 함수
+  const handleStatusChange = async (deviceId: string, newStatus: string) => {
+    try {
+      const response = await fetch('/api/devices', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          deviceTag: deviceId,
+          status: newStatus,
+          currentUser: newStatus === 'loaned' ? '관리자 설정' : null,
+          notes: `상태 변경: ${getDeviceStatusText(newStatus)}`
+        })
+      })
+
+      if (response.ok) {
+        // 로컬 상태 업데이트
+        setDevices(prev => prev.map(device =>
+          device.id === deviceId
+            ? { ...device, status: newStatus, updatedAt: new Date().toISOString() }
+            : device
+        ))
+
+        // 통계 업데이트
+        const updatedDevices = devices.map(device =>
+          device.id === deviceId ? { ...device, status: newStatus } : device
+        )
+        const newStats = {
+          total: updatedDevices.length,
+          available: updatedDevices.filter(d => d.status === 'available').length,
+          loaned: updatedDevices.filter(d => d.status === 'loaned').length,
+          maintenance: updatedDevices.filter(d => d.status === 'maintenance').length,
+          retired: updatedDevices.filter(d => d.status === 'retired').length
+        }
+        setStats(newStats)
+
+        alert('기기 상태가 변경되었습니다.')
+      } else {
+        alert('상태 변경에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('Status change error:', error)
+      alert('상태 변경 중 오류가 발생했습니다.')
     }
   }
 
@@ -163,12 +237,14 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
         </CardHeader>
         <CardContent>
           {/* 검색 및 필터 */}
-          <div className="flex items-center space-x-4 mb-4">
+          <div className="flex items-center space-x-4 mb-4 flex-wrap gap-2">
             <Input
               placeholder="자산번호, 모델명, 시리얼번호로 검색..."
               className="max-w-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="상태" />
               </SelectTrigger>
@@ -180,15 +256,28 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
                 <SelectItem value="retired">폐기</SelectItem>
               </SelectContent>
             </Select>
-            <Select>
+            <Select value={gradeFilter} onValueChange={setGradeFilter}>
               <SelectTrigger className="w-32">
-                <SelectValue placeholder="학급" />
+                <SelectValue placeholder="학년" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">전체</SelectItem>
-                <SelectItem value="1-1">1-1</SelectItem>
-                <SelectItem value="1-2">1-2</SelectItem>
-                <SelectItem value="1-3">1-3</SelectItem>
+                <SelectItem value="1">1학년</SelectItem>
+                <SelectItem value="2">2학년</SelectItem>
+                <SelectItem value="3">3학년</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={classFilter} onValueChange={setClassFilter}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="반" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체</SelectItem>
+                {Array.from({length: 13}, (_, i) => i + 1).map(classNum => (
+                  <SelectItem key={classNum} value={classNum.toString()}>
+                    {classNum}반
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -209,14 +298,14 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {devices.map((device) => (
+                {filteredDevices.map((device) => (
                   <TableRow key={device.id}>
                     <TableCell className="font-medium">
-                      {device.assetTag}
+                      {device.assetNumber}
                     </TableCell>
                     <TableCell>{device.model}</TableCell>
                     <TableCell className="font-mono text-sm">
-                      {device.serial}
+                      {device.serialNumber}
                     </TableCell>
                     <TableCell>
                       <Badge className={getDeviceStatusColor(device.status)}>
@@ -234,19 +323,39 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        <Button variant="ghost" size="sm">
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </Button>
-                        <Button variant="ghost" size="sm">
+                        <Select onValueChange={(value) => handleStatusChange(device.id, value)}>
+                          <SelectTrigger asChild>
+                            <Button variant="ghost" size="sm" title="상태 변경">
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </Button>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="available">대여 가능</SelectItem>
+                            <SelectItem value="loaned">대여 중</SelectItem>
+                            <SelectItem value="maintenance">점검 중</SelectItem>
+                            <SelectItem value="retired">폐기</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="유지보수"
+                          onClick={() => handleStatusChange(device.id, 'maintenance')}
+                        >
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="기기 정보"
+                          onClick={() => alert(`기기 정보\n자산번호: ${device.assetNumber}\n모델: ${device.model}\n시리얼: ${device.serialNumber}\n배정학급: ${device.assignedClass}\n상태: ${getDeviceStatusText(device.status)}`)}
+                        >
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2M8 4V2m0 2v2M12 4h.01" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </Button>
                       </div>
@@ -257,9 +366,22 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
             </Table>
           </div>
 
+          {filteredDevices.length === 0 && devices.length > 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              검색 조건에 맞는 기기가 없습니다.
+            </div>
+          )}
+
           {devices.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               등록된 기기가 없습니다.
+            </div>
+          )}
+
+          {/* 필터링 결과 요약 */}
+          {searchTerm && (
+            <div className="mt-4 text-sm text-muted-foreground">
+              "{searchTerm}" 검색 결과: {filteredDevices.length}개 기기
             </div>
           )}
         </CardContent>
