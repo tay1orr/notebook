@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getRoleText, getStatusColor, getStatusText, formatDateTime } from '@/lib/utils'
-import { ClearStorageButton } from '@/components/debug/clear-storage-button'
 
 interface AdminDashboardProps {
   user: {
@@ -269,8 +268,6 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
         </Card>
       </div>
 
-      {/* 개발용 디버깅 버튼 */}
-      <ClearStorageButton />
     </div>
   )
 }

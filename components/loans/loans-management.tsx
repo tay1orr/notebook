@@ -545,8 +545,59 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                전체 기록 조회 기능은 준비 중입니다.
+              <div className="space-y-4">
+                {[...pendingLoans, ...activeLoans, ...overdueLoans]
+                  .sort((a, b) => new Date(b.created_at || b.requestedAt).getTime() - new Date(a.created_at || a.requestedAt).getTime())
+                  .map((loan) => (
+                  <div key={loan.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{loan.student_name || loan.studentName}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {loan.class_name || loan.className} {loan.student_no || loan.studentNo}번
+                        </span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        사용 목적: {loan.purpose} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        기기: {loan.device_tag || loan.deviceTag || '미배정'} • 반납 예정: {formatDateTime(loan.due_date || loan.dueDate)}
+                      </div>
+                      {(loan.approved_at || loan.approvedAt) && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          승인: {formatDateTime(loan.approved_at || loan.approvedAt)}
+                          {(loan.picked_up_at || loan.pickedUpAt) && ` • 수령: ${formatDateTime(loan.picked_up_at || loan.pickedUpAt)}`}
+                          {(loan.returned_at || loan.returnedAt) && ` • 반납: ${formatDateTime(loan.returned_at || loan.returnedAt)}`}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge className={getStatusColor(loan.status)}>
+                        {getStatusText(loan.status)}
+                      </Badge>
+                      {loan.status === 'requested' && (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => handleReject(loan)}>
+                            거절
+                          </Button>
+                          <Button size="sm" onClick={() => handleApprove(loan)}>
+                            승인
+                          </Button>
+                        </>
+                      )}
+                      {loan.status === 'picked_up' && (
+                        <Button size="sm" variant="outline" onClick={() => handleReturnClick(loan)}>
+                          반납 처리
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {[...pendingLoans, ...activeLoans, ...overdueLoans].length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    대여 기록이 없습니다.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

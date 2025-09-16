@@ -105,23 +105,23 @@ export function ReturnConfirmationModal({
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">학생:</span>
-                <span className="ml-2 font-medium">{loanData.studentName}</span>
+                <span className="ml-2 font-medium">{loanData.student_name || loanData.studentName}</span>
               </div>
               <div>
                 <span className="text-gray-600">학번:</span>
-                <span className="ml-2">{loanData.className} {loanData.studentNo}번</span>
+                <span className="ml-2">{loanData.class_name || loanData.className} {loanData.student_no || loanData.studentNo}번</span>
               </div>
               <div>
                 <span className="text-gray-600">기기:</span>
-                <span className="ml-2 font-medium">{loanData.deviceTag}</span>
+                <span className="ml-2 font-medium">{loanData.device_tag || loanData.deviceTag}</span>
               </div>
               <div>
                 <span className="text-gray-600">반납 예정:</span>
-                <span className="ml-2">{loanData.dueDate}</span>
+                <span className="ml-2">{formatDateTime(loanData.due_date || loanData.dueDate)}</span>
               </div>
               <div>
                 <span className="text-gray-600">대여일:</span>
-                <span className="ml-2">{formatDateTime(loanData.approvedAt)}</span>
+                <span className="ml-2">{formatDateTime(loanData.approved_at || loanData.approvedAt)}</span>
               </div>
               <div>
                 <span className="text-gray-600">사용 목적:</span>
@@ -165,7 +165,7 @@ export function ReturnConfirmationModal({
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-medium text-blue-900 mb-2">담당자 서명</h4>
               <p className="text-sm text-blue-800 mb-4">
-                위 학생으로부터 기기 <strong>{loanData.deviceTag}</strong>을(를) 반납받아 교실 충전함에 보관했음을 확인합니다.
+                위 학생으로부터 기기 <strong>{loanData.device_tag || loanData.deviceTag}</strong>을(를) 반납받아 교실 충전함에 보관했음을 확인합니다.
                 <br />
                 담당자: <strong>{receiverName}</strong>
               </p>

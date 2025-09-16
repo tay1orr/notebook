@@ -383,14 +383,14 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                 <div key={loan.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium">{loan.deviceTag || '기기 정보 없음'}</span>
+                      <span className="font-medium">{loan.device_tag || loan.deviceTag || '기기 정보 없음'}</span>
                       <Badge variant="outline" className={getStatusColor(loan.status)}>
                         {getStatusText(loan.status)}
                       </Badge>
                     </div>
                     <div className="text-sm text-gray-600">
-                      {formatDateTime(loan.requestedAt)}
-                      {loan.returnedAt && ` ~ ${formatDateTime(loan.returnedAt)}`}
+                      {formatDateTime(loan.created_at || loan.requestedAt)}
+                      {(loan.returned_at || loan.returnedAt) && ` ~ ${formatDateTime(loan.returned_at || loan.returnedAt)}`}
                     </div>
                   </div>
                   <div className="text-sm text-gray-500">
