@@ -22,22 +22,15 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       return null
     }
 
-    const { data: userData, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-
-    if (error || !userData) {
-      return null
-    }
+    // 임시로 데이터베이스 없이도 동작하도록 수정
+    const isAdmin = user.email === 'taylorr@gclass.ice.go.kr'
 
     return {
-      id: userData.id,
-      email: userData.email,
-      name: userData.name,
-      role: userData.role,
-      class_id: userData.class_id
+      id: user.id,
+      email: user.email!,
+      name: user.user_metadata?.name || user.email!.split('@')[0],
+      role: isAdmin ? 'admin' : 'student',
+      class_id: null
     }
   } catch (error) {
     console.error('Error getting current user:', error)
@@ -66,9 +59,7 @@ export async function requireRole(allowedRoles: UserRole[]): Promise<AuthUser> {
 }
 
 export function isAllowedDomain(email: string): boolean {
-  const allowedDomain = process.env.NEXT_PUBLIC_ALLOWED_DOMAIN
-  if (!allowedDomain) return true
-
+  const allowedDomain = 'gclass.ice.go.kr' // 하드코딩으로 확실하게
   const domain = email.split('@')[1]
   return domain === allowedDomain
 }

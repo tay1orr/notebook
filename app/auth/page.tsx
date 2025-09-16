@@ -21,14 +21,14 @@ export default function AuthPage() {
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
-            hd: process.env.NEXT_PUBLIC_ALLOWED_DOMAIN // Google Workspace domain restriction
+            hd: 'gclass.ice.go.kr' // Google Workspace domain restriction
           }
         }
       })
 
       if (error) {
         if (error.message.includes('domain')) {
-          setError('학교 계정(@ichungjungsan.kr)으로만 로그인할 수 있습니다.')
+          setError('학교 계정(@gclass.ice.go.kr)으로만 로그인할 수 있습니다.')
         } else {
           setError(error.message)
         }
@@ -90,7 +90,7 @@ export default function AuthPage() {
 
             <div className="mt-6 text-center">
               <p className="text-xs text-gray-500">
-                <span className="font-medium">@ichungjungsan.kr</span> 도메인 계정만 이용 가능
+                <span className="font-medium">@gclass.ice.go.kr</span> 도메인 계정만 이용 가능
               </p>
               <p className="text-xs text-gray-400 mt-2">
                 처음 로그인 시 관리자 승인이 필요합니다

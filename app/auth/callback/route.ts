@@ -26,8 +26,10 @@ export async function GET(request: NextRequest) {
 
       // 사용자 정보를 users 테이블에 업서트
       if (data.user) {
+        console.log('Auth callback - user:', data.user.email)
         // 관리자 계정 자동 설정
         const isAdmin = data.user.email === 'taylorr@gclass.ice.go.kr'
+        console.log('Is admin:', isAdmin)
 
         const { error: upsertError } = await supabase
           .from('users')
