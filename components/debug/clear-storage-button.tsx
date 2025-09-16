@@ -22,10 +22,7 @@ export function ClearStorageButton() {
     }
   }
 
-  // 개발 환경에서만 표시
-  if (process.env.NODE_ENV !== 'development') {
-    return null
-  }
+  // 디버깅용으로 모든 환경에서 표시
 
   return (
     <div className="fixed bottom-4 right-4 space-y-2 z-50">
