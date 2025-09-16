@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear localStorage Data</title>
+</head>
+<body>
+    <h1>대여 데이터 삭제</h1>
+    <button onclick="clearData()">모든 대여 데이터 삭제</button>
+    <button onclick="showData()">현재 데이터 확인</button>
+    <div id="output"></div>
+
+    <script>
+        function clearData() {
+            localStorage.removeItem('loanApplications');
+            document.getElementById('output').innerHTML = '<p style="color: green;">✅ 모든 대여 데이터가 삭제되었습니다.</p>';
+        }
+
+        function showData() {
+            const data = localStorage.getItem('loanApplications');
+            const output = document.getElementById('output');
+
+            if (data) {
+                const loans = JSON.parse(data);
+                output.innerHTML = `
+                    <h3>현재 저장된 대여 데이터 (${loans.length}개):</h3>
+                    <pre>${JSON.stringify(loans, null, 2)}</pre>
+                `;
+            } else {
+                output.innerHTML = '<p>저장된 대여 데이터가 없습니다.</p>';
+            }
+        }
+
+        // 페이지 로드 시 현재 데이터 보여주기
+        window.onload = showData;
+    </script>
+</body>
+</html>
