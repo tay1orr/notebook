@@ -4,11 +4,52 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getRoleText, getStatusColor, getStatusText } from '@/lib/utils'
+import { StudentDashboard } from '@/components/student/student-dashboard'
 
 export default async function DashboardPage() {
   const user = await requireAuth()
 
-  // 임시 데이터 (실제로는 데이터베이스에서 가져와야 함)
+  // 학생용 임시 데이터
+  const studentCurrentLoans = [
+    // 임시로 빈 배열 - 실제로는 사용자별 대여 현황을 가져와야 함
+  ]
+
+  const studentLoanHistory = [
+    // 임시 이력 데이터
+    {
+      id: '1',
+      deviceTag: 'NB-2024-001',
+      status: 'returned',
+      requestedAt: '2024-09-01 14:30',
+      returnedAt: '2024-09-05 08:30',
+      purpose: '과제 작성'
+    }
+  ]
+
+  // 학생인 경우 학생용 대시보드 표시
+  if (user.role === 'student') {
+    const studentInfo = {
+      id: user.id,
+      name: user.name,
+      studentNo: user.email.split('@')[0], // 이메일 앞부분을 학번으로 사용
+      className: '1-1', // 임시 데이터, 실제로는 DB에서 가져와야 함
+      email: user.email
+    }
+
+    return (
+      <MainLayout>
+        <div className="container mx-auto py-6">
+          <StudentDashboard
+            student={studentInfo}
+            currentLoans={studentCurrentLoans}
+            loanHistory={studentLoanHistory}
+          />
+        </div>
+      </MainLayout>
+    )
+  }
+
+  // 관리자/교사용 임시 데이터 (실제로는 데이터베이스에서 가져와야 함)
   const dashboardStats = {
     todayPickups: 3,
     tomorrowReturns: 5,
@@ -196,26 +237,6 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        {/* 학생 역할일 때는 다른 정보 표시 */}
-        {user.role === 'student' && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>내 대여 현황</CardTitle>
-              <CardDescription>
-                현재 나의 노트북 대여 상태
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <h3 className="mt-2 text-lg font-medium text-gray-900">대여 중인 노트북이 없습니다</h3>
-                <p className="mt-1 text-gray-500">노트북 대여가 필요하시면 담임교사 또는 노트북 도우미에게 문의하세요.</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </MainLayout>
   )
