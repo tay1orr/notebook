@@ -32,8 +32,26 @@ export function StudentDashboard({ student, currentLoans, loanHistory }: Student
       // 임시로 성공 처리
       await new Promise(resolve => setTimeout(resolve, 2000))
 
-      alert('가정대여 신청이 완료되었습니다. 승인 결과는 이메일로 안내드리겠습니다.')
+      alert(`가정대여 신청이 완료되었습니다!
+
+📋 신청 내용:
+• 사용 목적: ${requestData.purpose === 'homework' ? '과제 작성' : requestData.purpose === 'report' ? '보고서 준비' : requestData.purpose}
+• 반납 예정일: ${requestData.returnDate}
+• 연락처: ${requestData.studentContact}
+
+✅ 다음 단계:
+1. 승인 결과를 기다려 주세요 (보통 1일 이내)
+2. 승인되면 이메일로 알림을 받습니다
+3. 승인 후 노트북실에서 기기를 수령하세요
+
+⚠️ 주의사항:
+• 반납 기한을 반드시 지켜주세요
+• 분실/파손 시 즉시 연락바랍니다`)
+
       setShowLoanRequest(false)
+
+      // 페이지 새로고침으로 신청 상태 반영 (임시)
+      window.location.reload()
     } catch (error) {
       console.error('Loan request failed:', error)
       alert('신청 중 오류가 발생했습니다. 다시 시도해주세요.')

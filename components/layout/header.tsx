@@ -24,7 +24,7 @@ export function Header({ user }: HeaderProps) {
   }
 
   const navigationItems = [
-    { href: '/dashboard', label: '대시보드', roles: ['admin', 'homeroom', 'helper', 'teacher'] },
+    { href: '/dashboard', label: '대시보드', roles: ['admin', 'homeroom', 'helper', 'teacher', 'student'] },
     { href: '/loans', label: '대여 관리', roles: ['admin', 'homeroom', 'helper'] },
     { href: '/devices', label: '기기 관리', roles: ['admin', 'homeroom'] },
     { href: '/students', label: '학생 관리', roles: ['admin', 'homeroom', 'helper'] },

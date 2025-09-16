@@ -34,8 +34,8 @@ export function HomeLoanRequestForm({
     purpose: '',
     purposeDetail: '',
     returnDate: '',
-    parentConsent: false,
-    emergencyContact: '',
+    rulesAgreed: false,
+    studentContact: '',
     notes: ''
   })
 
@@ -72,20 +72,20 @@ export function HomeLoanRequestForm({
         newErrors.returnDate = '반납 예정일은 내일 이후로 선택해주세요.'
       }
 
-      // 최대 2주까지만 허용
+      // 최대 7일까지만 허용 (다음 주 금요일까지)
       const maxDate = new Date()
-      maxDate.setDate(maxDate.getDate() + 14)
+      maxDate.setDate(maxDate.getDate() + 7)
       if (returnDate > maxDate) {
-        newErrors.returnDate = '가정대여는 최대 2주까지만 가능합니다.'
+        newErrors.returnDate = '가정대여는 다음 등교일까지만 가능합니다.'
       }
     }
 
-    if (!formData.parentConsent) {
-      newErrors.parentConsent = '보호자 동의가 필요합니다.'
+    if (!formData.rulesAgreed) {
+      newErrors.rulesAgreed = '안내사항에 동의해주세요.'
     }
 
-    if (!formData.emergencyContact.trim()) {
-      newErrors.emergencyContact = '비상 연락처를 입력해주세요.'
+    if (!formData.studentContact.trim()) {
+      newErrors.studentContact = '연락처를 입력해주세요.'
     }
 
     setErrors(newErrors)
@@ -119,8 +119,8 @@ export function HomeLoanRequestForm({
         purpose: '',
         purposeDetail: '',
         returnDate: '',
-        parentConsent: false,
-        emergencyContact: '',
+        rulesAgreed: false,
+        studentContact: '',
         notes: ''
       })
       setErrors({})
@@ -136,7 +136,7 @@ export function HomeLoanRequestForm({
 
   const getMaxDate = () => {
     const maxDate = new Date()
-    maxDate.setDate(maxDate.getDate() + 14)
+    maxDate.setDate(maxDate.getDate() + 7)
     return maxDate.toISOString().split('T')[0]
   }
 
@@ -218,20 +218,20 @@ export function HomeLoanRequestForm({
             />
             {errors.returnDate && <p className="text-sm text-red-500">{errors.returnDate}</p>}
             <p className="text-xs text-gray-500">
-              * 가정대여는 최대 2주까지 가능합니다
+              * 다음 등교일까지 반납이 원칙입니다
             </p>
           </div>
 
-          {/* 비상 연락처 */}
+          {/* 학생 연락처 */}
           <div className="space-y-2">
-            <Label htmlFor="emergencyContact">비상 연락처 *</Label>
+            <Label htmlFor="studentContact">본인 연락처 *</Label>
             <Input
-              id="emergencyContact"
-              value={formData.emergencyContact}
-              onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
-              placeholder="보호자 연락처를 입력하세요 (예: 010-1234-5678)"
+              id="studentContact"
+              value={formData.studentContact}
+              onChange={(e) => setFormData({ ...formData, studentContact: e.target.value })}
+              placeholder="본인 연락처를 입력하세요 (예: 010-1234-5678)"
             />
-            {errors.emergencyContact && <p className="text-sm text-red-500">{errors.emergencyContact}</p>}
+            {errors.studentContact && <p className="text-sm text-red-500">{errors.studentContact}</p>}
           </div>
 
           {/* 추가 사항 */}
@@ -246,7 +246,7 @@ export function HomeLoanRequestForm({
             />
           </div>
 
-          {/* 보호자 동의 */}
+          {/* 안내사항 확인 */}
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-medium text-blue-900 mb-2">가정대여 안내사항</h4>
@@ -254,27 +254,28 @@ export function HomeLoanRequestForm({
                 <li>• 노트북은 학습 목적으로만 사용해야 합니다</li>
                 <li>• 게임, 오락 목적의 사용은 금지됩니다</li>
                 <li>• 분실 또는 파손 시 즉시 학교에 신고해야 합니다</li>
-                <li>• 반납 기한을 반드시 준수해야 합니다</li>
+                <li>• 반납 기한을 반드시 준수해야 합니다 (다음 등교일)</li>
                 <li>• 다른 사람에게 대여하거나 양도할 수 없습니다</li>
+                <li>• 노트북 분실 시 변상 책임이 있습니다</li>
               </ul>
             </div>
 
             <div className="flex items-start space-x-2">
               <Checkbox
-                id="parentConsent"
-                checked={formData.parentConsent}
-                onCheckedChange={(checked) => setFormData({ ...formData, parentConsent: checked as boolean })}
+                id="rulesAgreed"
+                checked={formData.rulesAgreed}
+                onCheckedChange={(checked) => setFormData({ ...formData, rulesAgreed: checked as boolean })}
               />
               <div className="space-y-1">
-                <Label htmlFor="parentConsent" className="text-sm font-medium">
-                  보호자 동의 및 안내사항 확인 *
+                <Label htmlFor="rulesAgreed" className="text-sm font-medium">
+                  안내사항 확인 및 준수 동의 *
                 </Label>
                 <p className="text-xs text-gray-600">
-                  위 안내사항을 숙지하였으며, 보호자의 동의를 받았습니다.
+                  위 안내사항을 모두 읽었으며, 이를 준수할 것을 약속합니다.
                 </p>
               </div>
             </div>
-            {errors.parentConsent && <p className="text-sm text-red-500">{errors.parentConsent}</p>}
+            {errors.rulesAgreed && <p className="text-sm text-red-500">{errors.rulesAgreed}</p>}
           </div>
 
           {/* 버튼 영역 */}

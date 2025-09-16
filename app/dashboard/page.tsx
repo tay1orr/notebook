@@ -11,7 +11,16 @@ export default async function DashboardPage() {
 
   // 학생용 임시 데이터
   const studentCurrentLoans = [
-    // 임시로 빈 배열 - 실제로는 사용자별 대여 현황을 가져와야 함
+    // 테스트용 임시 데이터 - 신청 후 상태 확인용
+    // {
+    //   id: 'temp1',
+    //   status: 'requested',
+    //   requestedAt: new Date().toISOString(),
+    //   purpose: '과제 작성',
+    //   purposeDetail: '국어 독서감상문 작성',
+    //   returnDate: '2024-09-18',
+    //   studentContact: '010-1234-5678'
+    // }
   ]
 
   const studentLoanHistory = [
