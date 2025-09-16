@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SignaturePad, SignaturePadRef } from '@/components/ui/signature-pad'
 import { CalendarIcon } from 'lucide-react'
 
 interface HomeLoanRequestFormProps {
@@ -40,6 +41,8 @@ export function HomeLoanRequestForm({
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [signatureEmpty, setSignatureEmpty] = useState(true)
+  const signaturePadRef = useRef<SignaturePadRef>(null)
 
   const purposes = [
     { value: 'homework', label: '과제 작성' },
@@ -84,6 +87,10 @@ export function HomeLoanRequestForm({
       newErrors.rulesAgreed = '안내사항에 동의해주세요.'
     }
 
+    if (signatureEmpty) {
+      newErrors.signature = '서명을 해주세요.'
+    }
+
     if (!formData.studentContact.trim()) {
       newErrors.studentContact = '연락처를 입력해주세요.'
     } else {
@@ -105,6 +112,9 @@ export function HomeLoanRequestForm({
       return
     }
 
+    // 서명 데이터 가져오기
+    const signatureData = signaturePadRef.current?.toDataURL() || ''
+
     const requestData = {
       ...formData,
       studentName: studentInfo.name,
@@ -113,7 +123,8 @@ export function HomeLoanRequestForm({
       email: studentInfo.email,
       requestType: 'home_loan',
       status: 'requested',
-      requestedAt: new Date().toISOString()
+      requestedAt: new Date().toISOString(),
+      studentSignature: signatureData
     }
 
     onSubmit(requestData)
@@ -130,6 +141,8 @@ export function HomeLoanRequestForm({
         notes: ''
       })
       setErrors({})
+      setSignatureEmpty(true)
+      signaturePadRef.current?.clear()
       onClose()
     }
   }
@@ -282,6 +295,42 @@ export function HomeLoanRequestForm({
               </div>
             </div>
             {errors.rulesAgreed && <p className="text-sm text-red-500">{errors.rulesAgreed}</p>}
+          </div>
+
+          {/* 학생 서명 */}
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-medium text-blue-900 mb-2">학생 서명</h4>
+              <p className="text-sm text-blue-800 mb-4">
+                위 신청 내용이 정확하며, 안내사항을 준수할 것을 약속합니다.
+                아래에 본인의 이름을 자필로 서명해주세요.
+              </p>
+
+              <div className="space-y-2">
+                <Label>자필 서명 *</Label>
+                <SignaturePad
+                  ref={signaturePadRef}
+                  width={400}
+                  height={120}
+                  className="w-full"
+                  onSignatureChange={setSignatureEmpty}
+                />
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      signaturePadRef.current?.clear()
+                      setSignatureEmpty(true)
+                    }}
+                  >
+                    서명 지우기
+                  </Button>
+                </div>
+                {errors.signature && <p className="text-sm text-red-500">{errors.signature}</p>}
+              </div>
+            </div>
           </div>
 
           {/* 버튼 영역 */}

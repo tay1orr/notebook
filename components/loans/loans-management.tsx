@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getStatusColor, getStatusText, formatDateTime } from '@/lib/utils'
-import { PickupSignatureModal } from '@/components/forms/pickup-signature-modal'
-import { ReturnSignatureModal } from '@/components/forms/return-signature-modal'
+import { ApprovalSignatureModal } from '@/components/forms/approval-signature-modal'
+import { ReturnConfirmationModal } from '@/components/forms/return-confirmation-modal'
 
 interface LoansManagementProps {
   pendingLoans: any[]
@@ -21,7 +21,7 @@ interface LoansManagementProps {
 
 export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans: initialActiveLoans, overdueLoans: initialOverdueLoans, userRole, userName }: LoansManagementProps) {
   const [selectedLoan, setSelectedLoan] = useState<any>(null)
-  const [modalType, setModalType] = useState<'pickup' | 'return' | null>(null)
+  const [modalType, setModalType] = useState<'approval' | 'return' | null>(null)
   const [pendingLoans, setPendingLoans] = useState<any[]>(initialPendingLoans)
   const [activeLoans, setActiveLoans] = useState<any[]>(initialActiveLoans)
   const [overdueLoans, setOverdueLoans] = useState<any[]>(initialOverdueLoans)
@@ -32,11 +32,9 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
     const loadLoanData = () => {
       if (typeof window !== 'undefined') {
         const storedLoans = localStorage.getItem('loanApplications')
-        console.log('Raw stored loans:', storedLoans) // 디버깅용
         if (storedLoans) {
           try {
             const loans = JSON.parse(storedLoans)
-            console.log('Parsed loans:', loans) // 디버깅용
 
             // 역할별 필터링 - 도우미는 자기 반만, 관리자는 전체
             let filteredLoans = loans
@@ -49,14 +47,10 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
               filteredLoans = loans.filter((loan: any) => loan.className === helperClass)
             }
 
-            console.log('Filtered loans:', filteredLoans) // 디버깅용
-
             // 상태별로 분류
             const pending = filteredLoans.filter((loan: any) => loan.status === 'requested')
-            const active = filteredLoans.filter((loan: any) => ['approved', 'picked_up'].includes(loan.status))
+            const active = filteredLoans.filter((loan: any) => ['picked_up'].includes(loan.status))
             const overdue = filteredLoans.filter((loan: any) => loan.status === 'overdue')
-
-            console.log('Categorized loans:', { pending, active, overdue }) // 디버깅용
 
             setPendingLoans(pending)
             setActiveLoans(active)
@@ -64,8 +58,6 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
           } catch (error) {
             console.error('Failed to parse loan data:', error)
           }
-        } else {
-          console.log('No stored loans found') // 디버깅용
         }
       }
     }
@@ -91,48 +83,87 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
   const displayActiveLoans = filterByClass(activeLoans)
   const displayOverdueLoans = filterByClass(overdueLoans)
 
-  const handlePickupClick = (loan: any) => {
-    setSelectedLoan(loan)
-    setModalType('pickup')
-  }
-
   const handleReturnClick = (loan: any) => {
     setSelectedLoan(loan)
     setModalType('return')
   }
 
-  const handlePickupSignature = async (signatureData: string) => {
-    console.log('Pickup signature:', signatureData, selectedLoan)
-    // TODO: 실제 API 호출
-  }
-
-  const handleReturnSignature = async (data: {
-    signatureData: string
-    condition: string
-    notes?: string
-    damages: string[]
+  const handleApprovalSignature = async (data: {
+    signature: string
+    deviceTag: string
+    approverName: string
   }) => {
-    console.log('Return signature:', data, selectedLoan)
-    // TODO: 실제 API 호출
-  }
-
-  const handleApprove = (loan: any) => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && selectedLoan) {
       const existingLoans = localStorage.getItem('loanApplications')
       if (existingLoans) {
         const loans = JSON.parse(existingLoans)
         const updatedLoans = loans.map((l: any) =>
-          l.id === loan.id
-            ? { ...l, status: 'approved', approvedAt: new Date().toISOString() }
+          l.id === selectedLoan.id
+            ? {
+                ...l,
+                status: 'picked_up',
+                approvedAt: new Date().toISOString(),
+                deviceTag: data.deviceTag,
+                approverSignature: data.signature,
+                approverName: data.approverName
+              }
             : l
         )
         localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
 
         // 로컬 상태 업데이트
-        setPendingLoans(prev => prev.filter(l => l.id !== loan.id))
-        setActiveLoans(prev => [...prev, { ...loan, status: 'approved', approvedAt: new Date().toISOString() }])
+        setPendingLoans(prev => prev.filter(l => l.id !== selectedLoan.id))
+        setActiveLoans(prev => [...prev, {
+          ...selectedLoan,
+          status: 'picked_up',
+          approvedAt: new Date().toISOString(),
+          deviceTag: data.deviceTag,
+          approverSignature: data.signature,
+          approverName: data.approverName
+        }])
       }
     }
+    setSelectedLoan(null)
+    setModalType(null)
+  }
+
+  const handleReturnSignature = async (data: {
+    signature: string
+    condition: string
+    notes?: string
+    receiverName: string
+  }) => {
+    if (typeof window !== 'undefined' && selectedLoan) {
+      const existingLoans = localStorage.getItem('loanApplications')
+      if (existingLoans) {
+        const loans = JSON.parse(existingLoans)
+        const updatedLoans = loans.map((l: any) =>
+          l.id === selectedLoan.id
+            ? {
+                ...l,
+                status: 'returned',
+                returnedAt: new Date().toISOString(),
+                returnCondition: data.condition,
+                returnNotes: data.notes,
+                returnSignature: data.signature,
+                receiverName: data.receiverName
+              }
+            : l
+        )
+        localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
+
+        // 로컬 상태 업데이트
+        setActiveLoans(prev => prev.filter(l => l.id !== selectedLoan.id))
+        setOverdueLoans(prev => prev.filter(l => l.id !== selectedLoan.id))
+      }
+    }
+    setSelectedLoan(null)
+    setModalType(null)
+  }
+
+  const handleApprove = (loan: any) => {
+    setSelectedLoan(loan)
+    setModalType('approval')
   }
 
   const handleReject = (loan: any) => {
@@ -327,11 +358,6 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       <Badge className={getStatusColor(loan.status)}>
                         {getStatusText(loan.status)}
                       </Badge>
-                      {loan.status === 'approved' && (
-                        <Button size="sm" variant="outline" onClick={() => handlePickupClick(loan)}>
-                          수령 처리
-                        </Button>
-                      )}
                       {loan.status === 'picked_up' && (
                         <Button size="sm" variant="outline" onClick={() => handleReturnClick(loan)}>
                           반납 처리
@@ -416,23 +442,25 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
         </TabsContent>
       </Tabs>
 
-      {/* 수령 서명 모달 */}
-      {modalType === 'pickup' && selectedLoan && (
-        <PickupSignatureModal
+      {/* 승인 서명 모달 */}
+      {modalType === 'approval' && selectedLoan && (
+        <ApprovalSignatureModal
           isOpen={true}
           onClose={closeModal}
-          onConfirm={handlePickupSignature}
+          onConfirm={handleApprovalSignature}
           loanData={selectedLoan}
+          approverName={userName}
         />
       )}
 
-      {/* 반납 서명 모달 */}
+      {/* 반납 확인 모달 */}
       {modalType === 'return' && selectedLoan && (
-        <ReturnSignatureModal
+        <ReturnConfirmationModal
           isOpen={true}
           onClose={closeModal}
           onConfirm={handleReturnSignature}
           loanData={selectedLoan}
+          receiverName={userName}
         />
       )}
     </div>
