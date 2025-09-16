@@ -28,6 +28,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
   const [allLoans, setAllLoans] = useState<any[]>([])
   const [selectedClass, setSelectedClass] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [activeTab, setActiveTab] = useState<string>('pending')
 
   // API에서 대여 신청 데이터 로드
   useEffect(() => {
@@ -253,6 +254,9 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
 
     setSelectedLoan(null)
     setModalType(null)
+
+    // 반납 완료 후 전체 기록 탭으로 이동
+    setActiveTab('history')
   }
 
   const handleApprove = (loan: any) => {
@@ -328,7 +332,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
         </div>
       </div>
 
-      <Tabs defaultValue="pending" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="pending">
             승인 대기 ({displayPendingLoans.length})

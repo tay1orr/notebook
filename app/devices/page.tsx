@@ -17,23 +17,10 @@ export default async function DevicesPage() {
         const deviceId = `${grade}-${classNum.toString().padStart(2, '0')}-${deviceNum.toString().padStart(2, '0')}`
         const assetNumber = `ICH-${grade}${classNum.toString().padStart(2, '0')}${deviceNum.toString().padStart(2, '0')}`
 
-        // 일부 기기는 다른 상태로 설정 (시뮬레이션)
+        // 모든 기기는 기본적으로 대여 가능 상태
         let status = 'available'
         let currentUser = null
         let notes = ''
-
-        // 실제 상황 시뮬레이션: 일부는 대여중, 점검중 등
-        const random = Math.random()
-        if (random < 0.05) { // 5% 점검중
-          status = 'maintenance'
-          notes = '정기 점검 중'
-        } else if (random < 0.15) { // 10% 대여중
-          status = 'loaned'
-          currentUser = `학생${deviceNum}`
-        } else if (random < 0.17) { // 2% 고장/폐기
-          status = 'retired'
-          notes = '화면 손상으로 폐기'
-        }
 
         devices.push({
           id: deviceId,

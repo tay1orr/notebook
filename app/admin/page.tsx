@@ -5,135 +5,49 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { UserManagement } from '@/components/admin/user-management'
+
+async function getUsers() {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/users`, {
+      cache: 'no-store'
+    })
+    if (!response.ok) {
+      console.error('Failed to fetch users')
+      return []
+    }
+    const data = await response.json()
+    return data.users || []
+  } catch (error) {
+    console.error('Error fetching users:', error)
+    return []
+  }
+}
 
 export default async function AdminPage() {
   const user = await requireRole(['admin'])
 
+  const users = await getUsers()
+
   // 실제 시스템 통계 (실제로는 데이터베이스에서 가져와야 함)
   const totalDevices = 3 * 13 * 35 // 3학년 × 13반 × 35대 = 1,365대
-  const totalUsers = 850 // 예상 사용자 수 (학생 + 교직원)
-  const totalLoans = 1247 // 누적 대여 건수
 
   const systemStats = {
-    totalUsers: totalUsers,
+    totalUsers: users.length, // 실제 사용자 수
     totalDevices: totalDevices,
-    totalLoans: totalLoans,
-    activeLoans: Math.floor(totalDevices * 0.12), // 12% 대여중
-    overdueLoans: Math.floor(totalDevices * 0.02), // 2% 연체
+    totalLoans: 0, // 실제 대여 건수
+    activeLoans: 0, // 현재 대여중
+    overdueLoans: 0, // 현재 연체
     systemUptime: '99.8%',
     lastBackup: new Date().toISOString().slice(0, 19).replace('T', ' '),
-    dbSize: '2.4MB'
+    dbSize: '0KB'
   }
 
-  // 샘플 사용자 데이터
-  const users = [
-    {
-      id: '1',
-      name: '관리자',
-      email: 'taylorr@gclass.ice.go.kr',
-      role: 'admin',
-      createdAt: '2024-09-01',
-      lastLogin: '2025-09-17 14:30:22'
-    },
-    {
-      id: '2',
-      name: '김담임',
-      email: 'teacher1@gclass.ice.go.kr',
-      role: 'homeroom',
-      createdAt: '2024-09-01',
-      lastLogin: '2025-09-17 09:15:33'
-    },
-    {
-      id: '3',
-      name: '도우미1',
-      email: 'helper1@gclass.ice.go.kr',
-      role: 'helper',
-      createdAt: '2024-09-01',
-      lastLogin: '2025-09-16 16:45:12'
-    },
-    {
-      id: '4',
-      name: 'coding1',
-      email: 'kko92-coding1@gclass.ice.go.kr',
-      role: 'student',
-      createdAt: '2024-09-15',
-      lastLogin: '2025-09-17 12:20:55'
-    }
-  ]
+  // 실제 감사 로그는 API에서 가져와야 함
+  const auditLogs: any[] = []
 
-  // 샘플 감사 로그 데이터
-  const auditLogs = [
-    {
-      id: '1',
-      action: 'LOAN_APPROVED',
-      user: 'coding1',
-      details: '노트북 2-05번 대여 승인 (기기번호: ICH-20505)',
-      timestamp: '2025-09-17 15:08:22',
-      ipAddress: '192.168.1.100'
-    },
-    {
-      id: '2',
-      action: 'USER_LOGIN',
-      user: '관리자',
-      details: '시스템 관리자 로그인',
-      timestamp: '2025-09-17 14:30:22',
-      ipAddress: '192.168.1.50'
-    },
-    {
-      id: '3',
-      action: 'DEVICE_UPDATED',
-      user: '도우미1',
-      details: '기기 상태 변경: ICH-10101 (대여 가능 → 점검중)',
-      timestamp: '2025-09-17 13:45:11',
-      ipAddress: '192.168.1.80'
-    },
-    {
-      id: '4',
-      action: 'LOAN_RETURNED',
-      user: '도우미1',
-      details: '노트북 1-03번 반납 처리 완료',
-      timestamp: '2025-09-17 11:22:44',
-      ipAddress: '192.168.1.80'
-    }
-  ]
-
-  // 샘플 백업 기록 데이터
-  const backupHistory = [
-    {
-      id: '1',
-      date: '2025-09-17',
-      time: '02:00:00',
-      type: 'AUTO',
-      size: '2.4MB',
-      status: 'success'
-    },
-    {
-      id: '2',
-      date: '2025-09-16',
-      time: '02:00:00',
-      type: 'AUTO',
-      size: '2.3MB',
-      status: 'success'
-    },
-    {
-      id: '3',
-      date: '2025-09-15',
-      time: '14:30:00',
-      type: 'MANUAL',
-      size: '2.2MB',
-      status: 'success'
-    },
-    {
-      id: '4',
-      date: '2025-09-15',
-      time: '02:00:00',
-      type: 'AUTO',
-      size: '2.2MB',
-      status: 'success'
-    }
-  ]
+  // 실제 백업 기록은 API에서 가져와야 함
+  const backupHistory: any[] = []
 
   const getRoleText = (role: string) => {
     const roleMap = {
@@ -258,91 +172,7 @@ export default async function AdminPage() {
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>사용자 관리</CardTitle>
-                <CardDescription>
-                  시스템에 등록된 모든 사용자를 관리합니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* 검색 및 필터 */}
-                <div className="flex items-center space-x-4 mb-4">
-                  <Input
-                    placeholder="이름, 이메일로 검색..."
-                    className="max-w-sm"
-                  />
-                  <Select>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="역할" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">전체</SelectItem>
-                      <SelectItem value="admin">관리자</SelectItem>
-                      <SelectItem value="homeroom">담임교사</SelectItem>
-                      <SelectItem value="helper">노트북 도우미</SelectItem>
-                      <SelectItem value="teacher">교사</SelectItem>
-                      <SelectItem value="student">학생</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* 사용자 테이블 */}
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>이름</TableHead>
-                        <TableHead>이메일</TableHead>
-                        <TableHead>역할</TableHead>
-                        <TableHead>가입일</TableHead>
-                        <TableHead>최근 로그인</TableHead>
-                        <TableHead>작업</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.length > 0 ? (
-                        users.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.name}</TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>
-                              <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                                {getRoleText(user.role)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{user.createdAt}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {user.lastLogin}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-1">
-                                <Button variant="ghost" size="sm">
-                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                            등록된 사용자가 없습니다.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
+            <UserManagement initialUsers={users} />
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-4">

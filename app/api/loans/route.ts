@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
       return_date,
       return_time,
       due_date,
+      device_tag,
       signature,
       notes
     } = body
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest) {
           return_date,
           return_time,
           due_date,
+          device_tag,
           signature,
           notes,
           status: 'requested'
@@ -117,6 +119,37 @@ export async function PATCH(request: NextRequest) {
     if (error) {
       console.error('Database error:', error)
       return NextResponse.json({ error: 'Failed to update loan application' }, { status: 500 })
+    }
+
+    // 기기 상태 업데이트
+    if (device_tag) {
+      try {
+        let deviceStatus = 'available'
+        let currentUser = null
+
+        if (status === 'picked_up') {
+          deviceStatus = 'loaned'
+          currentUser = loan.student_name
+        } else if (status === 'returned') {
+          deviceStatus = 'available'
+          currentUser = null
+        }
+
+        // 기기 상태 업데이트 API 호출
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/devices`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            deviceTag: device_tag,
+            status: deviceStatus,
+            currentUser: currentUser,
+            notes: notes || ''
+          })
+        })
+      } catch (deviceError) {
+        console.error('Failed to update device status:', deviceError)
+        // 기기 상태 업데이트 실패해도 대여 승인은 성공으로 처리
+      }
     }
 
     return NextResponse.json({ loan })

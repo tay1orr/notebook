@@ -22,14 +22,36 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       return null
     }
 
-    // 임시로 데이터베이스 없이도 동작하도록 수정
-    const isAdmin = user.email === 'taylorr@gclass.ice.go.kr'
+    // Get user role from user_roles table
+    let role: UserRole = 'student'
+    try {
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+
+      if (roleData?.role) {
+        role = roleData.role as UserRole
+      } else {
+        // Default admin for specific email
+        if (user.email === 'taylorr@gclass.ice.go.kr') {
+          role = 'admin'
+        }
+      }
+    } catch (roleError) {
+      console.log('Role lookup failed, using default:', roleError)
+      // Fallback to admin check
+      if (user.email === 'taylorr@gclass.ice.go.kr') {
+        role = 'admin'
+      }
+    }
 
     return {
       id: user.id,
       email: user.email!,
       name: user.user_metadata?.name || user.email!.split('@')[0],
-      role: isAdmin ? 'admin' : 'student',
+      role,
       class_id: null
     }
   } catch (error) {
@@ -116,7 +138,7 @@ export async function signInWithGoogle() {
     options: {
       redirectTo: `https://notebook-two-pink.vercel.app/auth/callback`,
       queryParams: {
-        hd: process.env.NEXT_PUBLIC_ALLOWED_DOMAIN // Google Workspace domain restriction
+        hd: process.env.NEXT_PUBLIC_ALLOWED_DOMAIN || 'ichungjungsan.kr' // Google Workspace domain restriction
       }
     }
   })
