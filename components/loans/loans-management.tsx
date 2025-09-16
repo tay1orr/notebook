@@ -64,8 +64,8 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
 
     loadLoanData()
 
-    // 1초마다 체크하여 새로운 신청이 있으면 업데이트
-    const interval = setInterval(loadLoanData, 1000)
+    // 500ms마다 체크하여 새로운 신청이 있으면 업데이트
+    const interval = setInterval(loadLoanData, 500)
 
     return () => clearInterval(interval)
   }, [userRole, userName])

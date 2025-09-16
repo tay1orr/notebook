@@ -65,6 +65,12 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   }, [student.email])
 
   const handleLoanRequest = async (requestData: any) => {
+    // 중복 신청 방지 체크
+    if (hasActiveLoan) {
+      alert('이미 진행 중인 대여가 있습니다.')
+      return
+    }
+
     setIsSubmitting(true)
     try {
       // TODO: 실제 API 호출
@@ -133,6 +139,24 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   }
 
   const hasActiveLoan = currentLoans.some(loan => ['requested', 'approved', 'picked_up'].includes(loan.status))
+
+  const handleCancelLoan = async (loanId: string) => {
+    if (confirm('정말로 대여 신청을 취소하시겠습니까?')) {
+      if (typeof window !== 'undefined') {
+        const existingLoans = localStorage.getItem('loanApplications')
+        if (existingLoans) {
+          const loans = JSON.parse(existingLoans)
+          const updatedLoans = loans.filter((l: any) => l.id !== loanId)
+          localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
+
+          // 로컬 상태 업데이트
+          setCurrentLoans(prev => prev.filter(l => l.id !== loanId))
+
+          alert('대여 신청이 취소되었습니다.')
+        }
+      }
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -216,6 +240,16 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                         {getStatusText(loan.status)}
                       </Badge>
                     </div>
+                    {loan.status === 'requested' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCancelLoan(loan.id)}
+                        className="text-red-600 border-red-300 hover:bg-red-50"
+                      >
+                        신청 취소
+                      </Button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">

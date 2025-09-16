@@ -36,7 +36,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
     }
 
     loadLoans()
-    const interval = setInterval(loadLoans, 1000)
+    const interval = setInterval(loadLoans, 500)
     return () => clearInterval(interval)
   }, [])
 

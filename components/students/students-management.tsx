@@ -94,7 +94,7 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
     }
 
     loadStudentsFromLoans()
-    const interval = setInterval(loadStudentsFromLoans, 2000)
+    const interval = setInterval(loadStudentsFromLoans, 500)
     return () => clearInterval(interval)
   }, [])
 
