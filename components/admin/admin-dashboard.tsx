@@ -185,7 +185,11 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
           <CardContent>
             <div className="space-y-4">
               {recentLoans.map((loan) => (
-                <div key={loan.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <a
+                  key={loan.id}
+                  href="/loans"
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                >
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">{loan.student_name || loan.studentName}</span>
@@ -205,7 +209,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                   <Badge className={getStatusColor(loan.status)}>
                     {getStatusText(loan.status)}
                   </Badge>
-                </div>
+                </a>
               ))}
               {recentLoans.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">

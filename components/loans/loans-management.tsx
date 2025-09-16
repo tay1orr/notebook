@@ -110,36 +110,70 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
     deviceTag: string
     approverName: string
   }) => {
-    if (typeof window !== 'undefined' && selectedLoan) {
-      const existingLoans = localStorage.getItem('loanApplications')
-      if (existingLoans) {
-        const loans = JSON.parse(existingLoans)
-        const updatedLoans = loans.map((l: any) =>
-          l.id === selectedLoan.id
-            ? {
-                ...l,
-                status: 'picked_up',
-                approvedAt: new Date().toISOString(),
-                deviceTag: data.deviceTag,
-                approverSignature: data.signature,
-                approverName: data.approverName
-              }
-            : l
-        )
-        localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
+    if (!selectedLoan) return
 
-        // 로컬 상태 업데이트
-        setPendingLoans(prev => prev.filter(l => l.id !== selectedLoan.id))
-        setActiveLoans(prev => [...prev, {
-          ...selectedLoan,
+    try {
+      // API 먼저 시도
+      const response = await fetch('/api/loans', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: selectedLoan.id,
           status: 'picked_up',
-          approvedAt: new Date().toISOString(),
-          deviceTag: data.deviceTag,
-          approverSignature: data.signature,
-          approverName: data.approverName
-        }])
+          approved_at: new Date().toISOString(),
+          device_tag: data.deviceTag,
+          approver_signature: data.signature,
+          approved_by: data.approverName
+        })
+      })
+
+      if (response.ok) {
+        console.log('LoansManagement - Successfully approved via API')
+      } else {
+        throw new Error('API failed')
+      }
+    } catch (error) {
+      console.error('LoansManagement - API approval failed, using localStorage:', error)
+
+      // localStorage 폴백
+      if (typeof window !== 'undefined') {
+        const existingLoans = localStorage.getItem('loanApplications')
+        if (existingLoans) {
+          const loans = JSON.parse(existingLoans)
+          const updatedLoans = loans.map((l: any) =>
+            l.id === selectedLoan.id
+              ? {
+                  ...l,
+                  status: 'picked_up',
+                  approvedAt: new Date().toISOString(),
+                  deviceTag: data.deviceTag,
+                  approverSignature: data.signature,
+                  approverName: data.approverName
+                }
+              : l
+          )
+          localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
+        }
       }
     }
+
+    // 로컬 상태 업데이트
+    setPendingLoans(prev => prev.filter(l => l.id !== selectedLoan.id))
+    setActiveLoans(prev => [...prev, {
+      ...selectedLoan,
+      status: 'picked_up',
+      approvedAt: new Date().toISOString(),
+      approved_at: new Date().toISOString(),
+      deviceTag: data.deviceTag,
+      device_tag: data.deviceTag,
+      approverSignature: data.signature,
+      approver_signature: data.signature,
+      approverName: data.approverName,
+      approved_by: data.approverName
+    }])
+
     setSelectedLoan(null)
     setModalType(null)
   }
@@ -150,30 +184,61 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
     notes?: string
     receiverName: string
   }) => {
-    if (typeof window !== 'undefined' && selectedLoan) {
-      const existingLoans = localStorage.getItem('loanApplications')
-      if (existingLoans) {
-        const loans = JSON.parse(existingLoans)
-        const updatedLoans = loans.map((l: any) =>
-          l.id === selectedLoan.id
-            ? {
-                ...l,
-                status: 'returned',
-                returnedAt: new Date().toISOString(),
-                returnCondition: data.condition,
-                returnNotes: data.notes,
-                returnSignature: data.signature,
-                receiverName: data.receiverName
-              }
-            : l
-        )
-        localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
+    if (!selectedLoan) return
 
-        // 로컬 상태 업데이트
-        setActiveLoans(prev => prev.filter(l => l.id !== selectedLoan.id))
-        setOverdueLoans(prev => prev.filter(l => l.id !== selectedLoan.id))
+    try {
+      // API 먼저 시도
+      const response = await fetch('/api/loans', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: selectedLoan.id,
+          status: 'returned',
+          returned_at: new Date().toISOString(),
+          return_condition: data.condition,
+          return_notes: data.notes,
+          return_signature: data.signature,
+          receiver_name: data.receiverName
+        })
+      })
+
+      if (response.ok) {
+        console.log('LoansManagement - Successfully returned via API')
+      } else {
+        throw new Error('API failed')
+      }
+    } catch (error) {
+      console.error('LoansManagement - API return failed, using localStorage:', error)
+
+      // localStorage 폴백
+      if (typeof window !== 'undefined') {
+        const existingLoans = localStorage.getItem('loanApplications')
+        if (existingLoans) {
+          const loans = JSON.parse(existingLoans)
+          const updatedLoans = loans.map((l: any) =>
+            l.id === selectedLoan.id
+              ? {
+                  ...l,
+                  status: 'returned',
+                  returnedAt: new Date().toISOString(),
+                  returnCondition: data.condition,
+                  returnNotes: data.notes,
+                  returnSignature: data.signature,
+                  receiverName: data.receiverName
+                }
+              : l
+          )
+          localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
+        }
       }
     }
+
+    // 로컬 상태 업데이트
+    setActiveLoans(prev => prev.filter(l => l.id !== selectedLoan.id))
+    setOverdueLoans(prev => prev.filter(l => l.id !== selectedLoan.id))
+
     setSelectedLoan(null)
     setModalType(null)
   }
@@ -183,23 +248,47 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
     setModalType('approval')
   }
 
-  const handleReject = (loan: any) => {
+  const handleReject = async (loan: any) => {
     if (confirm('정말로 이 신청을 거절하시겠습니까?')) {
-      if (typeof window !== 'undefined') {
-        const existingLoans = localStorage.getItem('loanApplications')
-        if (existingLoans) {
-          const loans = JSON.parse(existingLoans)
-          const updatedLoans = loans.map((l: any) =>
-            l.id === loan.id
-              ? { ...l, status: 'rejected', rejectedAt: new Date().toISOString() }
-              : l
-          )
-          localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
+      try {
+        // API 먼저 시도
+        const response = await fetch('/api/loans', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: loan.id,
+            status: 'rejected',
+            rejected_at: new Date().toISOString()
+          })
+        })
 
-          // 로컬 상태 업데이트
-          setPendingLoans(prev => prev.filter(l => l.id !== loan.id))
+        if (response.ok) {
+          console.log('LoansManagement - Successfully rejected via API')
+        } else {
+          throw new Error('API failed')
+        }
+      } catch (error) {
+        console.error('LoansManagement - API reject failed, using localStorage:', error)
+
+        // localStorage 폴백
+        if (typeof window !== 'undefined') {
+          const existingLoans = localStorage.getItem('loanApplications')
+          if (existingLoans) {
+            const loans = JSON.parse(existingLoans)
+            const updatedLoans = loans.map((l: any) =>
+              l.id === loan.id
+                ? { ...l, status: 'rejected', rejectedAt: new Date().toISOString() }
+                : l
+            )
+            localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
+          }
         }
       }
+
+      // 로컬 상태 업데이트
+      setPendingLoans(prev => prev.filter(l => l.id !== loan.id))
     }
   }
 
@@ -297,16 +386,16 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       <div className="flex items-center space-x-4">
                         <div>
                           <div className="flex items-center space-x-2">
-                            <span className="font-medium">{loan.studentName}</span>
+                            <span className="font-medium">{loan.student_name || loan.studentName}</span>
                             <span className="text-sm text-muted-foreground">
-                              {loan.className} {loan.studentNo}번
+                              {loan.class_name || loan.className} {loan.student_no || loan.studentNo}번
                             </span>
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            사용 목적: {loan.purpose} • 신청: {formatDateTime(loan.requestedAt)}
+                            사용 목적: {loan.purpose} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            반납 예정: {loan.dueDate} • 연락처: {loan.studentContact}
+                            반납 예정: {loan.return_date || loan.dueDate} • 연락처: {loan.student_contact || loan.studentContact}
                           </div>
                           {loan.purposeDetail && (
                             <div className="text-sm text-blue-600 mt-1">
@@ -358,17 +447,17 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                   <div key={loan.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium">{loan.studentName}</span>
+                        <span className="font-medium">{loan.student_name || loan.studentName}</span>
                         <span className="text-sm text-muted-foreground">
-                          {loan.className} {loan.studentNo}번
+                          {loan.class_name || loan.className} {loan.student_no || loan.studentNo}번
                         </span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        기기: {loan.deviceTag} • 반납 예정: {formatDateTime(loan.dueDate)}
+                        기기: {loan.device_tag || loan.deviceTag} • 반납 예정: {formatDateTime(loan.due_date || loan.dueDate)}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        승인: {formatDateTime(loan.approvedAt)}
-                        {loan.pickedUpAt && ` • 수령: ${formatDateTime(loan.pickedUpAt)}`}
+                        승인: {formatDateTime(loan.approved_at || loan.approvedAt)}
+                        {(loan.picked_up_at || loan.pickedUpAt) && ` • 수령: ${formatDateTime(loan.picked_up_at || loan.pickedUpAt)}`}
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -412,16 +501,16 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                   <div key={loan.id} className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium">{loan.studentName}</span>
+                        <span className="font-medium">{loan.student_name || loan.studentName}</span>
                         <span className="text-sm text-muted-foreground">
-                          {loan.className} {loan.studentNo}번
+                          {loan.class_name || loan.className} {loan.student_no || loan.studentNo}번
                         </span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        기기: {loan.deviceTag} • 반납 예정이었던 시간: {formatDateTime(loan.dueDate)}
+                        기기: {loan.device_tag || loan.deviceTag} • 반납 예정이었던 시간: {formatDateTime(loan.due_date || loan.dueDate)}
                       </div>
                       <div className="text-sm text-red-600 font-medium">
-                        {loan.overdueDays}일 연체 중
+                        {loan.overdue_days || loan.overdueDays}일 연체 중
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
