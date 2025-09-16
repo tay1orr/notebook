@@ -13,10 +13,18 @@ export function ClearStorageButton() {
 
   const showData = () => {
     const data = localStorage.getItem('loanApplications')
+    console.log('localStorage 원본 데이터:', data)
+    console.log('localStorage 모든 키:', Object.keys(localStorage))
+
     if (data) {
-      const loans = JSON.parse(data)
-      console.log('현재 저장된 대여 데이터:', loans)
-      alert(`현재 ${loans.length}개의 대여 데이터가 있습니다. 콘솔을 확인하세요.`)
+      try {
+        const loans = JSON.parse(data)
+        console.log('현재 저장된 대여 데이터:', loans)
+        alert(`현재 ${loans.length}개의 대여 데이터가 있습니다. 콘솔을 확인하세요.`)
+      } catch (error) {
+        console.error('JSON 파싱 오류:', error)
+        alert('데이터 파싱 중 오류가 발생했습니다.')
+      }
     } else {
       alert('저장된 대여 데이터가 없습니다.')
     }
