@@ -19,9 +19,10 @@ interface StudentDashboardProps {
   loanHistory: any[]
 }
 
-export function StudentDashboard({ student, currentLoans, loanHistory }: StudentDashboardProps) {
+export function StudentDashboard({ student, currentLoans: initialCurrentLoans, loanHistory }: StudentDashboardProps) {
   const [showLoanRequest, setShowLoanRequest] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [currentLoans, setCurrentLoans] = useState(initialCurrentLoans)
 
   const handleLoanRequest = async (requestData: any) => {
     setIsSubmitting(true)
@@ -31,6 +32,24 @@ export function StudentDashboard({ student, currentLoans, loanHistory }: Student
 
       // 임시로 성공 처리
       await new Promise(resolve => setTimeout(resolve, 2000))
+
+      // 새로운 대여 신청 객체 생성
+      const newLoanRequest = {
+        id: `temp-${Date.now()}`, // 임시 ID
+        status: 'requested',
+        requestedAt: new Date().toISOString(),
+        purpose: requestData.purpose === 'homework' ? '과제 작성' :
+                requestData.purpose === 'report' ? '보고서 준비' :
+                requestData.purpose,
+        purposeDetail: requestData.purposeDetail,
+        dueDate: requestData.returnDate,
+        studentContact: requestData.studentContact,
+        notes: requestData.notes || '',
+        deviceTag: null // 아직 기기 배정 안됨
+      }
+
+      // 로컬 상태 즉시 업데이트
+      setCurrentLoans(prev => [newLoanRequest, ...prev])
 
       alert(`가정대여 신청이 완료되었습니다!
 
@@ -50,8 +69,7 @@ export function StudentDashboard({ student, currentLoans, loanHistory }: Student
 
       setShowLoanRequest(false)
 
-      // 페이지 새로고침으로 신청 상태 반영 (임시)
-      window.location.reload()
+      // 페이지 새로고침 제거 - 로컬 상태로 즉시 반영
     } catch (error) {
       console.error('Loan request failed:', error)
       alert('신청 중 오류가 발생했습니다. 다시 시도해주세요.')
