@@ -25,7 +25,9 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
   const [pendingLoans, setPendingLoans] = useState<any[]>(initialPendingLoans)
   const [activeLoans, setActiveLoans] = useState<any[]>(initialActiveLoans)
   const [overdueLoans, setOverdueLoans] = useState<any[]>(initialOverdueLoans)
+  const [allLoans, setAllLoans] = useState<any[]>([])
   const [selectedClass, setSelectedClass] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
 
   // API에서 대여 신청 데이터 로드
   useEffect(() => {
@@ -77,6 +79,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
       setPendingLoans(pending)
       setActiveLoans(active)
       setOverdueLoans(overdue)
+      setAllLoans(filteredLoans) // 모든 기록 저장
     }
 
     loadLoanData()
@@ -95,10 +98,19 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
     return loans
   }
 
+  // 상태별 필터링
+  const filterByStatus = (loans: any[]) => {
+    if (statusFilter === 'all') {
+      return loans
+    }
+    return loans.filter(loan => loan.status === statusFilter)
+  }
+
   // 화면에 표시할 필터링된 데이터
   const displayPendingLoans = filterByClass(pendingLoans)
   const displayActiveLoans = filterByClass(activeLoans)
   const displayOverdueLoans = filterByClass(overdueLoans)
+  const displayAllLoans = filterByStatus(filterByClass(allLoans))
 
   const handleReturnClick = (loan: any) => {
     setSelectedLoan(loan)
@@ -356,7 +368,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
               담당반만 표시
             </div>
           )}
-          <Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="상태" />
             </SelectTrigger>
@@ -365,7 +377,9 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
               <SelectItem value="requested">신청됨</SelectItem>
               <SelectItem value="approved">승인됨</SelectItem>
               <SelectItem value="picked_up">수령됨</SelectItem>
+              <SelectItem value="returned">반납됨</SelectItem>
               <SelectItem value="overdue">연체</SelectItem>
+              <SelectItem value="rejected">거절됨</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -546,7 +560,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[...pendingLoans, ...activeLoans, ...overdueLoans]
+                {displayAllLoans
                   .sort((a, b) => new Date(b.created_at || b.requestedAt).getTime() - new Date(a.created_at || a.requestedAt).getTime())
                   .map((loan) => (
                   <div key={loan.id} className="flex items-center justify-between p-4 border rounded-lg">
@@ -593,9 +607,9 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                     </div>
                   </div>
                 ))}
-                {[...pendingLoans, ...activeLoans, ...overdueLoans].length === 0 && (
+                {displayAllLoans.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
-                    대여 기록이 없습니다.
+                    {statusFilter === 'all' ? '대여 기록이 없습니다.' : `${getStatusText(statusFilter)} 상태의 기록이 없습니다.`}
                   </div>
                 )}
               </div>
