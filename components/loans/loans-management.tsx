@@ -49,7 +49,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
 
             // 상태별로 분류
             const pending = filteredLoans.filter((loan: any) => loan.status === 'requested')
-            const active = filteredLoans.filter((loan: any) => ['picked_up'].includes(loan.status))
+            const active = filteredLoans.filter((loan: any) => ['approved', 'picked_up'].includes(loan.status))
             const overdue = filteredLoans.filter((loan: any) => loan.status === 'overdue')
 
             setPendingLoans(pending)
@@ -358,6 +358,11 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       <Badge className={getStatusColor(loan.status)}>
                         {getStatusText(loan.status)}
                       </Badge>
+                      {loan.status === 'approved' && (
+                        <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                          학생이 기기 수령 완료
+                        </div>
+                      )}
                       {loan.status === 'picked_up' && (
                         <Button size="sm" variant="outline" onClick={() => handleReturnClick(loan)}>
                           반납 처리

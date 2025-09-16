@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,82 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
   const [stats, setStats] = useState(initialStats)
   const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+
+  // 대여 신청 데이터에서 학생 정보 추출
+  useEffect(() => {
+    const loadStudentsFromLoans = () => {
+      if (typeof window !== 'undefined') {
+        const storedLoans = localStorage.getItem('loanApplications')
+        if (storedLoans) {
+          try {
+            const loans = JSON.parse(storedLoans)
+
+            // 중복 제거하여 고유 학생 목록 생성
+            const studentMap = new Map()
+
+            loans.forEach((loan: any) => {
+              const key = `${loan.className}-${loan.studentNo}`
+              if (!studentMap.has(key)) {
+                studentMap.set(key, {
+                  id: `${loan.className}-${loan.studentNo}`,
+                  studentNo: loan.studentNo,
+                  name: loan.studentName,
+                  className: loan.className,
+                  email: loan.email,
+                  phone: loan.studentContact || '',
+                  parentPhone: '',
+                  currentLoan: null,
+                  loanHistory: 0,
+                  overdueCount: 0,
+                  status: 'active'
+                })
+              }
+            })
+
+            // 현재 대여 중인 기기 정보 추가
+            loans.forEach((loan: any) => {
+              const key = `${loan.className}-${loan.studentNo}`
+              if (studentMap.has(key)) {
+                const student = studentMap.get(key)
+
+                // 대여 이력 카운트
+                student.loanHistory += 1
+
+                // 현재 대여 중인 기기
+                if (loan.status === 'picked_up') {
+                  student.currentLoan = loan.deviceTag
+                  student.dueDate = loan.dueDate
+                }
+
+                // 연체 카운트
+                if (loan.status === 'overdue') {
+                  student.overdueCount += 1
+                }
+              }
+            })
+
+            const studentsArray = Array.from(studentMap.values())
+            setStudents(studentsArray)
+
+            // 통계 계산
+            const newStats = {
+              total: studentsArray.length,
+              withLoan: studentsArray.filter(s => s.currentLoan).length,
+              overdue: studentsArray.filter(s => s.overdueCount > 0).length
+            }
+            setStats(newStats)
+
+          } catch (error) {
+            console.error('Failed to parse loan data:', error)
+          }
+        }
+      }
+    }
+
+    loadStudentsFromLoans()
+    const interval = setInterval(loadStudentsFromLoans, 2000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleCSVUpload = async (csvData: any[]) => {
     setIsUploading(true)
