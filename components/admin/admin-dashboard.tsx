@@ -20,13 +20,26 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
   useEffect(() => {
     const loadLoans = () => {
       if (typeof window !== 'undefined') {
-        const storedLoans = localStorage.getItem('loanApplications')
+        // localStorage에서 먼저 시도
+        let storedLoans = localStorage.getItem('loanApplications')
+
+        // localStorage가 비어있으면 sessionStorage에서 시도
+        if (!storedLoans) {
+          storedLoans = sessionStorage.getItem('loanApplications')
+          console.log('AdminDashboard - Trying sessionStorage:', storedLoans) // 디버깅용
+        }
+
         if (storedLoans) {
           try {
             const loans = JSON.parse(storedLoans)
             console.log('AdminDashboard - Raw stored loans:', storedLoans) // 디버깅용
             console.log('AdminDashboard - Parsed loans:', loans) // 디버깅용
             setLoans(loans)
+
+            // sessionStorage에서 가져온 데이터라면 localStorage에도 저장
+            if (!localStorage.getItem('loanApplications') && storedLoans) {
+              localStorage.setItem('loanApplications', storedLoans)
+            }
           } catch (error) {
             console.error('Failed to parse loan data:', error)
           }
@@ -38,7 +51,21 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
 
     loadLoans()
     const interval = setInterval(loadLoans, 500)
-    return () => clearInterval(interval)
+
+    // BroadcastChannel 리스너 추가
+    const channel = new BroadcastChannel('loan-applications')
+    channel.onmessage = (event) => {
+      console.log('AdminDashboard - Received broadcast:', event.data)
+      if (event.data.type === 'NEW_LOAN_APPLICATION') {
+        setLoans(event.data.allLoans)
+        localStorage.setItem('loanApplications', JSON.stringify(event.data.allLoans))
+      }
+    }
+
+    return () => {
+      clearInterval(interval)
+      channel.close()
+    }
   }, [])
 
   // 통계 계산

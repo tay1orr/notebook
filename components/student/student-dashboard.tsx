@@ -106,6 +106,23 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         localStorage.setItem('loanApplications', JSON.stringify(loans))
         console.log('Student - Saved loan request:', newLoanRequest) // 디버깅용
         console.log('Student - All loans in storage:', loans) // 디버깅용
+
+        // sessionStorage에도 저장 (브라우저 탭 간 공유용)
+        sessionStorage.setItem('loanApplications', JSON.stringify(loans))
+        sessionStorage.setItem('lastLoanUpdate', Date.now().toString())
+
+        // BroadcastChannel을 통한 실시간 동기화
+        try {
+          const channel = new BroadcastChannel('loan-applications')
+          channel.postMessage({
+            type: 'NEW_LOAN_APPLICATION',
+            data: newLoanRequest,
+            allLoans: loans
+          })
+          console.log('Broadcast message sent')
+        } catch (error) {
+          console.log('BroadcastChannel failed:', error)
+        }
       }
 
       // 로컬 상태 즉시 업데이트
