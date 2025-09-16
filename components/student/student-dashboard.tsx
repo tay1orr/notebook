@@ -235,7 +235,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
           안녕하세요, {student.name}님! 👋
         </h1>
         <p className="text-gray-600">
-          {student.className} {student.studentNo}번 • 노트북 관리 시스템에 오신 것을 환영합니다.
+          노트북 관리 시스템에 오신 것을 환영합니다.
         </p>
       </div>
 

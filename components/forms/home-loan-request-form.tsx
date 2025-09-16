@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SignaturePad, SignaturePadRef } from '@/components/ui/signature-pad'
 import { CalendarIcon } from 'lucide-react'
+import { getCurrentKoreaTime } from '@/lib/utils'
 
 interface HomeLoanRequestFormProps {
   isOpen: boolean
@@ -37,7 +38,9 @@ export function HomeLoanRequestForm({
     returnDate: '',
     rulesAgreed: false,
     studentContact: '',
-    notes: ''
+    notes: '',
+    currentClass: '',
+    currentStudentNumber: ''
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -56,6 +59,19 @@ export function HomeLoanRequestForm({
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
+
+    if (!formData.currentClass) {
+      newErrors.currentClass = '현재 반을 선택해주세요.'
+    }
+
+    if (!formData.currentStudentNumber) {
+      newErrors.currentStudentNumber = '학생 번호를 입력해주세요.'
+    } else {
+      const studentNum = parseInt(formData.currentStudentNumber)
+      if (isNaN(studentNum) || studentNum < 1 || studentNum > 35) {
+        newErrors.currentStudentNumber = '1~35번 사이의 번호를 입력해주세요.'
+      }
+    }
 
     if (!formData.purpose) {
       newErrors.purpose = '사용 목적을 선택해주세요.'
@@ -115,15 +131,20 @@ export function HomeLoanRequestForm({
     // 서명 데이터 가져오기
     const signatureData = signaturePadRef.current?.toDataURL() || ''
 
+    // 학생이 입력한 정보로 기기 번호 생성
+    const paddedStudentNum = formData.currentStudentNumber.padStart(2, '0')
+    const deviceNumber = `${formData.currentClass}-${paddedStudentNum}`
+
     const requestData = {
       ...formData,
       studentName: studentInfo.name,
-      studentNo: studentInfo.studentNo,
-      className: studentInfo.className,
+      studentNo: paddedStudentNum,
+      className: formData.currentClass,
       email: studentInfo.email,
       requestType: 'home_loan',
       status: 'requested',
-      requestedAt: new Date().toISOString(),
+      requestedAt: getCurrentKoreaTime(),
+      deviceTag: deviceNumber, // 수동 입력된 정보로 생성된 기기 번호
       studentSignature: signatureData
     }
 
@@ -138,7 +159,9 @@ export function HomeLoanRequestForm({
         returnDate: '',
         rulesAgreed: false,
         studentContact: '',
-        notes: ''
+        notes: '',
+        currentClass: '',
+        currentStudentNumber: ''
       })
       setErrors({})
       setSignatureEmpty(true)
@@ -171,26 +194,63 @@ export function HomeLoanRequestForm({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* 신청자 정보 */}
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
             <h3 className="font-semibold text-lg">신청자 정보</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="text-gray-600">이름:</span>
+                <span className="text-gray-600 text-sm">이름:</span>
                 <span className="ml-2 font-medium">{studentInfo.name}</span>
               </div>
               <div>
-                <span className="text-gray-600">학번:</span>
-                <span className="ml-2">{studentInfo.studentNo}</span>
-              </div>
-              <div>
-                <span className="text-gray-600">학급:</span>
-                <span className="ml-2">{studentInfo.className}</span>
-              </div>
-              <div>
-                <span className="text-gray-600">이메일:</span>
-                <span className="ml-2">{studentInfo.email}</span>
+                <span className="text-gray-600 text-sm">이메일:</span>
+                <span className="ml-2 text-sm">{studentInfo.email}</span>
               </div>
             </div>
+
+            {/* 현재 학급 정보 입력 */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentClass">현재 학급 *</Label>
+                <Select
+                  value={formData.currentClass}
+                  onValueChange={(value) => setFormData({...formData, currentClass: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="학급을 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3].map(grade =>
+                      Array.from({length: 13}, (_, i) => i + 1).map(classNum => (
+                        <SelectItem key={`${grade}-${classNum}`} value={`${grade}-${classNum}`}>
+                          {grade}학년 {classNum}반
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {errors.currentClass && <p className="text-sm text-red-500">{errors.currentClass}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="currentStudentNumber">번호 *</Label>
+                <Input
+                  id="currentStudentNumber"
+                  type="number"
+                  min="1"
+                  max="35"
+                  value={formData.currentStudentNumber}
+                  onChange={(e) => setFormData({...formData, currentStudentNumber: e.target.value})}
+                  placeholder="예: 15"
+                />
+                {errors.currentStudentNumber && <p className="text-sm text-red-500">{errors.currentStudentNumber}</p>}
+              </div>
+            </div>
+
+            {formData.currentClass && formData.currentStudentNumber && (
+              <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+                대여 기기: <strong>{formData.currentClass}-{formData.currentStudentNumber.padStart(2, '0')}</strong>번 노트북
+              </div>
+            )}
           </div>
 
           {/* 사용 목적 */}

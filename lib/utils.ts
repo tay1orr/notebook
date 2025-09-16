@@ -26,8 +26,42 @@ export function formatDateTime(date: string | Date): string {
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: 'Asia/Seoul'
   })
+}
+
+export function getCurrentKoreaTime(): string {
+  const now = new Date()
+  return new Date(now.getTime() + (9 * 60 * 60 * 1000)).toISOString()
+}
+
+export function parseStudentId(email: string): {
+  grade: string
+  class: string
+  number: string
+  deviceNumber: string
+} | null {
+  // kko92-2510101@gclass.ice.go.kr 형식에서 정보 추출
+  const match = email.match(/([a-zA-Z]+)(\d{2})-(\d)(\d{2})(\d{2})@/)
+
+  if (!match) return null
+
+  const [, prefix, year, grade, classNum, studentNum] = match
+
+  return {
+    grade: grade,
+    class: `${grade}-${classNum}`,
+    number: studentNum,
+    deviceNumber: `${classNum}-${studentNum}` // 예: "05-01" (5반 1번)
+  }
+}
+
+export function getDeviceNumberForStudent(email: string): string | null {
+  const studentInfo = parseStudentId(email)
+  if (!studentInfo) return null
+
+  return studentInfo.deviceNumber
 }
 
 export function formatTime(date: string | Date): string {

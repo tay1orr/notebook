@@ -19,8 +19,8 @@ export default async function DashboardPage() {
     const studentInfo = {
       id: user.id,
       name: user.name,
-      studentNo: user.email.split('@')[0], // 이메일 앞부분을 학번으로 사용
-      className: '1-1', // 임시 데이터, 실제로는 DB에서 가져와야 함
+      studentNo: '', // 학생이 직접 입력하도록 변경
+      className: '', // 학생이 직접 입력하도록 변경
       email: user.email
     }
 
