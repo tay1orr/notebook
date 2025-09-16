@@ -19,57 +19,67 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
 
   useEffect(() => {
     const loadLoans = async () => {
+      // API 시도하되 실패하면 즉시 localStorage로 폴백
+      let useLocalStorage = false
+
       try {
         const response = await fetch('/api/loans')
         if (response.ok) {
           const { loans } = await response.json()
-          console.log('AdminDashboard - Loaded loans from API:', loans) // 디버깅용
+          console.log('AdminDashboard - Loaded loans from API:', loans)
           setLoans(loans)
+          return // API 성공 시 localStorage 실행 안함
         } else {
-          console.error('AdminDashboard - Failed to fetch loans:', response.statusText)
-
-          // API 실패 시 localStorage 폴백
-          if (typeof window !== 'undefined') {
-            let storedLoans = localStorage.getItem('loanApplications')
-            if (!storedLoans) {
-              storedLoans = sessionStorage.getItem('loanApplications')
-              console.log('AdminDashboard - Trying sessionStorage fallback:', storedLoans)
-            }
-            if (storedLoans) {
-              try {
-                const loans = JSON.parse(storedLoans)
-                setLoans(loans)
-                console.log('AdminDashboard - Using fallback data')
-              } catch (error) {
-                console.error('Failed to parse fallback data:', error)
-              }
-            }
-          }
+          console.error('AdminDashboard - API failed, using localStorage:', response.statusText)
+          useLocalStorage = true
         }
       } catch (error) {
-        console.error('AdminDashboard - API request failed:', error)
+        console.error('AdminDashboard - API error, using localStorage:', error)
+        useLocalStorage = true
+      }
 
-        // 네트워크 오류 시 localStorage 폴백
-        if (typeof window !== 'undefined') {
-          const storedLoans = localStorage.getItem('loanApplications') || sessionStorage.getItem('loanApplications')
-          if (storedLoans) {
-            try {
-              const loans = JSON.parse(storedLoans)
-              setLoans(loans)
-              console.log('AdminDashboard - Using fallback after network error')
-            } catch (error) {
-              console.error('Failed to parse fallback data:', error)
-            }
+      // localStorage 폴백 (API 실패 시 또는 기본)
+      if (typeof window !== 'undefined') {
+        let storedLoans = localStorage.getItem('loanApplications')
+        if (!storedLoans) {
+          storedLoans = sessionStorage.getItem('loanApplications')
+          console.log('AdminDashboard - Trying sessionStorage fallback')
+        }
+        if (storedLoans) {
+          try {
+            const loans = JSON.parse(storedLoans)
+            setLoans(loans)
+            console.log('AdminDashboard - Using localStorage fallback', loans.length, 'loans')
+          } catch (error) {
+            console.error('Failed to parse fallback data:', error)
           }
         }
       }
     }
 
     loadLoans()
-    const interval = setInterval(loadLoans, 3000) // API는 3초마다
+
+    // BroadcastChannel 리스너 추가 (탭 간 동기화)
+    let channel: BroadcastChannel | null = null
+    try {
+      channel = new BroadcastChannel('loan-applications')
+      channel.onmessage = (event) => {
+        console.log('AdminDashboard - Received broadcast:', event.data)
+        if (event.data.type === 'NEW_LOAN_APPLICATION') {
+          setLoans(event.data.allLoans)
+        }
+      }
+    } catch (error) {
+      console.log('BroadcastChannel not supported:', error)
+    }
+
+    const interval = setInterval(loadLoans, 2000) // 2초마다
 
     return () => {
       clearInterval(interval)
+      if (channel) {
+        channel.close()
+      }
     }
   }, [])
 
