@@ -70,18 +70,13 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
       }
 
       // 상태별로 분류
-            const pending = filteredLoans.filter((loan: any) => loan.status === 'requested')
-            const active = filteredLoans.filter((loan: any) => ['approved', 'picked_up'].includes(loan.status))
-            const overdue = filteredLoans.filter((loan: any) => loan.status === 'overdue')
+      const pending = filteredLoans.filter((loan: any) => loan.status === 'requested')
+      const active = filteredLoans.filter((loan: any) => ['approved', 'picked_up'].includes(loan.status))
+      const overdue = filteredLoans.filter((loan: any) => loan.status === 'overdue')
 
-            setPendingLoans(pending)
-            setActiveLoans(active)
-            setOverdueLoans(overdue)
-          } catch (error) {
-            console.error('Failed to parse loan data:', error)
-          }
-        }
-      }
+      setPendingLoans(pending)
+      setActiveLoans(active)
+      setOverdueLoans(overdue)
     }
 
     loadLoanData()
