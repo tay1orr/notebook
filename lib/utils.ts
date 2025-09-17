@@ -156,13 +156,13 @@ export function getStatusColor(status: string): string {
   return statusColors[status] || 'bg-gray-100 text-gray-800'
 }
 
-export function getStatusText(status: string): string {
+export function getStatusText(status: string, notes?: string): string {
   const statusText: Record<string, string> = {
     'requested': '신청됨',
     'approved': '승인됨',
     'picked_up': '수령됨',
     'returned': '반납됨',
-    'rejected': '거절됨',
+    'rejected': notes === 'STUDENT_CANCELLED' ? '취소됨' : '거절됨',
     'cancelled': '취소됨',
     'overdue': '연체',
     '충전함': '충전함',

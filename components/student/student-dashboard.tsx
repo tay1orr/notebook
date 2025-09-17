@@ -25,10 +25,11 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   const [currentLoans, setCurrentLoans] = useState<any[]>([])
   const [loanHistoryData, setLoanHistoryData] = useState(loanHistory)
 
+  // 데이터 해시를 useRef로 관리하여 새로고침 시에도 유지
+  const lastDataHashRef = useRef('')
+
   // localStorage에서 현재 학생의 대여 데이터 로드 (API 문제로 인한 임시 폴백)
   useEffect(() => {
-    let lastDataHash = ''
-
     const loadStudentLoans = async () => {
       // API 시도하되 실패하면 즉시 localStorage로 폴백
       let useLocalStorage = false
@@ -51,7 +52,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
           // 데이터 변경 여부 확인 (시간 덮어쓰기 방지) - 개수와 ID만 비교
           const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status })))
-          if (currentDataHash !== lastDataHash) {
+          if (currentDataHash !== lastDataHashRef.current) {
             console.log('Loaded student loans from API:', studentLoans)
             // 기존 데이터가 있고 같은 ID의 항목이면 시간 데이터 보존
             const updatedLoans = studentLoans.map(newLoan => {
@@ -68,7 +69,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             })
             setCurrentLoans(updatedLoans)
             setLoanHistoryData(studentHistory)
-            lastDataHash = currentDataHash
+            lastDataHashRef.current = currentDataHash
           }
           return // API 성공 시 localStorage 실행 안함
         } else {
@@ -97,7 +98,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
             // 데이터 변경 여부 확인
             const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status })))
-            if (currentDataHash !== lastDataHash) {
+            if (currentDataHash !== lastDataHashRef.current) {
               // 기존 데이터가 있고 같은 ID의 항목이면 시간 데이터 보존
               const updatedLoans = studentLoans.map(newLoan => {
                 const existingLoan = currentLoans.find(existing => existing.id === newLoan.id)
@@ -113,7 +114,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
               })
               setCurrentLoans(updatedLoans)
               setLoanHistoryData(studentHistory)
-              lastDataHash = currentDataHash
+              lastDataHashRef.current = currentDataHash
               console.log('Using localStorage fallback')
             }
           } catch (parseError) {
@@ -254,13 +255,14 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   const handleCancelLoan = async (loanId: string) => {
     if (confirm('정말로 대여 신청을 취소하시겠습니까?')) {
       try {
-        // API를 통해 대여 신청 상태를 'rejected'로 업데이트 (cancelled는 DB에서 허용되지 않음)
+        // API를 통해 대여 신청 상태를 'rejected'로 업데이트하고 notes에 취소 표시
         const response = await fetch('/api/loans', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: loanId,
-            status: 'rejected'
+            status: 'rejected',
+            notes: 'STUDENT_CANCELLED' // 학생이 취소했음을 표시
           })
         })
 
@@ -377,7 +379,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                            '기기 배정 대기 중'}
                         </h4>
                         <Badge className={getStatusColor(loan.status)}>
-                          {getStatusText(loan.status)}
+                          {getStatusText(loan.status, loan.notes)}
                         </Badge>
                       </div>
 
@@ -541,7 +543,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">{loan.device_tag || loan.deviceTag || '기기 정보 없음'}</span>
                       <Badge variant="outline" className={getStatusColor(loan.status)}>
-                        {getStatusText(loan.status)}
+                        {getStatusText(loan.status, loan.notes)}
                       </Badge>
                     </div>
                     <div className="text-sm text-gray-600">

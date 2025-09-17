@@ -355,8 +355,11 @@ export function HomeLoanRequestForm({
               id="studentContact"
               value={formData.studentContact}
               onChange={(e) => {
-                const convertedValue = convertToHalfWidth(e.target.value)
-                setFormData({ ...formData, studentContact: convertedValue })
+                const rawValue = e.target.value
+                const convertedValue = convertToHalfWidth(rawValue)
+                // 연락처는 숫자와 하이픈만 허용
+                const filteredValue = convertedValue.replace(/[^0-9-]/g, '')
+                setFormData({ ...formData, studentContact: filteredValue })
               }}
               placeholder="본인 연락처를 입력하세요 (예: 010-1234-5678)"
             />
