@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CSVUpload } from '@/components/forms/csv-upload'
-import { formatDate, maskPhone } from '@/lib/utils'
+import { formatDate, maskPhone, getRoleText } from '@/lib/utils'
 
 interface StudentsManagementProps {
   students: any[]
@@ -45,6 +45,7 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
                   email: loan.email,
                   phone: loan.studentContact || '',
                   parentPhone: '',
+                  role: 'student', // 기본값은 학생
                   currentLoan: null,
                   loanHistory: 0,
                   overdueCount: 0,
@@ -97,6 +98,28 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
     const interval = setInterval(loadStudentsFromLoans, 500)
     return () => clearInterval(interval)
   }, [])
+
+  const handleRoleChange = async (studentId: string, newRole: string) => {
+    try {
+      // 로컬 상태 업데이트
+      setStudents(prevStudents =>
+        prevStudents.map(student =>
+          student.id === studentId
+            ? { ...student, role: newRole }
+            : student
+        )
+      )
+
+      // TODO: API 호출로 서버에 역할 변경 저장
+      console.log(`학생 ${studentId}의 역할을 ${newRole}로 변경`)
+
+      // 성공 알림
+      alert(`역할이 ${getRoleText(newRole)}(으)로 변경되었습니다.`)
+    } catch (error) {
+      console.error('역할 변경 실패:', error)
+      alert('역할 변경 중 오류가 발생했습니다.')
+    }
+  }
 
   const handleCSVUpload = async (csvData: any[]) => {
     setIsUploading(true)
@@ -258,6 +281,7 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
                   <TableHead>이름</TableHead>
                   <TableHead>학급</TableHead>
                   <TableHead>연락처</TableHead>
+                  <TableHead>역할</TableHead>
                   <TableHead>현재 대여</TableHead>
                   <TableHead>대여 이력</TableHead>
                   <TableHead>상태</TableHead>
@@ -279,6 +303,20 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
                           보호자: {maskPhone(student.parentPhone) || '-'}
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={student.role}
+                        onValueChange={(value) => handleRoleChange(student.id, value)}
+                      >
+                        <SelectTrigger className="w-28">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="student">학생</SelectItem>
+                          <SelectItem value="helper">도우미</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
                       {student.currentLoan ? (

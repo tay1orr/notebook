@@ -349,14 +349,6 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
             노트북 대여 신청 승인 및 현황 관리
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button>
-            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            새 대여 신청
-          </Button>
-        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">

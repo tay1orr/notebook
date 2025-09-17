@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { StudentDashboard } from '@/components/student/student-dashboard'
 import { AdminDashboard } from '@/components/admin/admin-dashboard'
+import { HelperDashboard } from '@/components/helper/helper-dashboard'
 
 export default async function DashboardPage() {
   const user = await requireAuth()
@@ -37,8 +38,18 @@ export default async function DashboardPage() {
     )
   }
 
-  // 실제 데이터는 클라이언트 컴포넌트에서 로드
+  // 도우미인 경우 도우미용 통합 대시보드 표시
+  if (user.role === 'helper') {
+    return (
+      <MainLayout>
+        <div className="container mx-auto py-6">
+          <HelperDashboard user={user} />
+        </div>
+      </MainLayout>
+    )
+  }
 
+  // 관리자/교사인 경우 관리자 대시보드 표시
   return (
     <MainLayout>
       <div className="container mx-auto py-6">
