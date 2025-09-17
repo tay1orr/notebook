@@ -224,3 +224,35 @@ export function getTimeRemaining(dueDate: string | Date): string {
 export function generateQRCodeUrl(text: string): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}`
 }
+
+export function isLoanOverdue(dueDate: string | Date): boolean {
+  if (!dueDate) return false
+
+  const now = new Date()
+  const due = new Date(dueDate)
+
+  return now > due
+}
+
+export function getOverdueDays(dueDate: string | Date): number {
+  if (!dueDate) return 0
+
+  const now = new Date()
+  const due = new Date(dueDate)
+
+  if (now <= due) return 0
+
+  const diffTime = now.getTime() - due.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  return diffDays
+}
+
+export function getLoanStatus(loan: any): string {
+  // 실시간 연체 판단
+  if (loan.status === 'picked_up' && isLoanOverdue(loan.due_date || loan.dueDate)) {
+    return 'overdue'
+  }
+
+  return loan.status
+}

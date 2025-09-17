@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { getRoleText, getStatusColor, getStatusText, formatDateTime, getPurposeText } from '@/lib/utils'
+import { getRoleText, getStatusColor, getStatusText, formatDateTime, getPurposeText, isLoanOverdue, getLoanStatus } from '@/lib/utils'
 
 interface AdminDashboardProps {
   user: {
@@ -82,17 +82,15 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
     }
   }, [])
 
-  // 통계 계산
-  const todayPickups = loans.filter(loan => loan.status === 'approved').length
-  const tomorrowReturns = loans.filter(loan => loan.status === 'picked_up').length
-  const overdueLoans = loans.filter(loan => loan.status === 'overdue').length
+  // 통계 계산 (실시간 연체 판단 적용)
   const pendingLoans = loans.filter(loan => loan.status === 'requested').length
+  const activeLoans = loans.filter(loan => loan.status === 'picked_up' && !isLoanOverdue(loan.due_date || loan.dueDate)).length
+  const overdueLoans = loans.filter(loan => loan.status === 'picked_up' && isLoanOverdue(loan.due_date || loan.dueDate)).length
 
   console.log('AdminDashboard - Statistics:', {
     total: loans.length,
     pending: pendingLoans,
-    approved: todayPickups,
-    pickedUp: tomorrowReturns,
+    active: activeLoans,
     overdue: overdueLoans
   }) // 디버깅용
 
@@ -121,7 +119,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">승인 대기</CardTitle>
+            <CardTitle className="text-sm font-medium">신청 대기</CardTitle>
             <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
@@ -134,14 +132,14 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">수령 대기</CardTitle>
+            <CardTitle className="text-sm font-medium">사용 중</CardTitle>
             <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{todayPickups}</div>
-            <p className="text-xs text-muted-foreground">승인 완료, 수령 대기</p>
+            <div className="text-2xl font-bold">{activeLoans}</div>
+            <p className="text-xs text-muted-foreground">현재 대여 중</p>
           </CardContent>
         </Card>
 
@@ -150,14 +148,14 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
           onClick={() => window.location.href = '/loans?tab=active'}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">사용 중</CardTitle>
+            <CardTitle className="text-sm font-medium">전체 기록</CardTitle>
             <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{tomorrowReturns}</div>
-            <p className="text-xs text-muted-foreground">현재 대여 중</p>
+            <div className="text-2xl font-bold">{loans.length}</div>
+            <p className="text-xs text-muted-foreground">총 대여 기록</p>
           </CardContent>
         </Card>
 
@@ -208,8 +206,8 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                       </div>
                     )}
                   </div>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
-                    {getStatusText(loan.status, loan.notes)}
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(getLoanStatus(loan), loan.notes)}`}>
+                    {getStatusText(getLoanStatus(loan), loan.notes)}
                   </span>
                 </a>
               ))}

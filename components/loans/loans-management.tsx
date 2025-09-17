@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getStatusColor, getStatusText, formatDateTime, getPurposeText, getCurrentKoreaTime } from '@/lib/utils'
+import { getStatusColor, getStatusText, formatDateTime, getPurposeText, getCurrentKoreaTime, getLoanStatus, getOverdueDays, isLoanOverdue } from '@/lib/utils'
 import { ApprovalSignatureModal } from '@/components/forms/approval-signature-modal'
 import { ReturnConfirmationModal } from '@/components/forms/return-confirmation-modal'
 
@@ -97,10 +97,16 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
         filteredLoans = loans.filter((loan: any) => loan.class_name === helperClass || loan.className === helperClass)
       }
 
-      // 상태별로 분류
-      const pending = filteredLoans.filter((loan: any) => loan.status === 'requested')
-      const active = filteredLoans.filter((loan: any) => ['approved', 'picked_up'].includes(loan.status))
-      const overdue = filteredLoans.filter((loan: any) => loan.status === 'overdue')
+      // 상태별로 분류 (실시간 연체 판단 적용)
+      const loansWithRealTimeStatus = filteredLoans.map((loan: any) => ({
+        ...loan,
+        realTimeStatus: getLoanStatus(loan),
+        overdueDays: loan.status === 'picked_up' && isLoanOverdue(loan.due_date || loan.dueDate) ? getOverdueDays(loan.due_date || loan.dueDate) : 0
+      }))
+
+      const pending = loansWithRealTimeStatus.filter((loan: any) => loan.realTimeStatus === 'requested')
+      const active = loansWithRealTimeStatus.filter((loan: any) => loan.realTimeStatus === 'picked_up' && loan.realTimeStatus !== 'overdue')
+      const overdue = loansWithRealTimeStatus.filter((loan: any) => loan.realTimeStatus === 'overdue')
 
       setPendingLoans(pending)
       setActiveLoans(active)
@@ -400,7 +406,6 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
             <SelectContent>
               <SelectItem value="all">전체</SelectItem>
               <SelectItem value="requested">신청됨</SelectItem>
-              <SelectItem value="approved">승인됨</SelectItem>
               <SelectItem value="picked_up">수령됨</SelectItem>
               <SelectItem value="returned">반납됨</SelectItem>
               <SelectItem value="overdue">연체</SelectItem>
@@ -477,7 +482,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
             <CardHeader>
               <CardTitle>진행중인 대여</CardTitle>
               <CardDescription>
-                승인되었거나 수령된 대여 현황입니다.
+                현재 사용 중인 대여 현황입니다.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -497,17 +502,27 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       <div className="text-xs text-muted-foreground mt-1">
                         승인: {formatDateTime(loan.approved_at || loan.approvedAt)}
                         {(loan.picked_up_at || loan.pickedUpAt) && ` • 수령: ${formatDateTime(loan.picked_up_at || loan.pickedUpAt)}`}
+                        {(loan.approved_by || loan.approverName) && (
+                          <span className="ml-2 text-blue-600">
+                            • 승인자: {loan.approved_by || loan.approverName}
+                          </span>
+                        )}
                       </div>
+                      {(loan.approver_signature || loan.approverSignature) && (
+                        <div className="mt-2 p-2 bg-gray-50 rounded border">
+                          <div className="text-xs text-gray-600 mb-1">🖋️ 승인자 서명:</div>
+                          <img
+                            src={loan.approver_signature || loan.approverSignature}
+                            alt="승인자 서명"
+                            className="max-h-16 border border-gray-200 rounded bg-white p-1"
+                          />
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
                         {getStatusText(loan.status, loan.notes)}
                       </span>
-                      {loan.status === 'approved' && (
-                        <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                          학생이 기기 수령 완료
-                        </div>
-                      )}
                       {loan.status === 'picked_up' && (
                         <Button size="sm" variant="outline" onClick={() => handleReturnClick(loan)}>
                           반납 처리
@@ -549,12 +564,12 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                         기기: {loan.device_tag || loan.deviceTag} • 반납 예정이었던 시간: {formatDateTime(loan.due_date || loan.dueDate)}
                       </div>
                       <div className="text-sm text-red-600 font-medium">
-                        {loan.overdue_days || loan.overdueDays}일 연체 중
+                        {loan.overdueDays || getOverdueDays(loan.due_date || loan.dueDate)}일 연체 중
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
-                        {getStatusText(loan.status, loan.notes)}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.realTimeStatus || loan.status, loan.notes)}`}>
+                        {getStatusText(loan.realTimeStatus || loan.status, loan.notes)}
                       </span>
                       <Button size="sm" variant="destructive">
                         긴급 연락

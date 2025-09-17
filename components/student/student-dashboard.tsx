@@ -258,8 +258,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
 ✅ 다음 단계:
 1. 승인 결과를 기다려 주세요 (보통 1일 이내)
-2. 승인되면 이메일로 알림을 받습니다
-3. 승인 후 교실 충전함에서 기기를 수령하세요
+2. 승인되면 즉시 교실 충전함에서 기기를 사용하실 수 있습니다
 
 ⚠️ 주의사항:
 • 반납 기한을 반드시 지켜주세요
@@ -376,7 +375,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                       </p>
                       <Badge className="bg-yellow-100 text-yellow-800">
                         {status === 'requested' && '승인 대기 중'}
-                        {status === 'approved' && '수령 대기 중'}
+                        {status === 'picked_up' && '사용 중'}
                       </Badge>
                     </>
                   )
@@ -541,13 +540,6 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                     )}
                   </div>
 
-                  {loan.status === 'approved' && (
-                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                      <p className="text-sm text-blue-800">
-                        <strong>승인 완료!</strong> 교실 충전함에서 기기를 수령하세요.
-                      </p>
-                    </div>
-                  )}
 
                   {loan.status === 'picked_up' && loan.dueDate && (
                     <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
