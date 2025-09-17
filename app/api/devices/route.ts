@@ -42,23 +42,30 @@ export async function GET() {
       console.error('Error fetching loan data:', loanError)
     }
 
+    console.log('Current loans from DB:', currentLoans?.length || 0, 'loans found')
+    console.log('Current loans data:', currentLoans)
+
     // 대여 정보를 deviceTag 기준으로 매핑
     const loanMap = new Map()
-    if (currentLoans) {
+    if (currentLoans && currentLoans.length > 0) {
       currentLoans.forEach(loan => {
+        console.log('Processing loan:', loan)
         if (loan.device_tag) {
           // device_tag를 asset_tag 형식으로 변환하여 매핑
           const parts = loan.device_tag.split('-')
+          console.log('Device tag parts:', parts)
           if (parts.length === 3) {
             const serialNumber = `${parts[0]}${parts[1]}${parts[2]}`
             const assetTag = `ICH-${serialNumber}`
+            console.log(`Mapping ${loan.device_tag} -> ${assetTag}`)
             loanMap.set(assetTag, loan)
           }
         }
       })
     }
 
-    console.log('Current loans mapping:', Array.from(loanMap.entries()))
+    console.log('Final loan mapping size:', loanMap.size)
+    console.log('Loan map entries:', Array.from(loanMap.entries()))
 
     // 기기 데이터를 프론트엔드 형식으로 변환
     const formattedDevices = devices.map(device => {

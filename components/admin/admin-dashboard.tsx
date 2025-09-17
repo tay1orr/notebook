@@ -157,7 +157,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{tomorrowReturns}</div>
-            <p className="text-xs text-muted-foreground">현재 대여 중 • 클릭하여 반납 처리</p>
+            <p className="text-xs text-muted-foreground">현재 대여 중</p>
           </CardContent>
         </Card>
 
@@ -205,11 +205,6 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                     {(loan.due_date || loan.dueDate) && (
                       <div className="text-sm text-muted-foreground">
                         반납 예정: {loan.due_date || loan.dueDate}
-                      </div>
-                    )}
-                    {loan.status === 'picked_up' && (
-                      <div className="text-xs text-blue-600 mt-1">
-                        👆 클릭하여 반납 처리하기
                       </div>
                     )}
                   </div>

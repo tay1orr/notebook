@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,7 @@ interface LoansManagementProps {
 }
 
 export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans: initialActiveLoans, overdueLoans: initialOverdueLoans, userRole, userName }: LoansManagementProps) {
+  const searchParams = useSearchParams()
   const [selectedLoan, setSelectedLoan] = useState<any>(null)
   const [modalType, setModalType] = useState<'approval' | 'return' | null>(null)
   const [pendingLoans, setPendingLoans] = useState<any[]>(initialPendingLoans)
@@ -29,6 +31,18 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
   const [selectedClass, setSelectedClass] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [activeTab, setActiveTab] = useState<string>('pending')
+
+  // URL 파라미터에서 tab 확인하고 초기 탭 설정
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab === 'active') {
+      setActiveTab('active')
+    } else if (tab === 'overdue') {
+      setActiveTab('overdue')
+    } else {
+      setActiveTab('pending')
+    }
+  }, [searchParams])
 
   // API에서 대여 신청 데이터 로드
   useEffect(() => {

@@ -58,11 +58,6 @@ export function DevicesManagementWrapper() {
     }
 
     loadDevices()
-
-    // 5초마다 자동 새로고침으로 실시간 동기화
-    const interval = setInterval(loadDevices, 5000)
-
-    return () => clearInterval(interval)
   }, [])
 
   if (loading) {
