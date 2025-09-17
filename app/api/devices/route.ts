@@ -2,7 +2,7 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { Database } from '@/types/supabase'
-import { getCurrentKoreaTime } from '@/lib/utils'
+import { getCurrentKoreaTime, getCurrentKoreaDateTimeString } from '@/lib/utils'
 
 // GET: 모든 기기 목록 조회
 export async function GET() {

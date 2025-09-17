@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -51,7 +51,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
           )
 
           // 데이터 변경 여부 확인 (시간 덮어쓰기 방지)
-          const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status, created_at: l.created_at })))
+          const currentDataHash = JSON.stringify(studentLoans.map((l: any) => ({ id: l.id, status: l.status, created_at: l.created_at })))
 
           // sessionStorage에서 이전 시간 데이터 복원
           const savedTimeData = sessionStorage.getItem('student-time-data')
@@ -68,7 +68,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             console.log('Loaded student loans from API:', studentLoans)
 
             // 시간 데이터 보존 및 업데이트
-            const updatedLoans = studentLoans.map(newLoan => {
+            const updatedLoans = studentLoans.map((newLoan: any) => {
               const loanId = newLoan.id.toString()
               const existingLoan = currentLoans.find(existing => existing.id === newLoan.id)
               const savedTime = preservedTimeData[loanId]
@@ -125,7 +125,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status })))
             if (currentDataHash !== lastDataHashRef.current) {
               // 기존 데이터가 있고 같은 ID의 항목이면 시간 데이터 보존
-              const updatedLoans = studentLoans.map(newLoan => {
+              const updatedLoans = studentLoans.map((newLoan: any) => {
                 const existingLoan = currentLoans.find(existing => existing.id === newLoan.id)
                 if (existingLoan) {
                   // 기존 시간 데이터가 있으면 보존, 없으면 새 데이터 사용
