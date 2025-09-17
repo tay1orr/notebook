@@ -27,6 +27,8 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
   // localStorage에서 현재 학생의 대여 데이터 로드 (API 문제로 인한 임시 폴백)
   useEffect(() => {
+    let lastDataHash = ''
+
     const loadStudentLoans = async () => {
       // API 시도하되 실패하면 즉시 localStorage로 폴백
       let useLocalStorage = false
@@ -44,12 +46,17 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
           const studentHistory = loans.filter((loan: any) =>
             loan.email === student.email &&
-            ['returned', 'rejected'].includes(loan.status)
+            ['returned', 'rejected', 'cancelled'].includes(loan.status)
           )
 
-          console.log('Loaded student loans from API:', studentLoans)
-          setCurrentLoans(studentLoans)
-          setLoanHistoryData(studentHistory)
+          // 데이터 변경 여부 확인 (시간 덮어쓰기 방지)
+          const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status, created_at: l.created_at })))
+          if (currentDataHash !== lastDataHash) {
+            console.log('Loaded student loans from API:', studentLoans)
+            setCurrentLoans(studentLoans)
+            setLoanHistoryData(studentHistory)
+            lastDataHash = currentDataHash
+          }
           return // API 성공 시 localStorage 실행 안함
         } else {
           console.error('API failed, using localStorage:', response.statusText)
@@ -72,11 +79,17 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             )
             const studentHistory = loans.filter((loan: any) =>
               loan.email === student.email &&
-              ['returned', 'rejected'].includes(loan.status)
+              ['returned', 'rejected', 'cancelled'].includes(loan.status)
             )
-            setCurrentLoans(studentLoans)
-            setLoanHistoryData(studentHistory)
-            console.log('Using localStorage fallback')
+
+            // 데이터 변경 여부 확인
+            const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status, created_at: l.created_at })))
+            if (currentDataHash !== lastDataHash) {
+              setCurrentLoans(studentLoans)
+              setLoanHistoryData(studentHistory)
+              lastDataHash = currentDataHash
+              console.log('Using localStorage fallback')
+            }
           } catch (parseError) {
             console.error('Failed to parse fallback data:', parseError)
           }

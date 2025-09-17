@@ -129,6 +129,8 @@ export async function PATCH(request: NextRequest) {
       updateData.picked_up_at = getCurrentKoreaDateTimeString()
     } else if (status === 'returned') {
       updateData.returned_at = getCurrentKoreaDateTimeString()
+    } else if (status === 'cancelled' || status === 'rejected') {
+      // 취소나 거절 시에는 별도 시간 기록 없음 (updated_at으로 충분)
     }
 
     const { data: loan, error } = await supabase
