@@ -206,7 +206,11 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                       </div>
                     )}
                   </div>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(getLoanStatus(loan), loan.notes)}`}>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
+                      ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                      : getStatusColor(getLoanStatus(loan), loan.notes)
+                  }`}>
                     {getStatusText(getLoanStatus(loan), loan.notes)}
                   </span>
                 </a>
@@ -230,7 +234,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="grid gap-3">
-              {(user.role === 'admin' || user.role === 'helper' || user.role === 'homeroom') && (
+              {(user.role === 'admin' || user.role === 'helper' || user.role === 'homeroom' || user.role === 'teacher') && (
                 <>
                   <Button className="w-full justify-start" variant="outline" asChild>
                     <a href="/loans">

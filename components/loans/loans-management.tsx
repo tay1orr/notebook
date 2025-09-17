@@ -87,13 +87,19 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
         }
       }
 
-      // 역할별 필터링 - 도우미는 자기 반만, 관리자는 전체
+      // 역할별 필터링 - 도우미/담임교사는 자기 반만, 관리자는 전체
       let filteredLoans = loans
-      if (userRole === 'helper') {
-        // 도우미의 경우 담당 반만 필터링
+      if (userRole === 'helper' || userRole === 'homeroom') {
+        // 도우미/담임교사의 경우 담당 반만 필터링
         const helperClass = userName.includes('1-1') ? '1-1' :
                           userName.includes('1-2') ? '1-2' :
-                          userName.includes('1-3') ? '1-3' : '1-1' // 기본값
+                          userName.includes('1-3') ? '1-3' :
+                          userName.includes('2-1') ? '2-1' :
+                          userName.includes('2-2') ? '2-2' :
+                          userName.includes('2-3') ? '2-3' :
+                          userName.includes('3-1') ? '3-1' :
+                          userName.includes('3-2') ? '3-2' :
+                          userName.includes('3-3') ? '3-3' : '1-1' // 기본값
         filteredLoans = loans.filter((loan: any) => loan.class_name === helperClass || loan.className === helperClass)
       }
 
@@ -386,7 +392,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
               </SelectContent>
             </Select>
           )}
-          {userRole === 'helper' && (
+          {(userRole === 'helper' || userRole === 'homeroom') && (
             <div className="text-sm text-muted-foreground px-3 py-2 border rounded">
               담당반만 표시
             </div>
@@ -447,7 +453,11 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
+                          ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                          : getStatusColor(loan.status, loan.notes)
+                      }`}>
                         {getStatusText(loan.status, loan.notes)}
                       </span>
                       <Button variant="outline" size="sm" onClick={() => handleReject(loan)}>
@@ -512,7 +522,11 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       )}
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
+                          ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                          : getStatusColor(loan.status, loan.notes)
+                      }`}>
                         {getStatusText(loan.status, loan.notes)}
                       </span>
                       {loan.status === 'picked_up' && (
@@ -618,7 +632,11 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       )}
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
+                          ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                          : getStatusColor(loan.status, loan.notes)
+                      }`}>
                         {getStatusText(loan.status, loan.notes)}
                       </span>
                       {loan.status === 'requested' && (

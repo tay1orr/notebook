@@ -181,7 +181,7 @@ export function getRoleText(role: string): string {
   const roleText: Record<string, string> = {
     'admin': '관리자',
     'homeroom': '담임교사',
-    'helper': '노트북 도우미',
+    'helper': '노트북 관리 도우미',
     'teacher': '교사',
     'student': '학생'
   }

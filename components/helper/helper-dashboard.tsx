@@ -90,7 +90,9 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">도우미 대시보드</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {user.role === 'homeroom' ? '담임교사 대시보드' : '도우미 대시보드'}
+          </h1>
           <p className="text-muted-foreground">
             안녕하세요, <strong>{user.name}</strong>님 ({getRoleText(user.role)})
             {user.className && ` • 담당 반: ${user.className}`}

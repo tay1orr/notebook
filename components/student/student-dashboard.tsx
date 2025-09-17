@@ -429,7 +429,11 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                             `신청기기: ${loan.class_name}-${loan.student_no.padStart(2, '0')}번 노트북` :
                            '기기 배정 대기 중'}
                         </h4>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
+                            ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                            : getStatusColor(loan.status, loan.notes)
+                        }`}>
                           {getStatusText(loan.status, loan.notes)}
                         </span>
                       </div>
@@ -588,7 +592,11 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">{loan.device_tag || loan.deviceTag || '기기 정보 없음'}</span>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
+                          ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                          : getStatusColor(loan.status, loan.notes)
+                      }`}>
                         {getStatusText(loan.status, loan.notes)}
                       </span>
                     </div>

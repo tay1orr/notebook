@@ -38,8 +38,8 @@ export default async function DashboardPage() {
     )
   }
 
-  // 도우미인 경우 도우미용 통합 대시보드 표시
-  if (user.role === 'helper') {
+  // 도우미/담임교사인 경우 통합 대시보드 표시
+  if (user.role === 'helper' || user.role === 'homeroom') {
     return (
       <MainLayout>
         <div className="container mx-auto py-6">

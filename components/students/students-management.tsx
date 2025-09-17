@@ -314,7 +314,8 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="student">학생</SelectItem>
-                          <SelectItem value="helper">도우미</SelectItem>
+                          <SelectItem value="helper">노트북 관리 도우미</SelectItem>
+                          <SelectItem value="homeroom">담임교사</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
