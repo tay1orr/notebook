@@ -326,7 +326,18 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
               <p className="text-gray-600 mb-4">
                 과제나 학습을 위해 노트북을 집에서 사용하고 싶다면 가정대여를 신청하세요.
               </p>
-              <Button onClick={() => setShowLoanRequest(true)} size="lg">
+              <Button
+                onClick={() => {
+                  console.log('대여 신청 버튼 클릭됨!')
+                  console.log('현재 showLoanRequest:', showLoanRequest)
+                  console.log('현재 hasActiveLoan:', hasActiveLoan)
+                  console.log('currentLoans:', currentLoans)
+                  setShowLoanRequest(true)
+                }}
+                size="lg"
+                disabled={false}
+                className="w-full"
+              >
                 <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
