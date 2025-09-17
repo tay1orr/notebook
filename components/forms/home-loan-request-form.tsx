@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SignaturePad, SignaturePadRef } from '@/components/ui/signature-pad'
 import { CalendarIcon } from 'lucide-react'
-import { getCurrentKoreaTime } from '@/lib/utils'
+import { getCurrentKoreaTime, getCurrentKoreaDateTimeString, getReturnDateTime, isWeekend, getNextWeekday } from '@/lib/utils'
 
 interface HomeLoanRequestFormProps {
   isOpen: boolean
@@ -97,6 +97,11 @@ export function HomeLoanRequestForm({
         newErrors.returnDate = '반납 예정일은 내일 이후로 선택해주세요.'
       }
 
+      // 주말 선택 불가
+      if (isWeekend(returnDate)) {
+        newErrors.returnDate = '반납일은 평일만 선택할 수 있습니다. (토요일, 일요일 불가)'
+      }
+
       // 최대 7일까지만 허용 (다음 주 금요일까지)
       const maxDate = new Date()
       maxDate.setDate(maxDate.getDate() + 7)
@@ -151,7 +156,8 @@ export function HomeLoanRequestForm({
       email: studentInfo.email,
       requestType: 'home_loan',
       status: 'requested',
-      requestedAt: getCurrentKoreaTime(),
+      requestedAt: getCurrentKoreaDateTimeString(),
+      dueDate: getReturnDateTime(formData.returnDate + 'T09:00:00'), // 반납 시간을 오전 9시로 고정
       deviceTag: deviceNumber, // 수동 입력된 정보로 생성된 기기 번호
       studentSignature: signatureData
     }

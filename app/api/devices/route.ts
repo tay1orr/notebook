@@ -55,10 +55,18 @@ export async function GET() {
           const parts = loan.device_tag.split('-')
           console.log('Device tag parts:', parts)
           if (parts.length === 3) {
-            const serialNumber = `${parts[0]}${parts[1]}${parts[2]}`
+            // "2-1-11" -> "20111" (grade + padded class + padded device)
+            const grade = parts[0]
+            const classNum = parts[1].padStart(2, '0')
+            const deviceNum = parts[2].padStart(2, '0')
+            const serialNumber = `${grade}${classNum}${deviceNum}`
             const assetTag = `ICH-${serialNumber}`
-            console.log(`Mapping ${loan.device_tag} -> ${assetTag}`)
+            console.log(`Mapping ${loan.device_tag} -> ${assetTag} (serial: ${serialNumber})`)
             loanMap.set(assetTag, loan)
+          } else {
+            // 직접적인 매핑도 시도 (asset_tag가 그대로 들어온 경우)
+            console.log(`Direct mapping attempt: ${loan.device_tag}`)
+            loanMap.set(loan.device_tag, loan)
           }
         }
       })
@@ -308,7 +316,7 @@ export async function PATCH(request: NextRequest) {
       .update({
         status: dbStatus,
         notes: notes || null,
-        updated_at: getCurrentKoreaTime()
+        updated_at: getCurrentKoreaDateTimeString()
       })
       .eq('asset_tag', assetTag)
       .select()

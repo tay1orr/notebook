@@ -53,6 +53,37 @@ export function getCurrentKoreaDateTime(): Date {
   return new Date(now.getTime() + (9 * 60 * 60 * 1000) - (now.getTimezoneOffset() * 60 * 1000))
 }
 
+export function getCurrentKoreaDateTimeString(): string {
+  // 현재 한국 시간을 문자열로 반환 (YYYY-MM-DDTHH:mm:ss 형식)
+  const koreaTime = getCurrentKoreaDateTime()
+  return koreaTime.toISOString().slice(0, -1) // Z 제거
+}
+
+export function getReturnDateTime(returnDate: string): string {
+  // 반납일을 받아서 오전 9시로 고정된 반납 시간 반환
+  const date = new Date(returnDate)
+  date.setHours(9, 0, 0, 0) // 오전 9시로 고정
+
+  // 한국 시간으로 조정
+  const koreaTime = new Date(date.getTime() + (9 * 60 * 60 * 1000) - (date.getTimezoneOffset() * 60 * 1000))
+  return koreaTime.toISOString()
+}
+
+export function isWeekend(date: Date): boolean {
+  // 토요일(6) 또는 일요일(0)인지 확인
+  const day = date.getDay()
+  return day === 0 || day === 6
+}
+
+export function getNextWeekday(date: Date): Date {
+  // 주말이면 다음 월요일로 이동
+  const nextDate = new Date(date)
+  while (isWeekend(nextDate)) {
+    nextDate.setDate(nextDate.getDate() + 1)
+  }
+  return nextDate
+}
+
 export function parseStudentId(email: string): {
   grade: string
   class: string
