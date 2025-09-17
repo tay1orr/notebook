@@ -145,7 +145,10 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card
+          className="cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => window.location.href = '/loans?tab=active'}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">사용 중</CardTitle>
             <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -154,7 +157,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{tomorrowReturns}</div>
-            <p className="text-xs text-muted-foreground">현재 대여 중</p>
+            <p className="text-xs text-muted-foreground">현재 대여 중 • 클릭하여 반납 처리</p>
           </CardContent>
         </Card>
 
@@ -186,7 +189,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
               {recentLoans.map((loan) => (
                 <a
                   key={loan.id}
-                  href="/loans"
+                  href={loan.status === 'picked_up' ? '/loans?tab=active' : '/loans'}
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   <div className="flex-1">
@@ -202,6 +205,11 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                     {(loan.due_date || loan.dueDate) && (
                       <div className="text-sm text-muted-foreground">
                         반납 예정: {loan.due_date || loan.dueDate}
+                      </div>
+                    )}
+                    {loan.status === 'picked_up' && (
+                      <div className="text-xs text-blue-600 mt-1">
+                        👆 클릭하여 반납 처리하기
                       </div>
                     )}
                   </div>

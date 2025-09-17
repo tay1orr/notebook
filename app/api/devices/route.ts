@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const supabase = createServerComponentClient<Database>({ cookies })
 
-    // 기기와 할당된 클래스 정보를 조회
+    // 기기와 할당된 클래스 정보, 현재 대여 정보를 조회
     const { data: devices, error } = await supabase
       .from('devices')
       .select(`
@@ -32,20 +32,52 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch devices' }, { status: 500 })
     }
 
+    // 현재 대여중인 대여 정보 조회
+    const { data: currentLoans, error: loanError } = await supabase
+      .from('loan_applications')
+      .select('device_tag, student_name, status')
+      .in('status', ['approved', 'picked_up'])
+
+    if (loanError) {
+      console.error('Error fetching loan data:', loanError)
+    }
+
+    // 대여 정보를 deviceTag 기준으로 매핑
+    const loanMap = new Map()
+    if (currentLoans) {
+      currentLoans.forEach(loan => {
+        if (loan.device_tag) {
+          // device_tag를 asset_tag 형식으로 변환하여 매핑
+          const parts = loan.device_tag.split('-')
+          if (parts.length === 3) {
+            const serialNumber = `${parts[0]}${parts[1]}${parts[2]}`
+            const assetTag = `ICH-${serialNumber}`
+            loanMap.set(assetTag, loan)
+          }
+        }
+      })
+    }
+
+    console.log('Current loans mapping:', Array.from(loanMap.entries()))
+
     // 기기 데이터를 프론트엔드 형식으로 변환
-    const formattedDevices = devices.map(device => ({
-      id: device.asset_tag,
-      assetNumber: device.asset_tag,
-      model: device.model,
-      serialNumber: device.serial_number,
-      status: mapDeviceStatus(device.status),
-      assignedClass: device.assigned_class ? `${device.assigned_class.grade}-${device.assigned_class.name}` : '',
-      deviceNumber: device.asset_tag.replace('ICH-', ''),
-      currentUser: null, // 현재 대여자는 별도 조회 필요
-      notes: device.notes || '',
-      createdAt: device.created_at,
-      updatedAt: device.updated_at
-    }))
+    const formattedDevices = devices.map(device => {
+      const loan = loanMap.get(device.asset_tag)
+
+      return {
+        id: device.asset_tag,
+        assetNumber: device.asset_tag,
+        model: device.model,
+        serialNumber: device.serial_number,
+        status: loan ? 'loaned' : mapDeviceStatus(device.status), // 대여 정보가 있으면 강제로 대여중으로 설정
+        assignedClass: device.assigned_class ? `${device.assigned_class.grade}-${device.assigned_class.name}` : '',
+        deviceNumber: device.asset_tag.replace('ICH-', ''),
+        currentUser: loan ? loan.student_name : null,
+        notes: device.notes || '',
+        createdAt: device.created_at,
+        updatedAt: device.updated_at
+      }
+    })
 
     return NextResponse.json({ devices: formattedDevices })
   } catch (error) {

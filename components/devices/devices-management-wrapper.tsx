@@ -30,6 +30,7 @@ export function DevicesManagementWrapper() {
           const deviceList = data.devices || []
 
           console.log('DevicesManagement - Loaded devices:', deviceList.length)
+          console.log('DevicesManagement - Loaned devices:', deviceList.filter(d => d.status === 'loaned'))
           setDevices(deviceList)
 
           // 통계 계산
@@ -40,6 +41,7 @@ export function DevicesManagementWrapper() {
             maintenance: deviceList.filter(d => d.status === 'maintenance').length,
             retired: deviceList.filter(d => d.status === 'retired').length
           }
+          console.log('DevicesManagement - Stats:', newStats)
           setStats(newStats)
           setError(null)
         } else {
@@ -56,6 +58,11 @@ export function DevicesManagementWrapper() {
     }
 
     loadDevices()
+
+    // 5초마다 자동 새로고침으로 실시간 동기화
+    const interval = setInterval(loadDevices, 5000)
+
+    return () => clearInterval(interval)
   }, [])
 
   if (loading) {
