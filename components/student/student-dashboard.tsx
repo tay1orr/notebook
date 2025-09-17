@@ -304,7 +304,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
                       <h4 className="font-medium">
-                        {loan.deviceTag ? `기기: ${loan.deviceTag}` : '기기 배정 대기 중'}
+                        {loan.deviceTag ? `신청기기: ${loan.deviceTag}번 노트북` : '기기 배정 대기 중'}
                       </h4>
                       <Badge className={getStatusColor(loan.status)}>
                         {getStatusText(loan.status)}
@@ -321,6 +321,18 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                       </Button>
                     )}
                   </div>
+
+                  {/* 신청한 기기 정보 표시 */}
+                  {loan.deviceTag && (
+                    <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <div className="text-sm font-medium text-blue-900">
+                        신청한 노트북: <span className="font-bold">{loan.deviceTag}번</span>
+                      </div>
+                      <div className="text-xs text-blue-700 mt-1">
+                        {loan.deviceTag.split('-')[0]}학년 {loan.deviceTag.split('-')[1]}반 {loan.deviceTag.split('-')[2]}번 노트북
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
