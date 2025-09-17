@@ -52,6 +52,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // device_tag가 없으면 학생의 학급 정보로 기본 기기 할당
+    let assignedDeviceTag = device_tag
+    if (!assignedDeviceTag && class_name && student_no) {
+      const classInfo = class_name.split('-') // "2-1" -> ["2", "1"]
+      if (classInfo.length === 2) {
+        const grade = classInfo[0]
+        const classNumber = classInfo[1].padStart(2, '0')
+        const deviceNumber = student_no.padStart(2, '0')
+        assignedDeviceTag = `${grade}-${classNumber}-${deviceNumber}`
+      }
+    }
+
     const { data: loan, error } = await supabase
       .from('loan_applications')
       .insert([
@@ -66,7 +78,7 @@ export async function POST(request: NextRequest) {
           return_date,
           return_time,
           due_date,
-          device_tag,
+          device_tag: assignedDeviceTag,
           signature,
           notes,
           status: 'requested'
@@ -127,7 +139,7 @@ export async function PATCH(request: NextRequest) {
         let deviceStatus = 'available'
         let currentUser = null
 
-        if (status === 'picked_up') {
+        if (status === 'approved' || status === 'picked_up') {
           deviceStatus = 'loaned'
           currentUser = loan.student_name
         } else if (status === 'returned') {
@@ -136,7 +148,8 @@ export async function PATCH(request: NextRequest) {
         }
 
         // 기기 상태 업데이트 API 호출
-        await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/devices`, {
+        console.log(`Updating device status: ${device_tag} -> ${deviceStatus}`)
+        const deviceResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/devices`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -146,6 +159,14 @@ export async function PATCH(request: NextRequest) {
             notes: notes || ''
           })
         })
+
+        if (!deviceResponse.ok) {
+          const errorText = await deviceResponse.text()
+          console.error(`Device update failed: ${deviceResponse.status} - ${errorText}`)
+        } else {
+          const deviceResult = await deviceResponse.json()
+          console.log(`Device update successful:`, deviceResult)
+        }
       } catch (deviceError) {
         console.error('Failed to update device status:', deviceError)
         // 기기 상태 업데이트 실패해도 대여 승인은 성공으로 처리

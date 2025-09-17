@@ -27,6 +27,7 @@ export function formatDateTime(date: string | Date): string {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: true,
     timeZone: 'Asia/Seoul'
   })
 }
@@ -71,7 +72,9 @@ export function formatTime(date: string | Date): string {
   const d = new Date(date)
   return d.toLocaleTimeString('ko-KR', {
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Seoul'
   })
 }
 

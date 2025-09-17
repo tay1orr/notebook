@@ -302,15 +302,26 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
               {currentLoans.map((loan) => (
                 <div key={loan.id} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="font-medium">
-                        {loan.deviceTag ? `신청기기: ${loan.deviceTag}번 노트북` :
-                         loan.className && loan.studentNo ? `신청기기: ${loan.className}-${loan.studentNo.padStart(2, '0')}번 노트북` :
-                         '기기 배정 대기 중'}
-                      </h4>
-                      <Badge className={getStatusColor(loan.status)}>
-                        {getStatusText(loan.status)}
-                      </Badge>
+                    <div className="flex flex-col space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-medium">
+                          {loan.deviceTag ? `신청기기: ${loan.deviceTag}번 노트북` :
+                           loan.className && loan.studentNo ? `신청기기: ${loan.className}-${loan.studentNo.padStart(2, '0')}번 노트북` :
+                           '기기 배정 대기 중'}
+                        </h4>
+                        <Badge className={getStatusColor(loan.status)}>
+                          {getStatusText(loan.status)}
+                        </Badge>
+                      </div>
+                      {/* 추가 기기 정보 표시 */}
+                      {(loan.deviceTag || (loan.className && loan.studentNo)) && (
+                        <div className="text-sm text-blue-600">
+                          {loan.deviceTag ?
+                            `${loan.deviceTag.split('-')[0]}학년 ${loan.deviceTag.split('-')[1]}반 ${loan.deviceTag.split('-')[2]}번 노트북 (시리얼: ${loan.deviceTag.split('-')[0]}${loan.deviceTag.split('-')[1].padStart(2, '0')}${loan.deviceTag.split('-')[2].padStart(2, '0')})` :
+                            `${loan.className.split('-')[0]}학년 ${loan.className.split('-')[1]}반 ${loan.studentNo.padStart(2, '0')}번 노트북 (시리얼: ${loan.className.split('-')[0]}${loan.className.split('-')[1].padStart(2, '0')}${loan.studentNo.padStart(2, '0')})`
+                          }
+                        </div>
+                      )}
                     </div>
                     {loan.status === 'requested' && (
                       <Button
@@ -382,9 +393,24 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
                   {loan.status === 'picked_up' && loan.dueDate && (
                     <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                      <p className="text-sm text-green-800">
-                        <strong>사용 중</strong> • 반납 예정일을 지켜주세요.
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-green-800">
+                            <strong>사용 중</strong> • 반납 예정일을 지켜주세요.
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // 관리자/담임 페이지의 반납처리 탭으로 이동
+                            window.location.href = '/loans?tab=active'
+                          }}
+                          className="bg-white border-green-300 text-green-700 hover:bg-green-50"
+                        >
+                          반납 신청
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
