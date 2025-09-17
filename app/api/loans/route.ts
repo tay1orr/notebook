@@ -82,7 +82,8 @@ export async function POST(request: NextRequest) {
           device_tag: assignedDeviceTag,
           signature,
           notes,
-          status: 'requested'
+          status: 'requested',
+          created_at: getCurrentKoreaTime()
         }
       ])
       .select()

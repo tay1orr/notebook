@@ -27,16 +27,22 @@ export function formatDateTime(date: string | Date): string {
 
   if (isNaN(d.getTime())) return 'Invalid Date'
 
-  // UTC 시간을 한국 시간으로 변환하여 표시
+  // 데이터베이스에서 온 UTC 시간을 한국 시간으로 정확히 변환
+  // 현재 로컬 시간대 오프셋을 고려하여 한국 시간으로 변환
+  const utcTime = d.getTime()
+  const localOffset = d.getTimezoneOffset() * 60 * 1000
+  const koreaOffset = 9 * 60 * 60 * 1000 // UTC+9
+  const koreaTime = new Date(utcTime + localOffset + koreaOffset)
+
+  // 한국 시간으로 표시
   return new Intl.DateTimeFormat('ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true,
-    timeZone: 'Asia/Seoul'
-  }).format(d)
+    hour12: true
+  }).format(koreaTime)
 }
 
 export function getCurrentKoreaTime(): string {

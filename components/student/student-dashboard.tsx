@@ -404,9 +404,9 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                             `신청기기: ${loan.class_name}-${loan.student_no.padStart(2, '0')}번 노트북` :
                            '기기 배정 대기 중'}
                         </h4>
-                        <Badge className={getStatusColor(loan.status, loan.notes)}>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
                           {getStatusText(loan.status, loan.notes)}
-                        </Badge>
+                        </span>
                       </div>
 
                       {/* 학년 반 번호 정보를 항상 표시 */}
