@@ -158,7 +158,7 @@ export function HomeLoanRequestForm({
       status: 'requested',
       requestedAt: getCurrentKoreaDateTimeString(),
       dueDate: getReturnDateTime(formData.returnDate + 'T09:00:00'), // 반납 시간을 오전 9시로 고정
-      deviceTag: deviceNumber, // 수동 입력된 정보로 생성된 기기 번호
+      device_tag: deviceNumber, // 수동 입력된 정보로 생성된 기기 번호
       studentSignature: signatureData
     }
 

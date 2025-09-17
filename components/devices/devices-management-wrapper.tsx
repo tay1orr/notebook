@@ -21,33 +21,77 @@ export function DevicesManagementWrapper() {
         setLoading(true)
         console.log('DevicesManagement - Loading devices from API...')
 
-        const response = await fetch('/api/devices', {
-          cache: 'no-store'
-        })
+        // 기기 목록과 대여 현황을 동시에 가져오기
+        const [devicesResponse, loansResponse] = await Promise.all([
+          fetch('/api/devices', { cache: 'no-store' }),
+          fetch('/api/loans', { cache: 'no-store' })
+        ])
 
-        if (response.ok) {
-          const data = await response.json()
-          const deviceList = data.devices || []
+        if (devicesResponse.ok && loansResponse.ok) {
+          const devicesData = await devicesResponse.json()
+          const loansData = await loansResponse.json()
 
-          console.log('DevicesManagement - Loaded devices:', deviceList.length)
-          console.log('DevicesManagement - Loaned devices:', deviceList.filter(d => d.status === 'loaned'))
-          setDevices(deviceList)
+          const deviceList = devicesData.devices || []
+          const loansList = loansData.loans || []
+
+          // 수령됨 상태인 대여 목록으로 기기 상태 업데이트
+          const activeLoanDevices = new Set()
+          loansList.forEach(loan => {
+            if (loan.status === 'picked_up' && loan.device_tag) {
+              // device_tag "2-1-11"을 asset_tag "ICH-20111" 형식으로 변환
+              const parts = loan.device_tag.split('-')
+              if (parts.length === 3) {
+                const grade = parts[0]
+                const classNum = parts[1].padStart(2, '0')
+                const deviceNum = parts[2].padStart(2, '0')
+                const serialNumber = `${grade}${classNum}${deviceNum}`
+                const assetTag = `ICH-${serialNumber}`
+                activeLoanDevices.add(assetTag)
+              }
+            }
+          })
+
+          // 기기 상태 업데이트: 수령됨 상태인 대여가 있으면 대여중으로 표시
+          const updatedDeviceList = deviceList.map(device => {
+            if (activeLoanDevices.has(device.assetNumber)) {
+              const loan = loansList.find(l => {
+                if (!l.device_tag) return false
+                const parts = l.device_tag.split('-')
+                if (parts.length === 3) {
+                  const serialNumber = `${parts[0]}${parts[1].padStart(2, '0')}${parts[2].padStart(2, '0')}`
+                  return `ICH-${serialNumber}` === device.assetNumber
+                }
+                return false
+              })
+              return {
+                ...device,
+                status: 'loaned',
+                currentUser: loan?.student_name || device.currentUser
+              }
+            }
+            return device
+          })
+
+          console.log('DevicesManagement - Loaded devices:', updatedDeviceList.length)
+          console.log('DevicesManagement - Active loans found:', activeLoanDevices.size)
+          console.log('DevicesManagement - Loaned devices:', updatedDeviceList.filter(d => d.status === 'loaned'))
+          setDevices(updatedDeviceList)
 
           // 통계 계산
           const newStats = {
-            total: deviceList.length,
-            available: deviceList.filter(d => d.status === 'available').length,
-            loaned: deviceList.filter(d => d.status === 'loaned').length,
-            maintenance: deviceList.filter(d => d.status === 'maintenance').length,
-            retired: deviceList.filter(d => d.status === 'retired').length
+            total: updatedDeviceList.length,
+            available: updatedDeviceList.filter(d => d.status === 'available').length,
+            loaned: updatedDeviceList.filter(d => d.status === 'loaned').length,
+            maintenance: updatedDeviceList.filter(d => d.status === 'maintenance').length,
+            retired: updatedDeviceList.filter(d => d.status === 'retired').length
           }
           console.log('DevicesManagement - Stats:', newStats)
           setStats(newStats)
           setError(null)
         } else {
-          const errorText = await response.text()
-          console.error('DevicesManagement - API error:', response.status, errorText)
-          setError(`API 오류: ${response.status} - ${errorText}`)
+          const errorText = await (devicesResponse.ok ? loansResponse : devicesResponse).text()
+          console.error('DevicesManagement - API error:', errorText)
+          setError(`API 오류: ${errorText}`)
         }
       } catch (error) {
         console.error('DevicesManagement - Failed to load devices:', error)

@@ -45,6 +45,14 @@ export async function GET() {
     console.log('Current loans from DB:', currentLoans?.length || 0, 'loans found')
     console.log('Current loans data:', currentLoans)
 
+    // 특정 기기에 대한 자세한 정보 확인
+    const targetDeviceLoans = currentLoans?.filter(loan =>
+      loan.device_tag === '2-1-11' ||
+      loan.device_tag === 'ICH-20111' ||
+      loan.device_tag?.includes('2-1-11')
+    )
+    console.log('Target device (2-1-11) loans found:', targetDeviceLoans)
+
     // 대여 정보를 deviceTag 기준으로 매핑
     const loanMap = new Map()
     if (currentLoans && currentLoans.length > 0) {
@@ -74,6 +82,10 @@ export async function GET() {
 
     console.log('Final loan mapping size:', loanMap.size)
     console.log('Loan map entries:', Array.from(loanMap.entries()))
+
+    // ICH-20111 기기가 매핑되었는지 확인
+    const ich20111Loan = loanMap.get('ICH-20111')
+    console.log('ICH-20111 device loan mapping result:', ich20111Loan)
 
     // 기기 데이터를 프론트엔드 형식으로 변환
     const formattedDevices = devices.map(device => {

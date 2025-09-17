@@ -96,7 +96,8 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
       device.assetNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       device.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       device.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      device.assignedClass?.toLowerCase().includes(searchTerm.toLowerCase())
+      device.assignedClass?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      device.currentUser?.toLowerCase().includes(searchTerm.toLowerCase())
 
     // 상태 필터링
     const matchesStatus = statusFilter === 'all' || device.status === statusFilter

@@ -48,9 +48,10 @@ export function getCurrentKoreaTime(): string {
 }
 
 export function getCurrentKoreaDateTime(): Date {
-  // 현재 한국 시간을 Date 객체로 반환
+  // 현재 한국 시간을 Date 객체로 반환 (UTC+9)
   const now = new Date()
-  return new Date(now.getTime() + (9 * 60 * 60 * 1000) - (now.getTimezoneOffset() * 60 * 1000))
+  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000))
+  return koreaTime
 }
 
 export function getCurrentKoreaDateTimeString(): string {
