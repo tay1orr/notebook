@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { HomeLoanRequestForm } from '@/components/forms/home-loan-request-form'
-import { formatDateTime, getStatusColor, getStatusText, getPurposeText } from '@/lib/utils'
+import { formatDateTime, getStatusColor, getStatusText, getPurposeText, getCurrentKoreaTime } from '@/lib/utils'
 
 interface StudentDashboardProps {
   student: {
@@ -168,24 +168,24 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
     try {
       console.log('Submitting loan request:', requestData)
 
-      // 새로운 대여 신청 객체 생성 (localStorage용)
+      // 새로운 대여 신청 객체 생성 (API 형식에 맞춤)
       // 정확한 한국 시간으로 신청 시간 기록
-      const currentKoreaTime = new Date().toISOString()
+      const currentKoreaTime = getCurrentKoreaTime()
 
       const newLoanRequest = {
         id: `temp-${Date.now()}`,
         status: 'requested',
         requestedAt: currentKoreaTime,
         created_at: currentKoreaTime,
-        purpose: getPurposeText(requestData.purpose),
-        purposeDetail: requestData.purposeDetail,
-        dueDate: `${requestData.returnDate} 09:00`,
-        studentContact: requestData.studentContact,
+        purpose: requestData.purpose, // 원본 값 유지
+        purpose_detail: requestData.purposeDetail,
+        due_date: `${requestData.returnDate} 09:00`,
+        student_contact: requestData.studentContact,
         notes: requestData.notes || '',
-        deviceTag: requestData.deviceTag || null,
-        studentName: requestData.studentName || student.name,
-        studentNo: requestData.studentNo || student.studentNo,
-        className: requestData.className || student.className,
+        device_tag: requestData.deviceTag || null,
+        student_name: requestData.studentName || student.name,
+        student_no: requestData.studentNo || student.studentNo,
+        class_name: requestData.className || student.className,
         email: student.email,
         signature: requestData.studentSignature || requestData.signature || null
       }
@@ -203,11 +203,11 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             class_name: requestData.className || student.className,
             email: student.email,
             student_contact: requestData.studentContact,
-            purpose: newLoanRequest.purpose,
+            purpose: requestData.purpose,
             purpose_detail: requestData.purposeDetail,
             return_date: requestData.returnDate,
             return_time: '09:00',
-            due_date: newLoanRequest.dueDate,
+            due_date: newLoanRequest.due_date,
             device_tag: requestData.deviceTag,
             signature: requestData.studentSignature || requestData.signature || null,
             notes: requestData.notes || ''
@@ -596,9 +596,9 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">{loan.device_tag || loan.deviceTag || '기기 정보 없음'}</span>
-                      <Badge variant="outline" className={getStatusColor(loan.status, loan.notes)}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
                         {getStatusText(loan.status, loan.notes)}
-                      </Badge>
+                      </span>
                     </div>
                     <div className="text-sm text-gray-600">
                       {formatDateTime(loan.created_at || loan.requestedAt)}

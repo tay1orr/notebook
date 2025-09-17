@@ -208,9 +208,9 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                       </div>
                     )}
                   </div>
-                  <Badge className={getStatusColor(loan.status, loan.notes)}>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
                     {getStatusText(loan.status, loan.notes)}
-                  </Badge>
+                  </span>
                 </a>
               ))}
               {recentLoans.length === 0 && (

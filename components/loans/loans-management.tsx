@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getStatusColor, getStatusText, formatDateTime, getPurposeText } from '@/lib/utils'
+import { getStatusColor, getStatusText, formatDateTime, getPurposeText, getCurrentKoreaTime } from '@/lib/utils'
 import { ApprovalSignatureModal } from '@/components/forms/approval-signature-modal'
 import { ReturnConfirmationModal } from '@/components/forms/return-confirmation-modal'
 
@@ -160,7 +160,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
         body: JSON.stringify({
           id: selectedLoan.id,
           status: 'picked_up',
-          approved_at: new Date().toISOString(),
+          approved_at: getCurrentKoreaTime(),
           device_tag: data.deviceTag,
           approver_signature: data.signature,
           approved_by: data.approverName
@@ -185,7 +185,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
               ? {
                   ...l,
                   status: 'picked_up',
-                  approvedAt: new Date().toISOString(),
+                  approvedAt: getCurrentKoreaTime(),
                   deviceTag: data.deviceTag,
                   approverSignature: data.signature,
                   approverName: data.approverName
@@ -202,8 +202,8 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
     setActiveLoans(prev => [...prev, {
       ...selectedLoan,
       status: 'picked_up',
-      approvedAt: new Date().toISOString(),
-      approved_at: new Date().toISOString(),
+      approvedAt: getCurrentKoreaTime(),
+      approved_at: getCurrentKoreaTime(),
       deviceTag: data.deviceTag,
       device_tag: data.deviceTag,
       approverSignature: data.signature,
@@ -454,9 +454,9 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={getStatusColor(loan.status, loan.notes)}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
                         {getStatusText(loan.status, loan.notes)}
-                      </Badge>
+                      </span>
                       <Button variant="outline" size="sm" onClick={() => handleReject(loan)}>
                         거절
                       </Button>
@@ -504,9 +504,9 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={getStatusColor(loan.status, loan.notes)}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
                         {getStatusText(loan.status, loan.notes)}
-                      </Badge>
+                      </span>
                       {loan.status === 'approved' && (
                         <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
                           학생이 기기 수령 완료
@@ -557,9 +557,9 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={getStatusColor(loan.status, loan.notes)}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
                         {getStatusText(loan.status, loan.notes)}
-                      </Badge>
+                      </span>
                       <Button size="sm" variant="destructive">
                         긴급 연락
                       </Button>
@@ -615,9 +615,9 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       )}
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={getStatusColor(loan.status, loan.notes)}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
                         {getStatusText(loan.status, loan.notes)}
-                      </Badge>
+                      </span>
                       {loan.status === 'requested' && (
                         <>
                           <Button size="sm" variant="outline" onClick={() => handleReject(loan)}>
