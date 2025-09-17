@@ -50,23 +50,48 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             ['returned', 'rejected', 'cancelled'].includes(loan.status)
           )
 
-          // 데이터 변경 여부 확인 (시간 덮어쓰기 방지) - 개수와 ID만 비교
-          const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status })))
+          // 데이터 변경 여부 확인 (시간 덮어쓰기 방지)
+          const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status, created_at: l.created_at })))
+
+          // sessionStorage에서 이전 시간 데이터 복원
+          const savedTimeData = sessionStorage.getItem('student-time-data')
+          let preservedTimeData: Record<string, any> = {}
+          if (savedTimeData) {
+            try {
+              preservedTimeData = JSON.parse(savedTimeData)
+            } catch (e) {
+              console.error('Failed to parse saved time data:', e)
+            }
+          }
+
           if (currentDataHash !== lastDataHashRef.current) {
             console.log('Loaded student loans from API:', studentLoans)
-            // 기존 데이터가 있고 같은 ID의 항목이면 시간 데이터 보존
+
+            // 시간 데이터 보존 및 업데이트
             const updatedLoans = studentLoans.map(newLoan => {
+              const loanId = newLoan.id.toString()
               const existingLoan = currentLoans.find(existing => existing.id === newLoan.id)
-              if (existingLoan) {
-                // 기존 시간 데이터가 있으면 보존, 없으면 새 데이터 사용
-                return {
-                  ...newLoan,
-                  created_at: existingLoan.created_at || newLoan.created_at,
-                  requestedAt: existingLoan.requestedAt || newLoan.requestedAt || newLoan.created_at
-                }
+              const savedTime = preservedTimeData[loanId]
+
+              // 우선순위: 기존 메모리 데이터 > sessionStorage 데이터 > 새 API 데이터
+              const preservedLoan = {
+                ...newLoan,
+                created_at: existingLoan?.created_at || savedTime?.created_at || newLoan.created_at,
+                requestedAt: existingLoan?.requestedAt || savedTime?.requestedAt || newLoan.requestedAt || newLoan.created_at
               }
-              return newLoan
+
+              // sessionStorage에 시간 데이터 저장
+              preservedTimeData[loanId] = {
+                created_at: preservedLoan.created_at,
+                requestedAt: preservedLoan.requestedAt
+              }
+
+              return preservedLoan
             })
+
+            // sessionStorage 업데이트
+            sessionStorage.setItem('student-time-data', JSON.stringify(preservedTimeData))
+
             setCurrentLoans(updatedLoans)
             setLoanHistoryData(studentHistory)
             lastDataHashRef.current = currentDataHash

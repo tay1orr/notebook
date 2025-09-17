@@ -353,13 +353,28 @@ export function HomeLoanRequestForm({
             <Label htmlFor="studentContact">본인 연락처 *</Label>
             <Input
               id="studentContact"
+              type="text"
+              inputMode="numeric"
               value={formData.studentContact}
               onChange={(e) => {
                 const rawValue = e.target.value
                 const convertedValue = convertToHalfWidth(rawValue)
-                // 연락처는 숫자와 하이픈만 허용
+                // 연락처는 숫자와 하이픈만 허용하고 중복 입력 방지
                 const filteredValue = convertedValue.replace(/[^0-9-]/g, '')
-                setFormData({ ...formData, studentContact: filteredValue })
+
+                // 중복 숫자 입력 방지: 이전 값과 비교해서 길이가 2배 이상 증가하면 무시
+                if (filteredValue.length <= formData.studentContact.length * 1.5 + 2) {
+                  setFormData({ ...formData, studentContact: filteredValue })
+                }
+              }}
+              onInput={(e) => {
+                // 브라우저 자동완성이나 붙여넣기로 인한 중복 방지
+                const target = e.target as HTMLInputElement
+                const converted = convertToHalfWidth(target.value).replace(/[^0-9-]/g, '')
+                if (target.value !== converted) {
+                  target.value = converted
+                  setFormData({ ...formData, studentContact: converted })
+                }
               }}
               placeholder="본인 연락처를 입력하세요 (예: 010-1234-5678)"
             />
