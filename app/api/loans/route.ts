@@ -119,21 +119,21 @@ export async function PATCH(request: NextRequest) {
 
     const updateData: any = {
       status,
-      updated_at: new Date().toISOString()
+      updated_at: getCurrentKoreaTime()
     }
 
     if (device_tag) updateData.device_tag = device_tag
     if (approved_by) updateData.approved_by = approved_by
-    if (approved_at) updateData.approved_at = approved_at || new Date().toISOString()
+    if (approved_at) updateData.approved_at = approved_at || getCurrentKoreaTime()
     if (notes) updateData.notes = notes
 
     // 상태별 시간 기록
     if (status === 'approved') {
-      updateData.approved_at = new Date().toISOString()
+      updateData.approved_at = getCurrentKoreaTime()
     } else if (status === 'picked_up') {
-      updateData.picked_up_at = new Date().toISOString()
+      updateData.picked_up_at = getCurrentKoreaTime()
     } else if (status === 'returned') {
-      updateData.returned_at = new Date().toISOString()
+      updateData.returned_at = getCurrentKoreaTime()
     } else if (status === 'rejected') {
       // 거절(취소 포함) 시에는 별도 시간 기록 없음 (updated_at으로 충분)
     }

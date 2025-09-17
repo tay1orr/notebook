@@ -139,14 +139,14 @@ export function maskPhone(phone: string): string {
   return phone.replace(/(\d{3})-?(\d{4})-?(\d{4})/, '$1-****-$3')
 }
 
-export function getStatusColor(status: string): string {
+export function getStatusColor(status: string, notes?: string): string {
   const statusColors: Record<string, string> = {
     'requested': 'bg-yellow-100 text-yellow-800',
     'approved': 'bg-blue-100 text-blue-800',
     'picked_up': 'bg-green-100 text-green-800',
     'returned': 'bg-gray-100 text-gray-800',
-    'rejected': 'bg-red-100 text-red-800',
-    'cancelled': 'bg-gray-100 text-gray-800',
+    'rejected': notes === 'STUDENT_CANCELLED' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800',
+    'cancelled': 'bg-orange-100 text-orange-800',
     'overdue': 'bg-red-100 text-red-800',
     '충전함': 'bg-green-100 text-green-800',
     '대여중': 'bg-blue-100 text-blue-800',

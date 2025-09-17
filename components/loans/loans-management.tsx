@@ -443,8 +443,8 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={getStatusColor(loan.status)}>
-                        {getStatusText(loan.status)}
+                      <Badge className={getStatusColor(loan.status, loan.notes)}>
+                        {getStatusText(loan.status, loan.notes)}
                       </Badge>
                       <Button variant="outline" size="sm" onClick={() => handleReject(loan)}>
                         거절
@@ -493,8 +493,8 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={getStatusColor(loan.status)}>
-                        {getStatusText(loan.status)}
+                      <Badge className={getStatusColor(loan.status, loan.notes)}>
+                        {getStatusText(loan.status, loan.notes)}
                       </Badge>
                       {loan.status === 'approved' && (
                         <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
@@ -546,8 +546,8 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={getStatusColor(loan.status)}>
-                        {getStatusText(loan.status)}
+                      <Badge className={getStatusColor(loan.status, loan.notes)}>
+                        {getStatusText(loan.status, loan.notes)}
                       </Badge>
                       <Button size="sm" variant="destructive">
                         긴급 연락
@@ -604,8 +604,8 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       )}
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={getStatusColor(loan.status)}>
-                        {getStatusText(loan.status)}
+                      <Badge className={getStatusColor(loan.status, loan.notes)}>
+                        {getStatusText(loan.status, loan.notes)}
                       </Badge>
                       {loan.status === 'requested' && (
                         <>

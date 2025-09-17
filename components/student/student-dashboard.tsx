@@ -24,6 +24,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentLoans, setCurrentLoans] = useState<any[]>([])
   const [loanHistoryData, setLoanHistoryData] = useState(loanHistory)
+  const [showAllHistory, setShowAllHistory] = useState(false)
 
   // 데이터 해시를 useRef로 관리하여 새로고침 시에도 유지
   const lastDataHashRef = useRef('')
@@ -403,7 +404,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                             `신청기기: ${loan.class_name}-${loan.student_no.padStart(2, '0')}번 노트북` :
                            '기기 배정 대기 중'}
                         </h4>
-                        <Badge className={getStatusColor(loan.status)}>
+                        <Badge className={getStatusColor(loan.status, loan.notes)}>
                           {getStatusText(loan.status, loan.notes)}
                         </Badge>
                       </div>
@@ -562,12 +563,12 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         <CardContent>
           {loanHistoryData.length > 0 ? (
             <div className="space-y-3">
-              {loanHistoryData.slice(0, 5).map((loan) => (
+              {(showAllHistory ? loanHistoryData : loanHistoryData.slice(0, 5)).map((loan) => (
                 <div key={loan.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">{loan.device_tag || loan.deviceTag || '기기 정보 없음'}</span>
-                      <Badge variant="outline" className={getStatusColor(loan.status)}>
+                      <Badge variant="outline" className={getStatusColor(loan.status, loan.notes)}>
                         {getStatusText(loan.status, loan.notes)}
                       </Badge>
                     </div>
@@ -583,8 +584,15 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
               ))}
               {loanHistoryData.length > 5 && (
                 <div className="text-center pt-4">
-                  <Button variant="ghost" size="sm">
-                    더 보기 ({loanHistoryData.length - 5}개 더)
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAllHistory(!showAllHistory)}
+                  >
+                    {showAllHistory ?
+                      '접기' :
+                      `더 보기 (${loanHistoryData.length - 5}개 더)`
+                    }
                   </Button>
                 </div>
               )}

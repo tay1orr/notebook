@@ -208,8 +208,8 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                       </div>
                     )}
                   </div>
-                  <Badge className={getStatusColor(loan.status)}>
-                    {getStatusText(loan.status)}
+                  <Badge className={getStatusColor(loan.status, loan.notes)}>
+                    {getStatusText(loan.status, loan.notes)}
                   </Badge>
                 </a>
               ))}
