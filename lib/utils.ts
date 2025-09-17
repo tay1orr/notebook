@@ -40,20 +40,22 @@ export function formatDateTime(date: string | Date): string {
 }
 
 export function getCurrentKoreaTime(): string {
-  // 현재 한국 시간을 정확히 계산 (Asia/Seoul 타임존 사용)
+  // 현재 한국 시간을 정확히 계산
   const now = new Date()
-  const koreaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000))
   return koreaTime.toISOString()
 }
 
 export function getCurrentKoreaDateTime(): Date {
   // 현재 한국 시간을 Date 객체로 반환
-  return new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+  const now = new Date()
+  return new Date(now.getTime() + (9 * 60 * 60 * 1000))
 }
 
 export function getCurrentKoreaDateTimeString(): string {
   // 현재 한국 시간을 문자열로 반환 (YYYY-MM-DDTHH:mm:ss 형식)
-  const koreaTime = getCurrentKoreaDateTime()
+  const now = new Date()
+  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000))
   return koreaTime.toISOString().slice(0, 19) // 초까지만 포함, Z 제거
 }
 
@@ -172,6 +174,19 @@ export function getRoleText(role: string): string {
     'student': '학생'
   }
   return roleText[role] || role
+}
+
+export function getPurposeText(purpose: string): string {
+  const purposeText: Record<string, string> = {
+    'homework': '과제 작성',
+    'report': '보고서 준비',
+    'research': '조사 활동',
+    'presentation': '발표 준비',
+    'project': '프로젝트 작업',
+    'exam_prep': '시험 준비',
+    'other': '기타'
+  }
+  return purposeText[purpose] || purpose
 }
 
 export function getTimeRemaining(dueDate: string | Date): string {

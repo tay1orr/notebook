@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getStatusColor, getStatusText, formatDateTime } from '@/lib/utils'
+import { getStatusColor, getStatusText, formatDateTime, getPurposeText } from '@/lib/utils'
 import { ApprovalSignatureModal } from '@/components/forms/approval-signature-modal'
 import { ReturnConfirmationModal } from '@/components/forms/return-confirmation-modal'
 
@@ -424,7 +424,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                             </span>
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            사용 목적: {loan.purpose} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
+                            사용 목적: {getPurposeText(loan.purpose)} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             반납 예정: {loan.return_date || loan.dueDate} • 연락처: {loan.student_contact || loan.studentContact}
@@ -590,7 +590,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                         </span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        사용 목적: {loan.purpose} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
+                        사용 목적: {getPurposeText(loan.purpose)} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         기기: {loan.device_tag || loan.deviceTag || '미배정'} • 반납 예정: {formatDateTime(loan.due_date || loan.dueDate)}

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { HomeLoanRequestForm } from '@/components/forms/home-loan-request-form'
-import { formatDateTime, getStatusColor, getStatusText } from '@/lib/utils'
+import { formatDateTime, getStatusColor, getStatusText, getPurposeText } from '@/lib/utils'
 
 interface StudentDashboardProps {
   student: {
@@ -107,9 +107,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         id: `temp-${Date.now()}`,
         status: 'requested',
         requestedAt: new Date().toISOString(),
-        purpose: requestData.purpose === 'homework' ? '과제 작성' :
-                requestData.purpose === 'report' ? '보고서 준비' :
-                requestData.purpose,
+        purpose: getPurposeText(requestData.purpose),
         purposeDetail: requestData.purposeDetail,
         dueDate: `${requestData.returnDate} 09:00`,
         studentContact: requestData.studentContact,
@@ -184,7 +182,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
       alert(`가정대여 신청이 완료되었습니다!
 
 📋 신청 내용:
-• 사용 목적: ${requestData.purpose === 'homework' ? '과제 작성' : requestData.purpose === 'report' ? '보고서 준비' : requestData.purpose}
+• 사용 목적: ${getPurposeText(requestData.purpose)}
 • 반납 예정일: ${requestData.returnDate}
 • 연락처: ${requestData.studentContact}
 
@@ -441,7 +439,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                     {loan.purpose && (
                       <div>
                         <span className="text-gray-600">사용 목적:</span>
-                        <span className="ml-2">{loan.purpose}</span>
+                        <span className="ml-2">{getPurposeText(loan.purpose)}</span>
                       </div>
                     )}
                   </div>
@@ -509,7 +507,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                     </div>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {loan.purpose}
+                    {getPurposeText(loan.purpose)}
                   </div>
                 </div>
               ))}

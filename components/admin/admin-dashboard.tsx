@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { getRoleText, getStatusColor, getStatusText, formatDateTime } from '@/lib/utils'
+import { getRoleText, getStatusColor, getStatusText, formatDateTime, getPurposeText } from '@/lib/utils'
 
 interface AdminDashboardProps {
   user: {
@@ -200,7 +200,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                       </span>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {loan.purpose} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
+                      {getPurposeText(loan.purpose)} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
                     </div>
                     {(loan.due_date || loan.dueDate) && (
                       <div className="text-sm text-muted-foreground">
