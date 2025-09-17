@@ -27,7 +27,7 @@ export function formatDateTime(date: string | Date): string {
 
   if (isNaN(d.getTime())) return 'Invalid Date'
 
-  // 입력된 시간이 이미 한국 시간이라고 가정하고 직접 포맷팅
+  // UTC 시간을 한국 시간으로 변환하여 표시
   return new Intl.DateTimeFormat('ko-KR', {
     year: 'numeric',
     month: 'long',
@@ -40,22 +40,26 @@ export function formatDateTime(date: string | Date): string {
 }
 
 export function getCurrentKoreaTime(): string {
-  // 현재 한국 시간을 정확히 계산
+  // 현재 한국 시간을 정확히 계산 - 로컬 타임존 고려
   const now = new Date()
-  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000))
+  // UTC 시간에 9시간 추가하고, 현재 타임존 오프셋 제거
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)
+  const koreaTime = new Date(utcTime + (9 * 60 * 60 * 1000))
   return koreaTime.toISOString()
 }
 
 export function getCurrentKoreaDateTime(): Date {
   // 현재 한국 시간을 Date 객체로 반환
   const now = new Date()
-  return new Date(now.getTime() + (9 * 60 * 60 * 1000))
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)
+  return new Date(utcTime + (9 * 60 * 60 * 1000))
 }
 
 export function getCurrentKoreaDateTimeString(): string {
   // 현재 한국 시간을 문자열로 반환 (YYYY-MM-DDTHH:mm:ss 형식)
   const now = new Date()
-  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000))
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)
+  const koreaTime = new Date(utcTime + (9 * 60 * 60 * 1000))
   return koreaTime.toISOString().slice(0, 19) // 초까지만 포함, Z 제거
 }
 
@@ -141,6 +145,7 @@ export function getStatusColor(status: string): string {
     'approved': 'bg-blue-100 text-blue-800',
     'picked_up': 'bg-green-100 text-green-800',
     'returned': 'bg-gray-100 text-gray-800',
+    'rejected': 'bg-red-100 text-red-800',
     'overdue': 'bg-red-100 text-red-800',
     '충전함': 'bg-green-100 text-green-800',
     '대여중': 'bg-blue-100 text-blue-800',
@@ -156,6 +161,7 @@ export function getStatusText(status: string): string {
     'approved': '승인됨',
     'picked_up': '수령됨',
     'returned': '반납됨',
+    'rejected': '거절됨',
     'overdue': '연체',
     '충전함': '충전함',
     '대여중': '대여중',

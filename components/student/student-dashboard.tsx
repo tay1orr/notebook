@@ -86,8 +86,8 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
     loadStudentLoans()
 
-    // 1초마다 체크
-    const interval = setInterval(loadStudentLoans, 1000)
+    // 30초마다 체크 (성능 최적화)
+    const interval = setInterval(loadStudentLoans, 30000)
     return () => clearInterval(interval)
   }, [student.email])
 
