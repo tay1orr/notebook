@@ -49,6 +49,13 @@ export function HomeLoanRequestForm({
   const [signatureEmpty, setSignatureEmpty] = useState(true)
   const signaturePadRef = useRef<SignaturePadRef>(null)
 
+  // 전각 문자를 반각으로 변환하는 함수
+  const convertToHalfWidth = (str: string) => {
+    return str.replace(/[０-９－]/g, (match) => {
+      return String.fromCharCode(match.charCodeAt(0) - 0xFEE0)
+    })
+  }
+
   const purposes = [
     { value: 'homework', label: '과제 작성' },
     { value: 'report', label: '보고서 준비' },
@@ -272,7 +279,10 @@ export function HomeLoanRequestForm({
                   min="1"
                   max="35"
                   value={formData.currentStudentNumber}
-                  onChange={(e) => setFormData({...formData, currentStudentNumber: e.target.value})}
+                  onChange={(e) => {
+                    const convertedValue = convertToHalfWidth(e.target.value)
+                    setFormData({...formData, currentStudentNumber: convertedValue})
+                  }}
                   placeholder="예: 15"
                 />
                 {errors.currentStudentNumber && <p className="text-sm text-red-500">{errors.currentStudentNumber}</p>}
@@ -340,7 +350,10 @@ export function HomeLoanRequestForm({
             <Input
               id="studentContact"
               value={formData.studentContact}
-              onChange={(e) => setFormData({ ...formData, studentContact: e.target.value })}
+              onChange={(e) => {
+                const convertedValue = convertToHalfWidth(e.target.value)
+                setFormData({ ...formData, studentContact: convertedValue })
+              }}
               placeholder="본인 연락처를 입력하세요 (예: 010-1234-5678)"
             />
             {errors.studentContact && <p className="text-sm text-red-500">{errors.studentContact}</p>}
