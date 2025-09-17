@@ -86,41 +86,61 @@ export function ApprovalSignatureModal({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* 승인 검토 안내 */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h3 className="font-semibold text-lg text-yellow-800 mb-2">📋 승인 전 검토사항</h3>
+            <ul className="text-sm text-yellow-700 space-y-1">
+              <li>• 대여 기기 번호가 올바른지 확인</li>
+              <li>• 학번(학급, 번호)이 정확히 기입되었는지 확인</li>
+              <li>• 사용 목적이 적절하고 구체적인지 확인</li>
+              <li>• 반납일이 적절한지 확인 (다음 등교일)</li>
+              <li>• 서명이 학생 이름과 일치하는지 확인</li>
+            </ul>
+          </div>
+
           {/* 신청 정보 */}
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-            <h3 className="font-semibold text-lg">신청 정보</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-600">학생:</span>
-                <span className="ml-2 font-medium">{loanData.student_name || loanData.studentName}</span>
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h3 className="font-semibold text-lg">📝 신청 정보 상세</h3>
+            <div className="grid grid-cols-1 gap-3 text-sm">
+              <div className="flex justify-between items-center p-2 bg-white rounded border">
+                <span className="text-gray-600 font-medium">👤 학생명:</span>
+                <span className="font-bold">{loanData.student_name || loanData.studentName}</span>
               </div>
-              <div>
-                <span className="text-gray-600">학번:</span>
-                <span className="ml-2">{loanData.class_name || loanData.className} {loanData.student_no || loanData.studentNo}번</span>
+              <div className="flex justify-between items-center p-2 bg-white rounded border">
+                <span className="text-gray-600 font-medium">🏫 학번:</span>
+                <span className="font-bold">{loanData.class_name || loanData.className} {loanData.student_no || loanData.studentNo}번</span>
               </div>
-              <div>
-                <span className="text-gray-600">사용 목적:</span>
-                <span className="ml-2">{loanData.purpose}</span>
+              <div className="flex justify-between items-center p-2 bg-white rounded border">
+                <span className="text-gray-600 font-medium">📚 사용 목적:</span>
+                <span className="font-bold text-blue-600">{loanData.purpose}</span>
               </div>
-              <div>
-                <span className="text-gray-600">반납 예정:</span>
-                <span className="ml-2">{loanData.due_date || loanData.dueDate}</span>
+              {(loanData.purpose_detail || loanData.purposeDetail) && (
+                <div className="p-2 bg-white rounded border">
+                  <span className="text-gray-600 font-medium">📄 상세 목적:</span>
+                  <div className="mt-1 text-blue-600 font-medium">{loanData.purpose_detail || loanData.purposeDetail}</div>
+                </div>
+              )}
+              <div className="flex justify-between items-center p-2 bg-white rounded border">
+                <span className="text-gray-600 font-medium">📅 반납 예정:</span>
+                <span className="font-bold text-red-600">{loanData.due_date || loanData.dueDate}</span>
               </div>
-              <div>
-                <span className="text-gray-600">연락처:</span>
-                <span className="ml-2">{loanData.student_contact || loanData.studentContact}</span>
+              <div className="flex justify-between items-center p-2 bg-white rounded border">
+                <span className="text-gray-600 font-medium">📞 연락처:</span>
+                <span className="font-bold">{loanData.student_contact || loanData.studentContact}</span>
               </div>
-              <div>
-                <span className="text-gray-600">신청일:</span>
-                <span className="ml-2">{formatDateTime(loanData.created_at || loanData.requestedAt)}</span>
+              <div className="flex justify-between items-center p-2 bg-white rounded border">
+                <span className="text-gray-600 font-medium">🕐 신청일:</span>
+                <span className="font-bold">{formatDateTime(loanData.created_at || loanData.requestedAt)}</span>
               </div>
+              {loanData.signature && (
+                <div className="p-2 bg-white rounded border">
+                  <span className="text-gray-600 font-medium">✍️ 학생 서명:</span>
+                  <div className="mt-2 border rounded p-2 bg-gray-50">
+                    <img src={loanData.signature} alt="학생 서명" className="max-h-20" />
+                  </div>
+                </div>
+              )}
             </div>
-            {(loanData.purpose_detail || loanData.purposeDetail) && (
-              <div>
-                <span className="text-gray-600">상세 목적:</span>
-                <span className="ml-2">{loanData.purpose_detail || loanData.purposeDetail}</span>
-              </div>
-            )}
           </div>
 
           {/* 신청한 기기 정보 */}

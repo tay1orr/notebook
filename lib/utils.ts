@@ -27,22 +27,16 @@ export function formatDateTime(date: string | Date): string {
 
   if (isNaN(d.getTime())) return 'Invalid Date'
 
-  // 데이터베이스에서 온 UTC 시간을 한국 시간으로 정확히 변환
-  // 현재 로컬 시간대 오프셋을 고려하여 한국 시간으로 변환
-  const utcTime = d.getTime()
-  const localOffset = d.getTimezoneOffset() * 60 * 1000
-  const koreaOffset = 9 * 60 * 60 * 1000 // UTC+9
-  const koreaTime = new Date(utcTime + localOffset + koreaOffset)
-
-  // 한국 시간으로 표시
+  // 한국 시간으로 직접 표시 (Intl.DateTimeFormat의 timeZone 옵션 사용)
   return new Intl.DateTimeFormat('ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true
-  }).format(koreaTime)
+    hour12: true,
+    timeZone: 'Asia/Seoul'  // 한국 시간대로 강제 변환
+  }).format(d)
 }
 
 export function getCurrentKoreaTime(): string {
@@ -146,20 +140,24 @@ export function maskPhone(phone: string): string {
 }
 
 export function getStatusColor(status: string, notes?: string): string {
-  const statusColors: Record<string, string> = {
-    'requested': 'bg-yellow-100 text-yellow-800',
-    'approved': 'bg-blue-100 text-blue-800',
-    'picked_up': 'bg-green-100 text-green-800',
-    'returned': 'bg-gray-100 text-gray-800',
-    'rejected': notes === 'STUDENT_CANCELLED' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800',
-    'cancelled': 'bg-orange-100 text-orange-800',
-    'overdue': 'bg-red-100 text-red-800',
-    '충전함': 'bg-green-100 text-green-800',
-    '대여중': 'bg-blue-100 text-blue-800',
-    '점검': 'bg-yellow-100 text-yellow-800',
-    '분실': 'bg-red-100 text-red-800'
+  if (status === 'rejected' && notes === 'STUDENT_CANCELLED') {
+    return 'bg-orange-100 text-orange-800 border-orange-200'
   }
-  return statusColors[status] || 'bg-gray-100 text-gray-800'
+
+  const statusColors: Record<string, string> = {
+    'requested': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    'approved': 'bg-blue-100 text-blue-800 border-blue-200',
+    'picked_up': 'bg-green-100 text-green-800 border-green-200',
+    'returned': 'bg-gray-100 text-gray-800 border-gray-200',
+    'rejected': 'bg-red-100 text-red-800 border-red-200',
+    'cancelled': 'bg-orange-100 text-orange-800 border-orange-200',
+    'overdue': 'bg-red-100 text-red-800 border-red-200',
+    '충전함': 'bg-green-100 text-green-800 border-green-200',
+    '대여중': 'bg-blue-100 text-blue-800 border-blue-200',
+    '점검': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    '분실': 'bg-red-100 text-red-800 border-red-200'
+  }
+  return statusColors[status] || 'bg-gray-100 text-gray-800 border-gray-200'
 }
 
 export function getStatusText(status: string, notes?: string): string {
