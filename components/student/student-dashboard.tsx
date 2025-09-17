@@ -49,11 +49,19 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             ['returned', 'rejected', 'cancelled'].includes(loan.status)
           )
 
-          // 데이터 변경 여부 확인 (시간 덮어쓰기 방지)
-          const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status, created_at: l.created_at })))
+          // 데이터 변경 여부 확인 (시간 덮어쓰기 방지) - 개수와 ID만 비교
+          const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status })))
           if (currentDataHash !== lastDataHash) {
             console.log('Loaded student loans from API:', studentLoans)
-            setCurrentLoans(studentLoans)
+            // 기존 데이터가 있고 같은 ID의 항목이면 시간 데이터 보존
+            const updatedLoans = studentLoans.map(newLoan => {
+              const existingLoan = currentLoans.find(existing => existing.id === newLoan.id)
+              if (existingLoan && existingLoan.created_at) {
+                return { ...newLoan, created_at: existingLoan.created_at, requestedAt: existingLoan.requestedAt }
+              }
+              return newLoan
+            })
+            setCurrentLoans(updatedLoans)
             setLoanHistoryData(studentHistory)
             lastDataHash = currentDataHash
           }
@@ -83,9 +91,17 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             )
 
             // 데이터 변경 여부 확인
-            const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status, created_at: l.created_at })))
+            const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status })))
             if (currentDataHash !== lastDataHash) {
-              setCurrentLoans(studentLoans)
+              // 기존 데이터가 있고 같은 ID의 항목이면 시간 데이터 보존
+              const updatedLoans = studentLoans.map(newLoan => {
+                const existingLoan = currentLoans.find(existing => existing.id === newLoan.id)
+                if (existingLoan && existingLoan.created_at) {
+                  return { ...newLoan, created_at: existingLoan.created_at, requestedAt: existingLoan.requestedAt }
+                }
+                return newLoan
+              })
+              setCurrentLoans(updatedLoans)
               setLoanHistoryData(studentHistory)
               lastDataHash = currentDataHash
               console.log('Using localStorage fallback')
@@ -224,13 +240,13 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   const handleCancelLoan = async (loanId: string) => {
     if (confirm('정말로 대여 신청을 취소하시겠습니까?')) {
       try {
-        // API를 통해 대여 신청 상태를 'cancelled'로 업데이트
+        // API를 통해 대여 신청 상태를 'rejected'로 업데이트 (cancelled는 DB에서 허용되지 않음)
         const response = await fetch('/api/loans', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: loanId,
-            status: 'cancelled'
+            status: 'rejected'
           })
         })
 
