@@ -18,26 +18,39 @@ export function formatDate(date: string | Date): string {
 export function formatDateTime(date: string | Date): string {
   if (!date) return 'Invalid Date'
 
-  const d = new Date(date)
+  let d: Date
+  if (typeof date === 'string') {
+    d = new Date(date)
+  } else {
+    d = date
+  }
+
   if (isNaN(d.getTime())) return 'Invalid Date'
 
-  return d.toLocaleString('ko-KR', {
+  // 한국 시간으로 변환 (UTC+9)
+  const koreaTime = new Date(d.getTime() + (9 * 60 * 60 * 1000) - (d.getTimezoneOffset() * 60 * 1000))
+
+  return koreaTime.toLocaleString('ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true,
-    timeZone: 'Asia/Seoul'
+    hour12: true
   })
 }
 
 export function getCurrentKoreaTime(): string {
   // 현재 한국 시간을 직접 계산
   const now = new Date()
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000)
-  const koreaTime = new Date(utc + (9 * 3600000)) // UTC + 9시간
+  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000) - (now.getTimezoneOffset() * 60 * 1000))
   return koreaTime.toISOString()
+}
+
+export function getCurrentKoreaDateTime(): Date {
+  // 현재 한국 시간을 Date 객체로 반환
+  const now = new Date()
+  return new Date(now.getTime() + (9 * 60 * 60 * 1000) - (now.getTimezoneOffset() * 60 * 1000))
 }
 
 export function parseStudentId(email: string): {
@@ -69,12 +82,24 @@ export function getDeviceNumberForStudent(email: string): string | null {
 }
 
 export function formatTime(date: string | Date): string {
-  const d = new Date(date)
-  return d.toLocaleTimeString('ko-KR', {
+  if (!date) return 'Invalid Time'
+
+  let d: Date
+  if (typeof date === 'string') {
+    d = new Date(date)
+  } else {
+    d = date
+  }
+
+  if (isNaN(d.getTime())) return 'Invalid Time'
+
+  // 한국 시간으로 변환 (UTC+9)
+  const koreaTime = new Date(d.getTime() + (9 * 60 * 60 * 1000) - (d.getTimezoneOffset() * 60 * 1000))
+
+  return koreaTime.toLocaleTimeString('ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true,
-    timeZone: 'Asia/Seoul'
+    hour12: true
   })
 }
 

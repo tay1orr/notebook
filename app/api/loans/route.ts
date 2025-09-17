@@ -2,6 +2,7 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { Database } from '@/types/supabase'
+import { getCurrentKoreaTime } from '@/lib/utils'
 
 // GET: 모든 대여 신청 조회
 export async function GET() {
@@ -113,13 +114,22 @@ export async function PATCH(request: NextRequest) {
 
     const updateData: any = {
       status,
-      updated_at: new Date().toISOString()
+      updated_at: getCurrentKoreaTime()
     }
 
     if (device_tag) updateData.device_tag = device_tag
     if (approved_by) updateData.approved_by = approved_by
-    if (approved_at) updateData.approved_at = approved_at
+    if (approved_at) updateData.approved_at = approved_at || getCurrentKoreaTime()
     if (notes) updateData.notes = notes
+
+    // 상태별 시간 기록
+    if (status === 'approved') {
+      updateData.approved_at = getCurrentKoreaTime()
+    } else if (status === 'picked_up') {
+      updateData.picked_up_at = getCurrentKoreaTime()
+    } else if (status === 'returned') {
+      updateData.returned_at = getCurrentKoreaTime()
+    }
 
     const { data: loan, error } = await supabase
       .from('loan_applications')

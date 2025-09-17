@@ -212,18 +212,40 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
   const handleCancelLoan = async (loanId: string) => {
     if (confirm('정말로 대여 신청을 취소하시겠습니까?')) {
-      if (typeof window !== 'undefined') {
-        const existingLoans = localStorage.getItem('loanApplications')
-        if (existingLoans) {
-          const loans = JSON.parse(existingLoans)
-          const updatedLoans = loans.filter((l: any) => l.id !== loanId)
-          localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
+      try {
+        // API를 통해 대여 신청 상태를 'cancelled'로 업데이트
+        const response = await fetch('/api/loans', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: loanId,
+            status: 'cancelled'
+          })
+        })
 
-          // 로컬 상태 업데이트
+        if (response.ok) {
+          // API 성공 시 로컬 상태 업데이트
           setCurrentLoans(prev => prev.filter(l => l.id !== loanId))
 
+          // localStorage에서도 제거
+          if (typeof window !== 'undefined') {
+            const existingLoans = localStorage.getItem('loanApplications')
+            if (existingLoans) {
+              const loans = JSON.parse(existingLoans)
+              const updatedLoans = loans.filter((l: any) => l.id !== loanId)
+              localStorage.setItem('loanApplications', JSON.stringify(updatedLoans))
+            }
+          }
+
           alert('대여 신청이 취소되었습니다.')
+        } else {
+          const errorData = await response.json()
+          console.error('Cancel loan API error:', errorData)
+          alert('신청 취소 중 오류가 발생했습니다. 다시 시도해주세요.')
         }
+      } catch (error) {
+        console.error('Cancel loan error:', error)
+        alert('신청 취소 중 오류가 발생했습니다. 다시 시도해주세요.')
       }
     }
   }

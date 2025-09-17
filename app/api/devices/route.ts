@@ -2,6 +2,7 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { Database } from '@/types/supabase'
+import { getCurrentKoreaTime } from '@/lib/utils'
 
 // GET: 모든 기기 목록 조회
 export async function GET() {
@@ -56,13 +57,23 @@ export async function GET() {
 // 기본 기기 초기화 함수
 async function initializeDevices(supabase: any) {
   try {
+    console.log('Initializing devices and classes...')
+
     // 먼저 클래스 데이터가 있는지 확인
-    const { data: classes } = await supabase
+    const { data: classes, error: classError } = await supabase
       .from('classes')
       .select('*')
       .order('grade, name')
 
+    if (classError) {
+      console.error('Error fetching classes:', classError)
+      // classes 테이블이 아예 없을 수도 있으므로 메모리 데이터로 폴백
+      return generateInMemoryDevices()
+    }
+
+    let finalClasses = classes
     if (!classes || classes.length === 0) {
+      console.log('No classes found, creating default classes...')
       // 클래스 먼저 생성
       const classData = []
       for (let grade = 1; grade <= 3; grade++) {
@@ -74,23 +85,44 @@ async function initializeDevices(supabase: any) {
         }
       }
 
-      await supabase.from('classes').insert(classData)
+      const { data: insertedClasses, error: insertError } = await supabase
+        .from('classes')
+        .insert(classData)
+        .select()
+
+      if (insertError) {
+        console.error('Error inserting classes:', insertError)
+        return generateInMemoryDevices()
+      }
+
+      finalClasses = insertedClasses
     }
 
-    // 다시 클래스 데이터 조회
-    const { data: refreshedClasses } = await supabase
-      .from('classes')
-      .select('*')
-      .order('grade, name')
+    // 기기가 이미 있는지 확인
+    const { data: existingDevices } = await supabase
+      .from('devices')
+      .select('asset_tag')
+      .limit(1)
 
-    // 기기 데이터 생성
-    const devices = []
-    for (const classInfo of refreshedClasses) {
+    if (existingDevices && existingDevices.length > 0) {
+      console.log('Devices already exist, fetching existing data...')
+      // 이미 기기가 있으면 기존 데이터 반환
+      return await fetchExistingDevices(supabase)
+    }
+
+    console.log('Creating devices for', finalClasses.length, 'classes...')
+
+    // 기기 데이터를 배치로 생성 (한 번에 너무 많이 하지 않음)
+    const batchSize = 100
+    let allDevices = []
+
+    for (const classInfo of finalClasses) {
+      const classDevices = []
       for (let deviceNum = 1; deviceNum <= 35; deviceNum++) {
         const serialNumber = `${classInfo.grade}${classInfo.name.replace('반', '').padStart(2, '0')}${deviceNum.toString().padStart(2, '0')}`
         const assetTag = `ICH-${serialNumber}`
 
-        devices.push({
+        classDevices.push({
           asset_tag: assetTag,
           model: 'Samsung Galaxy Book3',
           serial_number: serialNumber,
@@ -98,16 +130,99 @@ async function initializeDevices(supabase: any) {
           status: '충전함'
         })
       }
+
+      // 배치로 삽입
+      for (let i = 0; i < classDevices.length; i += batchSize) {
+        const batch = classDevices.slice(i, i + batchSize)
+        const { error: deviceError } = await supabase
+          .from('devices')
+          .insert(batch)
+
+        if (deviceError) {
+          console.error('Error inserting device batch:', deviceError)
+          // 배치 삽입 실패 시 메모리 데이터로 폴백
+          return generateInMemoryDevices()
+        }
+      }
+
+      allDevices.push(...classDevices)
     }
 
-    await supabase.from('devices').insert(devices)
+    console.log('Successfully created', allDevices.length, 'devices')
 
     // 생성된 기기 목록 반환
-    return GET()
+    return await fetchExistingDevices(supabase)
   } catch (error) {
     console.error('Failed to initialize devices:', error)
-    return NextResponse.json({ error: 'Failed to initialize devices' }, { status: 500 })
+    return generateInMemoryDevices()
   }
+}
+
+// 기존 기기 데이터 조회
+async function fetchExistingDevices(supabase: any) {
+  const { data: devices, error } = await supabase
+    .from('devices')
+    .select(`
+      *,
+      assigned_class:classes!assigned_class_id(
+        grade,
+        name
+      )
+    `)
+    .order('asset_tag')
+
+  if (error) {
+    console.error('Error fetching existing devices:', error)
+    return generateInMemoryDevices()
+  }
+
+  const formattedDevices = devices.map(device => ({
+    id: device.asset_tag,
+    assetNumber: device.asset_tag,
+    model: device.model,
+    serialNumber: device.serial_number,
+    status: mapDeviceStatus(device.status),
+    assignedClass: device.assigned_class ? `${device.assigned_class.grade}-${device.assigned_class.name}` : '',
+    deviceNumber: device.asset_tag.replace('ICH-', ''),
+    currentUser: null,
+    notes: device.notes || '',
+    createdAt: device.created_at,
+    updatedAt: device.updated_at
+  }))
+
+  return NextResponse.json({ devices: formattedDevices })
+}
+
+// 메모리 기반 기기 생성 (폴백용)
+function generateInMemoryDevices() {
+  console.log('Generating in-memory devices as fallback...')
+  const devices: any[] = []
+
+  for (let grade = 1; grade <= 3; grade++) {
+    for (let classNum = 1; classNum <= 13; classNum++) {
+      for (let deviceNum = 1; deviceNum <= 35; deviceNum++) {
+        const deviceId = `${grade}-${classNum.toString().padStart(2, '0')}-${deviceNum.toString().padStart(2, '0')}`
+        const serialNumber = `${grade}${classNum.toString().padStart(2, '0')}${deviceNum.toString().padStart(2, '0')}`
+        const assetNumber = `ICH-${serialNumber}`
+
+        devices.push({
+          id: deviceId,
+          assetNumber: assetNumber,
+          model: 'Samsung Galaxy Book3',
+          serialNumber: serialNumber,
+          status: 'available',
+          assignedClass: `${grade}-${classNum}반`,
+          deviceNumber: `${grade}-${classNum.toString().padStart(2, '0')}-${deviceNum.toString().padStart(2, '0')}`,
+          currentUser: null,
+          notes: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+      }
+    }
+  }
+
+  return NextResponse.json({ devices })
 }
 
 // DB 상태를 프론트엔드 상태로 매핑
@@ -154,7 +269,7 @@ export async function PATCH(request: NextRequest) {
       .update({
         status: dbStatus,
         notes: notes || null,
-        updated_at: new Date().toISOString()
+        updated_at: getCurrentKoreaTime()
       })
       .eq('asset_tag', assetTag)
       .select()
