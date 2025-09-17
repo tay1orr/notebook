@@ -275,13 +275,17 @@ export function HomeLoanRequestForm({
                 <Label htmlFor="currentStudentNumber">번호 *</Label>
                 <Input
                   id="currentStudentNumber"
-                  type="number"
-                  min="1"
-                  max="35"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={formData.currentStudentNumber}
                   onChange={(e) => {
-                    const convertedValue = convertToHalfWidth(e.target.value)
-                    setFormData({...formData, currentStudentNumber: convertedValue})
+                    const value = e.target.value
+                    // 숫자만 허용하고 전각을 반각으로 변환
+                    const convertedValue = convertToHalfWidth(value).replace(/[^0-9]/g, '')
+                    if (convertedValue === '' || (parseInt(convertedValue) >= 1 && parseInt(convertedValue) <= 35)) {
+                      setFormData({...formData, currentStudentNumber: convertedValue})
+                    }
                   }}
                   placeholder="예: 15"
                 />

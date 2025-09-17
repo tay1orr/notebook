@@ -56,8 +56,13 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             // 기존 데이터가 있고 같은 ID의 항목이면 시간 데이터 보존
             const updatedLoans = studentLoans.map(newLoan => {
               const existingLoan = currentLoans.find(existing => existing.id === newLoan.id)
-              if (existingLoan && existingLoan.created_at) {
-                return { ...newLoan, created_at: existingLoan.created_at, requestedAt: existingLoan.requestedAt }
+              if (existingLoan) {
+                // 기존 시간 데이터가 있으면 보존, 없으면 새 데이터 사용
+                return {
+                  ...newLoan,
+                  created_at: existingLoan.created_at || newLoan.created_at,
+                  requestedAt: existingLoan.requestedAt || newLoan.requestedAt || newLoan.created_at
+                }
               }
               return newLoan
             })
@@ -96,8 +101,13 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
               // 기존 데이터가 있고 같은 ID의 항목이면 시간 데이터 보존
               const updatedLoans = studentLoans.map(newLoan => {
                 const existingLoan = currentLoans.find(existing => existing.id === newLoan.id)
-                if (existingLoan && existingLoan.created_at) {
-                  return { ...newLoan, created_at: existingLoan.created_at, requestedAt: existingLoan.requestedAt }
+                if (existingLoan) {
+                  // 기존 시간 데이터가 있으면 보존, 없으면 새 데이터 사용
+                  return {
+                    ...newLoan,
+                    created_at: existingLoan.created_at || newLoan.created_at,
+                    requestedAt: existingLoan.requestedAt || newLoan.requestedAt || newLoan.created_at
+                  }
                 }
                 return newLoan
               })
@@ -132,10 +142,14 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
       console.log('Submitting loan request:', requestData)
 
       // 새로운 대여 신청 객체 생성 (localStorage용)
+      // 정확한 한국 시간으로 신청 시간 기록
+      const currentKoreaTime = new Date().toISOString()
+
       const newLoanRequest = {
         id: `temp-${Date.now()}`,
         status: 'requested',
-        requestedAt: new Date().toISOString(),
+        requestedAt: currentKoreaTime,
+        created_at: currentKoreaTime,
         purpose: getPurposeText(requestData.purpose),
         purposeDetail: requestData.purposeDetail,
         dueDate: `${requestData.returnDate} 09:00`,
