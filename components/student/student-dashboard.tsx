@@ -278,9 +278,6 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
   const hasActiveLoan = currentLoans.some(loan => ['requested', 'approved', 'picked_up'].includes(loan.status))
 
-  // 대여 상태별로 분리
-  const pendingLoans = currentLoans.filter(loan => ['requested', 'approved'].includes(loan.status))
-  const usingLoans = currentLoans.filter(loan => loan.status === 'picked_up')
 
   const handleCancelLoan = async (loanId: string) => {
     if (confirm('정말로 대여 신청을 취소하시겠습니까?')) {
@@ -346,20 +343,45 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         <CardContent>
           {hasActiveLoan ? (
             <div className="text-center py-8">
-              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">진행 중인 대여가 있습니다</h3>
-              <p className="text-gray-600 mb-4">
-                현재 대여 신청 중이거나 사용 중인 노트북이 있어 새로운 신청을 할 수 없습니다.
-              </p>
-              <Badge className="bg-blue-100 text-blue-800">
-                {currentLoans.find(loan => ['requested', 'approved', 'picked_up'].includes(loan.status))?.status === 'requested' && '승인 대기 중'}
-                {currentLoans.find(loan => ['requested', 'approved', 'picked_up'].includes(loan.status))?.status === 'approved' && '수령 대기 중'}
-                {currentLoans.find(loan => ['requested', 'approved', 'picked_up'].includes(loan.status))?.status === 'picked_up' && '사용 중'}
-              </Badge>
+              {(() => {
+                const activeLoan = currentLoans.find(loan => ['requested', 'approved', 'picked_up'].includes(loan.status))
+                const status = activeLoan?.status
+
+                if (status === 'picked_up') {
+                  return (
+                    <>
+                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">현재 노트북을 사용중입니다</h3>
+                      <p className="text-gray-600 mb-4">
+                        이미 노트북을 사용중이므로 새로운 신청을 할 수 없습니다.
+                      </p>
+                      <Badge className="bg-green-100 text-green-800">사용 중</Badge>
+                    </>
+                  )
+                } else {
+                  return (
+                    <>
+                      <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">현재 대여 신청중입니다</h3>
+                      <p className="text-gray-600 mb-4">
+                        이미 대여 신청이 진행중이므로 새로운 신청을 할 수 없습니다.
+                      </p>
+                      <Badge className="bg-yellow-100 text-yellow-800">
+                        {status === 'requested' && '승인 대기 중'}
+                        {status === 'approved' && '수령 대기 중'}
+                      </Badge>
+                    </>
+                  )
+                }
+              })()}
             </div>
           ) : (
             <div className="text-center py-8">
@@ -383,21 +405,18 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         </CardContent>
       </Card>
 
-      {/* 현재 대여 신청중 */}
-      {pendingLoans.length > 0 && (
+      {/* 현재 대여 현황 */}
+      {currentLoans.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <span className="text-yellow-600">🟡</span>
-              <span>현재 대여 신청중입니다</span>
-            </CardTitle>
+            <CardTitle>현재 대여 현황</CardTitle>
             <CardDescription>
-              승인 대기중이거나 수령 대기중인 신청 내역입니다.
+              현재 신청 중이거나 사용 중인 노트북 정보입니다.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {pendingLoans.map((loan) => (
+              {currentLoans.map((loan) => (
                 <div key={loan.id} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex flex-col space-y-1">
@@ -530,110 +549,36 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                     </div>
                   )}
 
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 현재 노트북 사용중 */}
-      {usingLoans.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <span className="text-green-600">🟢</span>
-              <span>현재 노트북을 사용중입니다</span>
-            </CardTitle>
-            <CardDescription>
-              수령 완료된 노트북 정보입니다. 반납 기한을 지켜주세요.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {usingLoans.map((loan) => (
-                <div key={loan.id} className="border rounded-lg p-4 bg-green-50 border-green-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex flex-col space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <h4 className="font-medium text-green-800">
-                          {loan.deviceTag || loan.device_tag ?
-                            `사용중: ${loan.deviceTag || loan.device_tag}번 노트북` :
-                           loan.className && loan.studentNo ?
-                            `사용중: ${loan.className}-${loan.studentNo.padStart(2, '0')}번 노트북` :
-                           loan.class_name && loan.student_no ?
-                            `사용중: ${loan.class_name}-${loan.student_no.padStart(2, '0')}번 노트북` :
-                           '사용중인 기기'}
-                        </h4>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.status, loan.notes)}`}>
-                          {getStatusText(loan.status, loan.notes)}
-                        </span>
-                      </div>
-
-                      {/* 기기 정보 */}
-                      <div className="text-sm font-medium text-green-700">
-                        {loan.deviceTag || loan.device_tag ? (
-                          <>
-                            <span className="text-green-800">🎒 사용중인 기기:</span>{' '}
-                            {(() => {
-                              const tag = loan.deviceTag || loan.device_tag;
-                              const parts = tag.split('-');
-                              return `${parts[0]}학년 ${parts[1]}반 ${parts[2]}번 노트북`;
-                            })()}
-                          </>
-                        ) : null}
-                      </div>
-
-                      {/* 시리얼번호 표시 */}
-                      {loan.deviceTag || loan.device_tag ? (
-                        <div className="text-xs text-green-600">
-                          시리얼번호: {(() => {
-                            const tag = loan.deviceTag || loan.device_tag;
-                            const parts = tag.split('-');
-                            return `${parts[0]}${parts[1].padStart(2, '0')}${parts[2].padStart(2, '0')}`;
-                          })()}
+                  {loan.status === 'picked_up' && loan.dueDate && (
+                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-green-800">
+                            <strong>사용 중</strong> • 반납 예정일을 지켜주세요.
+                          </p>
                         </div>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  {/* 신청일과 반납 예정일 */}
-                  <div className="space-y-2 text-sm text-green-700">
-                    <div>
-                      <strong>수령일:</strong> {formatDateTime(loan.picked_up_at || loan.pickedUpAt || loan.created_at)}
-                    </div>
-                    <div>
-                      <strong>반납 예정:</strong> {formatDateTime(loan.due_date || loan.dueDate)}
-                    </div>
-                  </div>
-
-                  {/* 반납 신청 버튼 */}
-                  <div className="mt-4 p-3 bg-green-100 border border-green-300 rounded-md">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-green-800">
-                          <strong>사용 중</strong> • 반납 기한을 반드시 지켜주세요.
-                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // 관리자/담임 페이지의 반납처리 탭으로 이동
+                            window.location.href = '/loans?tab=active'
+                          }}
+                          className="bg-white border-green-300 text-green-700 hover:bg-green-50"
+                        >
+                          반납 신청
+                        </Button>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          // 관리자/담임 페이지의 반납처리 탭으로 이동
-                          window.location.href = '/loans?tab=active'
-                        }}
-                        className="bg-white border-green-400 text-green-800 hover:bg-green-50"
-                      >
-                        반납 신청
-                      </Button>
                     </div>
-                  </div>
+                  )}
+
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
       )}
+
 
       {/* 대여 이력 */}
       <Card>
