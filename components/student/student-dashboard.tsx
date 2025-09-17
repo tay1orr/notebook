@@ -305,21 +305,62 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                     <div className="flex flex-col space-y-1">
                       <div className="flex items-center space-x-2">
                         <h4 className="font-medium">
-                          {loan.deviceTag ? `신청기기: ${loan.deviceTag}번 노트북` :
-                           loan.className && loan.studentNo ? `신청기기: ${loan.className}-${loan.studentNo.padStart(2, '0')}번 노트북` :
+                          {loan.deviceTag || loan.device_tag ?
+                            `신청기기: ${loan.deviceTag || loan.device_tag}번 노트북` :
+                           loan.className && loan.studentNo ?
+                            `신청기기: ${loan.className}-${loan.studentNo.padStart(2, '0')}번 노트북` :
+                           loan.class_name && loan.student_no ?
+                            `신청기기: ${loan.class_name}-${loan.student_no.padStart(2, '0')}번 노트북` :
                            '기기 배정 대기 중'}
                         </h4>
                         <Badge className={getStatusColor(loan.status)}>
                           {getStatusText(loan.status)}
                         </Badge>
                       </div>
-                      {/* 추가 기기 정보 표시 */}
-                      {(loan.deviceTag || (loan.className && loan.studentNo)) && (
-                        <div className="text-sm text-blue-600">
-                          {loan.deviceTag ?
-                            `${loan.deviceTag.split('-')[0]}학년 ${loan.deviceTag.split('-')[1]}반 ${loan.deviceTag.split('-')[2]}번 노트북 (시리얼: ${loan.deviceTag.split('-')[0]}${loan.deviceTag.split('-')[1].padStart(2, '0')}${loan.deviceTag.split('-')[2].padStart(2, '0')})` :
-                            `${loan.className.split('-')[0]}학년 ${loan.className.split('-')[1]}반 ${loan.studentNo.padStart(2, '0')}번 노트북 (시리얼: ${loan.className.split('-')[0]}${loan.className.split('-')[1].padStart(2, '0')}${loan.studentNo.padStart(2, '0')})`
-                          }
+
+                      {/* 학년 반 번호 정보를 항상 표시 */}
+                      <div className="text-sm font-medium text-blue-800">
+                        {loan.deviceTag || loan.device_tag ? (
+                          <>
+                            <span className="text-green-700">📱 할당된 기기:</span>{' '}
+                            {(() => {
+                              const tag = loan.deviceTag || loan.device_tag;
+                              const parts = tag.split('-');
+                              return `${parts[0]}학년 ${parts[1]}반 ${parts[2]}번 노트북`;
+                            })()}
+                          </>
+                        ) : loan.className || loan.class_name ? (
+                          <>
+                            <span className="text-blue-700">📝 신청 정보:</span>{' '}
+                            {(() => {
+                              const className = loan.className || loan.class_name;
+                              const studentNo = loan.studentNo || loan.student_no;
+                              const parts = className.split('-');
+                              return `${parts[0]}학년 ${parts[1]}반 ${studentNo.padStart(2, '0')}번 노트북 신청`;
+                            })()}
+                          </>
+                        ) : (
+                          <span className="text-gray-600">📋 기기 정보 확인 중...</span>
+                        )}
+                      </div>
+
+                      {/* 시리얼 번호 정보 */}
+                      {(loan.deviceTag || loan.device_tag || ((loan.className || loan.class_name) && (loan.studentNo || loan.student_no))) && (
+                        <div className="text-xs text-blue-600">
+                          {loan.deviceTag || loan.device_tag ? (
+                            <>시리얼번호: {(() => {
+                              const tag = loan.deviceTag || loan.device_tag;
+                              const parts = tag.split('-');
+                              return `${parts[0]}${parts[1].padStart(2, '0')}${parts[2].padStart(2, '0')}`;
+                            })()}</>
+                          ) : (
+                            <>예상 시리얼번호: {(() => {
+                              const className = loan.className || loan.class_name;
+                              const studentNo = loan.studentNo || loan.student_no;
+                              const parts = className.split('-');
+                              return `${parts[0]}${parts[1].padStart(2, '0')}${studentNo.padStart(2, '0')}`;
+                            })()}</>
+                          )}
                         </div>
                       )}
                     </div>
