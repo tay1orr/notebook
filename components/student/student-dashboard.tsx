@@ -304,7 +304,9 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
                       <h4 className="font-medium">
-                        {loan.deviceTag ? `신청기기: ${loan.deviceTag}번 노트북` : '기기 배정 대기 중'}
+                        {loan.deviceTag ? `신청기기: ${loan.deviceTag}번 노트북` :
+                         loan.className && loan.studentNo ? `신청기기: ${loan.className}-${loan.studentNo.padStart(2, '0')}번 노트북` :
+                         '기기 배정 대기 중'}
                       </h4>
                       <Badge className={getStatusColor(loan.status)}>
                         {getStatusText(loan.status)}
@@ -323,13 +325,24 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                   </div>
 
                   {/* 신청한 기기 정보 표시 */}
-                  {loan.deviceTag && (
+                  {(loan.deviceTag || (loan.className && loan.studentNo)) && (
                     <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
                       <div className="text-sm font-medium text-blue-900">
-                        신청한 노트북: <span className="font-bold">{loan.deviceTag}번</span>
+                        신청한 노트북: <span className="font-bold">
+                          {loan.deviceTag || `${loan.className}-${loan.studentNo.padStart(2, '0')}`}번
+                        </span>
                       </div>
                       <div className="text-xs text-blue-700 mt-1">
-                        {loan.deviceTag.split('-')[0]}학년 {loan.deviceTag.split('-')[1]}반 {loan.deviceTag.split('-')[2]}번 노트북
+                        {loan.deviceTag ?
+                          `${loan.deviceTag.split('-')[0]}학년 ${loan.deviceTag.split('-')[1]}반 ${loan.deviceTag.split('-')[2]}번 노트북` :
+                          `${loan.className.split('-')[0]}학년 ${loan.className.split('-')[1]}반 ${loan.studentNo.padStart(2, '0')}번 노트북`
+                        }
+                      </div>
+                      <div className="text-xs text-blue-600 mt-1">
+                        시리얼번호: {loan.deviceTag ?
+                          `${loan.deviceTag.split('-')[0]}${loan.deviceTag.split('-')[1].padStart(2, '0')}${loan.deviceTag.split('-')[2].padStart(2, '0')}` :
+                          `${loan.className.split('-')[0]}${loan.className.split('-')[1].padStart(2, '0')}${loan.studentNo.padStart(2, '0')}`
+                        }
                       </div>
                     </div>
                   )}

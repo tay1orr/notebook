@@ -32,8 +32,10 @@ export function formatDateTime(date: string | Date): string {
 }
 
 export function getCurrentKoreaTime(): string {
+  // 현재 한국 시간을 직접 계산
   const now = new Date()
-  const koreaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000)
+  const koreaTime = new Date(utc + (9 * 3600000)) // UTC + 9시간
   return koreaTime.toISOString()
 }
 

@@ -13,11 +13,11 @@ export async function GET() {
         // 각 반의 1번부터 35번까지
         for (let deviceNum = 1; deviceNum <= 35; deviceNum++) {
           const deviceId = `${grade}-${classNum.toString().padStart(2, '0')}-${deviceNum.toString().padStart(2, '0')}`
-          const assetNumber = `ICH-${grade}${classNum.toString().padStart(2, '0')}${deviceNum.toString().padStart(2, '0')}`
 
-          // 시리얼 번호를 10101부터 31335까지 순차적으로 배정
-          const totalDeviceIndex = (grade - 1) * 13 * 35 + (classNum - 1) * 35 + (deviceNum - 1)
-          const serialNumber = (10101 + totalDeviceIndex).toString()
+          // 시리얼 번호: 학년(1자리) + 반(2자리) + 번호(2자리)
+          // 예: 10101 = 1학년 1반 1번, 30532 = 3학년 5반 32번
+          const serialNumber = `${grade}${classNum.toString().padStart(2, '0')}${deviceNum.toString().padStart(2, '0')}`
+          const assetNumber = `ICH-${serialNumber}`
 
           devices.push({
             id: deviceId,
