@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,7 @@ interface LoansManagementProps {
 
 export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans: initialActiveLoans, overdueLoans: initialOverdueLoans, userRole, userName }: LoansManagementProps) {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [selectedLoan, setSelectedLoan] = useState<any>(null)
   const [modalType, setModalType] = useState<'approval' | 'return' | null>(null)
   const [pendingLoans, setPendingLoans] = useState<any[]>(initialPendingLoans)
@@ -32,6 +33,14 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [activeTab, setActiveTab] = useState<string>('pending')
 
+  // 탭 변경 핸들러 - URL 업데이트
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', tab)
+    router.push(`/loans?${params.toString()}`)
+  }
+
   // URL 파라미터에서 tab 확인하고 초기 탭 설정
   useEffect(() => {
     const tab = searchParams.get('tab')
@@ -39,6 +48,8 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
       setActiveTab('active')
     } else if (tab === 'overdue') {
       setActiveTab('overdue')
+    } else if (tab === 'history') {
+      setActiveTab('history')
     } else {
       setActiveTab('pending')
     }
@@ -270,7 +281,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
     setModalType(null)
 
     // 반납 완료 후 전체 기록 탭으로 이동
-    setActiveTab('history')
+    handleTabChange('history')
   }
 
   const handleApprove = (loan: any) => {
@@ -346,7 +357,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList>
           <TabsTrigger value="pending">
             승인 대기 ({displayPendingLoans.length})
