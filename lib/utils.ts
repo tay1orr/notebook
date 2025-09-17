@@ -27,47 +27,41 @@ export function formatDateTime(date: string | Date): string {
 
   if (isNaN(d.getTime())) return 'Invalid Date'
 
-  // 한국 시간으로 변환 (UTC+9)
-  const koreaTime = new Date(d.getTime() + (9 * 60 * 60 * 1000) - (d.getTimezoneOffset() * 60 * 1000))
-
-  return koreaTime.toLocaleString('ko-KR', {
+  // 입력된 시간이 이미 한국 시간이라고 가정하고 직접 포맷팅
+  return new Intl.DateTimeFormat('ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true
-  })
+    hour12: true,
+    timeZone: 'Asia/Seoul'
+  }).format(d)
 }
 
 export function getCurrentKoreaTime(): string {
-  // 현재 한국 시간을 직접 계산
+  // 현재 한국 시간을 정확히 계산 (Asia/Seoul 타임존 사용)
   const now = new Date()
-  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000) - (now.getTimezoneOffset() * 60 * 1000))
+  const koreaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
   return koreaTime.toISOString()
 }
 
 export function getCurrentKoreaDateTime(): Date {
-  // 현재 한국 시간을 Date 객체로 반환 (UTC+9)
-  const now = new Date()
-  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000))
-  return koreaTime
+  // 현재 한국 시간을 Date 객체로 반환
+  return new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
 }
 
 export function getCurrentKoreaDateTimeString(): string {
   // 현재 한국 시간을 문자열로 반환 (YYYY-MM-DDTHH:mm:ss 형식)
   const koreaTime = getCurrentKoreaDateTime()
-  return koreaTime.toISOString().slice(0, -1) // Z 제거
+  return koreaTime.toISOString().slice(0, 19) // 초까지만 포함, Z 제거
 }
 
 export function getReturnDateTime(returnDate: string): string {
-  // 반납일을 받아서 오전 9시로 고정된 반납 시간 반환
+  // 반납일을 받아서 오전 9시로 고정된 반납 시간 반환 (한국 시간 기준)
   const date = new Date(returnDate)
   date.setHours(9, 0, 0, 0) // 오전 9시로 고정
-
-  // 한국 시간으로 조정
-  const koreaTime = new Date(date.getTime() + (9 * 60 * 60 * 1000) - (date.getTimezoneOffset() * 60 * 1000))
-  return koreaTime.toISOString()
+  return date.toISOString()
 }
 
 export function isWeekend(date: Date): boolean {
@@ -125,14 +119,13 @@ export function formatTime(date: string | Date): string {
 
   if (isNaN(d.getTime())) return 'Invalid Time'
 
-  // 한국 시간으로 변환 (UTC+9)
-  const koreaTime = new Date(d.getTime() + (9 * 60 * 60 * 1000) - (d.getTimezoneOffset() * 60 * 1000))
-
-  return koreaTime.toLocaleTimeString('ko-KR', {
+  // 한국 시간으로 포맷팅
+  return new Intl.DateTimeFormat('ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true
-  })
+    hour12: true,
+    timeZone: 'Asia/Seoul'
+  }).format(d)
 }
 
 export function maskPhone(phone: string): string {
