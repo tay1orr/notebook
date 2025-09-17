@@ -133,6 +133,10 @@ export async function PATCH(request: NextRequest) {
       updateData.approved_at = getCurrentKoreaTime()
     } else if (status === 'picked_up') {
       updateData.picked_up_at = getCurrentKoreaTime()
+      // picked_up 상태일 때 승인 시간이 없으면 지금 시간으로 설정
+      if (!updateData.approved_at) {
+        updateData.approved_at = getCurrentKoreaTime()
+      }
     } else if (status === 'returned') {
       updateData.returned_at = getCurrentKoreaTime()
     } else if (status === 'rejected') {

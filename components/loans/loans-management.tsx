@@ -160,7 +160,6 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
         body: JSON.stringify({
           id: selectedLoan.id,
           status: 'picked_up',
-          approved_at: getCurrentKoreaTime(),
           device_tag: data.deviceTag,
           approver_signature: data.signature,
           approved_by: data.approverName
@@ -185,7 +184,6 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
               ? {
                   ...l,
                   status: 'picked_up',
-                  approvedAt: getCurrentKoreaTime(),
                   deviceTag: data.deviceTag,
                   approverSignature: data.signature,
                   approverName: data.approverName
@@ -202,8 +200,6 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
     setActiveLoans(prev => [...prev, {
       ...selectedLoan,
       status: 'picked_up',
-      approvedAt: getCurrentKoreaTime(),
-      approved_at: getCurrentKoreaTime(),
       deviceTag: data.deviceTag,
       device_tag: data.deviceTag,
       approverSignature: data.signature,

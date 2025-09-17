@@ -132,12 +132,27 @@ export function ApprovalSignatureModal({
                 <span className="text-gray-600 font-medium">🕐 신청일:</span>
                 <span className="font-bold">{formatDateTime(loanData.created_at || loanData.requestedAt)}</span>
               </div>
-              {loanData.signature && (
-                <div className="p-2 bg-white rounded border">
-                  <span className="text-gray-600 font-medium">✍️ 학생 서명:</span>
-                  <div className="mt-2 border rounded p-2 bg-gray-50">
-                    <img src={loanData.signature} alt="학생 서명" className="max-h-20" />
+              {loanData.signature ? (
+                <div className="p-3 bg-white rounded border-2 border-blue-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-700 font-bold">✍️ 학생 서명 확인</span>
+                    <span className="text-xs text-blue-600 font-medium">이름과 일치하는지 확인하세요</span>
                   </div>
+                  <div className="border-2 border-gray-300 rounded-lg p-3 bg-blue-50">
+                    <img
+                      src={loanData.signature}
+                      alt="학생 서명"
+                      className="max-h-24 w-full object-contain border border-gray-200 rounded bg-white p-2"
+                    />
+                  </div>
+                  <div className="mt-2 text-sm text-gray-600">
+                    👤 서명자: <strong>{loanData.student_name || loanData.studentName}</strong>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-red-50 rounded border border-red-200">
+                  <span className="text-red-700 font-medium">⚠️ 학생 서명이 없습니다</span>
+                  <div className="text-sm text-red-600 mt-1">서명 없이 승인을 진행하시겠습니까?</div>
                 </div>
               )}
             </div>
