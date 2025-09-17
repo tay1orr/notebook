@@ -106,32 +106,39 @@ export async function PATCH(request: NextRequest) {
     const supabase = createServerComponentClient<Database>({ cookies })
 
     const body = await request.json()
+    console.log('PATCH request body:', body)
+
     const { id, status, device_tag, approved_by, approved_at, notes } = body
 
     if (!id || !status) {
+      console.error('Missing required fields:', { id, status })
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    console.log('Updating loan with:', { id, status, device_tag, approved_by, approved_at, notes })
+
     const updateData: any = {
       status,
-      updated_at: getCurrentKoreaDateTimeString()
+      updated_at: new Date().toISOString()
     }
 
     if (device_tag) updateData.device_tag = device_tag
     if (approved_by) updateData.approved_by = approved_by
-    if (approved_at) updateData.approved_at = approved_at || getCurrentKoreaDateTimeString()
+    if (approved_at) updateData.approved_at = approved_at || new Date().toISOString()
     if (notes) updateData.notes = notes
 
     // 상태별 시간 기록
     if (status === 'approved') {
-      updateData.approved_at = getCurrentKoreaDateTimeString()
+      updateData.approved_at = new Date().toISOString()
     } else if (status === 'picked_up') {
-      updateData.picked_up_at = getCurrentKoreaDateTimeString()
+      updateData.picked_up_at = new Date().toISOString()
     } else if (status === 'returned') {
-      updateData.returned_at = getCurrentKoreaDateTimeString()
+      updateData.returned_at = new Date().toISOString()
     } else if (status === 'cancelled' || status === 'rejected') {
       // 취소나 거절 시에는 별도 시간 기록 없음 (updated_at으로 충분)
     }
+
+    console.log('About to update database with:', updateData)
 
     const { data: loan, error } = await supabase
       .from('loan_applications')
@@ -142,8 +149,12 @@ export async function PATCH(request: NextRequest) {
 
     if (error) {
       console.error('Database error:', error)
-      return NextResponse.json({ error: 'Failed to update loan application' }, { status: 500 })
+      console.error('Update data that failed:', updateData)
+      console.error('Loan ID that failed:', id)
+      return NextResponse.json({ error: 'Failed to update loan application', details: error.message }, { status: 500 })
     }
+
+    console.log('Successfully updated loan:', loan)
 
     // 기기 상태 업데이트
     if (device_tag) {
@@ -187,7 +198,8 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ loan })
   } catch (error) {
-    console.error('Unexpected error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Unexpected error in PATCH /api/loans:', error)
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 })
   }
 }
