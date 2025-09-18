@@ -32,7 +32,12 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
         .single()
 
       if (roleData?.role) {
-        role = roleData.role as UserRole
+        // 관리자가 아닌 모든 사용자의 역할을 강제 초기화
+        if (user.email === 'taylorr@gclass.ice.go.kr') {
+          role = 'admin'
+        } else {
+          role = '' // 모든 비관리자 사용자 역할 초기화
+        }
       } else {
         // Default admin for specific email
         if (user.email === 'taylorr@gclass.ice.go.kr') {

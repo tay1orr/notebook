@@ -283,14 +283,24 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                     </a>
                   </Button>
                   {user.role === 'admin' && (
-                    <Button className="w-full justify-start" variant="outline" asChild>
-                      <a href="/users">
-                        <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                        </svg>
-                        사용자 관리
-                      </a>
-                    </Button>
+                    <>
+                      <Button className="w-full justify-start" variant="outline" asChild>
+                        <a href="/users">
+                          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                          </svg>
+                          사용자 관리
+                        </a>
+                      </Button>
+                      <Button className="w-full justify-start" variant="destructive" asChild>
+                        <a href="/reset-roles">
+                          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          역할 초기화 도구
+                        </a>
+                      </Button>
+                    </>
                   )}
                 </>
               )}
