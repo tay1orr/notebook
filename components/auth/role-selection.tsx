@@ -56,16 +56,26 @@ export function RoleSelection({ user, onComplete }: RoleSelectionProps) {
       if (onComplete) {
         await onComplete(userData)
       } else {
-        // 기본 처리: localStorage에 저장하고 대시보드로 이동
-        console.log('역할 설정 완료:', userData)
+        // 기본 처리: API로 역할 저장하고 대시보드로 이동
+        console.log('🔍 ROLE SELECTION - 역할 설정 완료:', userData)
 
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('userProfile', JSON.stringify({
-            ...user,
-            ...userData,
-            setupComplete: true
-          }))
-          window.location.href = '/dashboard'
+        // API 호출로 데이터베이스에 역할 저장
+        const response = await fetch('/api/user/role', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData)
+        })
+
+        if (response.ok) {
+          console.log('🔍 ROLE SELECTION - API 호출 성공, 대시보드로 이동')
+          if (typeof window !== 'undefined') {
+            window.location.href = '/dashboard'
+          }
+        } else {
+          console.error('🔍 ROLE SELECTION - API 호출 실패:', await response.text())
+          throw new Error('역할 저장 실패')
         }
       }
     } catch (error) {
