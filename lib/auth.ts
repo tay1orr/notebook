@@ -13,9 +13,9 @@ export interface AuthUser {
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const supabase = createServerClient()
-
   try {
+    const supabase = createServerClient()
+
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {

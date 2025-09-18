@@ -70,39 +70,56 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_roles: {
+        Row: {
+          user_id: string
+          role: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          role: string
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          role?: string
+          created_at?: string
+        }
+      }
       students: {
         Row: {
-          id: string
-          class_id: string
-          student_no: string
+          id?: string
+          user_id: string
           name: string
           email: string
+          grade: number
+          class: number
+          student_no: number | null
           phone: string | null
-          active: boolean
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
-          class_id: string
-          student_no: string
+          user_id: string
           name: string
           email: string
+          grade: number
+          class: number
+          student_no?: number | null
           phone?: string | null
-          active?: boolean
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
-          class_id?: string
-          student_no?: string
+          user_id?: string
           name?: string
           email?: string
+          grade?: number
+          class?: number
+          student_no?: number | null
           phone?: string | null
-          active?: boolean
           created_at?: string
-          updated_at?: string
         }
       }
       devices: {
