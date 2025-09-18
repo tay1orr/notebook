@@ -21,22 +21,5 @@ export default async function SetupPage() {
   //   redirect('/dashboard')
   // }
 
-  const handleComplete = async (userData: any) => {
-    // TODO: API 호출로 사용자 정보 업데이트
-    console.log('역할 설정 완료:', userData)
-
-    // 임시로 localStorage에 저장 (실제로는 API 호출)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('userProfile', JSON.stringify({
-        ...user,
-        ...userData,
-        setupComplete: true
-      }))
-    }
-
-    // 대시보드로 리다이렉트
-    window.location.href = '/dashboard'
-  }
-
-  return <RoleSelection user={user} onComplete={handleComplete} />
+  return <RoleSelection user={user} />
 }

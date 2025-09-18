@@ -13,7 +13,7 @@ interface RoleSelectionProps {
     name: string
     email: string
   }
-  onComplete: (userData: {
+  onComplete?: (userData: {
     role: 'student' | 'homeroom'
     grade?: string
     class?: string
@@ -45,13 +45,29 @@ export function RoleSelection({ user, onComplete }: RoleSelectionProps) {
     setIsSubmitting(true)
 
     try {
-      await onComplete({
+      const userData = {
         role: selectedRole,
         grade,
         class: classNo,
         studentNo: selectedRole === 'student' ? studentNo : undefined,
         pendingApproval: selectedRole === 'homeroom'
-      })
+      }
+
+      if (onComplete) {
+        await onComplete(userData)
+      } else {
+        // 기본 처리: localStorage에 저장하고 대시보드로 이동
+        console.log('역할 설정 완료:', userData)
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('userProfile', JSON.stringify({
+            ...user,
+            ...userData,
+            setupComplete: true
+          }))
+          window.location.href = '/dashboard'
+        }
+      }
     } catch (error) {
       console.error('역할 설정 실패:', error)
       alert('역할 설정 중 오류가 발생했습니다.')
