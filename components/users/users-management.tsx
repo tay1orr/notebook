@@ -64,7 +64,7 @@ export function UsersManagement() {
                 id: email,
                 name: loan.student_name || loan.studentName,
                 email: email,
-                role: 'student',
+                role: '', // 역할 초기화 - 역할 선택 필요
                 lastLogin: loan.created_at || loan.requestedAt,
                 status: 'active',
                 createdAt: loan.created_at || loan.requestedAt,
@@ -125,7 +125,7 @@ export function UsersManagement() {
                   id: email,
                   name: loan.studentName,
                   email: email,
-                  role: 'student',
+                  role: '', // 역할 초기화 - 역할 선택 필요
                   lastLogin: loan.requestedAt,
                   status: 'active',
                   createdAt: loan.requestedAt,
@@ -278,6 +278,7 @@ export function UsersManagement() {
     homeroom: users.filter(u => u.role === 'homeroom').length,
     helper: users.filter(u => u.role === 'helper').length,
     student: users.filter(u => u.role === 'student').length,
+    noRole: users.filter(u => u.role === '' || !u.role).length,
     active: users.filter(u => u.status === 'active').length,
     inactive: users.filter(u => u.status === 'inactive').length
   }
@@ -299,7 +300,7 @@ export function UsersManagement() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">전체 사용자</CardTitle>
@@ -337,6 +338,16 @@ export function UsersManagement() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.helper}</div>
             <p className="text-xs text-muted-foreground">대여 승인 업무</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">역할 선택 필요</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{stats.noRole}</div>
+            <p className="text-xs text-muted-foreground">초기 설정 대기</p>
           </CardContent>
         </Card>
       </div>
@@ -405,6 +416,10 @@ export function UsersManagement() {
                     <TableCell>
                       {user.email === 'taylorr@gclass.ice.go.kr' ? (
                         <Badge variant="secondary">관리자 (고정)</Badge>
+                      ) : user.role === '' ? (
+                        <Badge variant="outline" className="text-orange-600 border-orange-300">
+                          역할 선택 필요
+                        </Badge>
                       ) : (
                         <Select
                           value={user.role}

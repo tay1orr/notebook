@@ -1,9 +1,9 @@
-import { requireAuth } from '@/lib/auth'
+import { requireAuthWithoutRole } from '@/lib/auth'
 import { RoleSelection } from '@/components/auth/role-selection'
 import { redirect } from 'next/navigation'
 
 export default async function SetupPage() {
-  const user = await requireAuth()
+  const user = await requireAuthWithoutRole()
 
   // 관리자는 이 페이지를 볼 수 없음
   if (user.role === 'admin') {
@@ -11,7 +11,7 @@ export default async function SetupPage() {
   }
 
   // 이미 역할이 설정된 사용자는 대시보드로
-  if (user.role && user.role !== 'pending') {
+  if (user.role && user.role !== '') {
     redirect('/dashboard')
   }
 

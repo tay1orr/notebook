@@ -2,7 +2,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
-export type UserRole = 'admin' | 'homeroom' | 'helper' | 'teacher' | 'student'
+export type UserRole = 'admin' | 'homeroom' | 'helper' | 'teacher' | 'student' | ''
 
 export interface AuthUser {
   id: string
@@ -23,7 +23,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     }
 
     // Get user role from user_roles table
-    let role: UserRole = 'student'
+    let role: UserRole = ''
     try {
       const { data: roleData } = await supabase
         .from('user_roles')
@@ -67,6 +67,11 @@ export async function requireAuth(): Promise<AuthUser> {
     redirect('/auth')
   }
 
+  // 역할이 없는 사용자는 역할 선택 페이지로 리다이렉트
+  if (!user.role || user.role === '') {
+    redirect('/setup')
+  }
+
   return user
 }
 
@@ -75,6 +80,16 @@ export async function requireRole(allowedRoles: UserRole[]): Promise<AuthUser> {
 
   if (!allowedRoles.includes(user.role)) {
     redirect('/unauthorized')
+  }
+
+  return user
+}
+
+export async function requireAuthWithoutRole(): Promise<AuthUser> {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    redirect('/auth')
   }
 
   return user
