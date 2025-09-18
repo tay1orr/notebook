@@ -61,7 +61,7 @@ export async function POST() {
       if (directError && directError.code === 'PGRST106') {
         return NextResponse.json({
           error: 'Cannot create table automatically. Please run SQL manually in Supabase dashboard.',
-          sql: \`
+          sql: `
 CREATE TABLE IF NOT EXISTS public.user_roles (
     id SERIAL PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -84,7 +84,7 @@ CREATE POLICY "Users can insert their own role" ON public.user_roles
 
 GRANT ALL ON public.user_roles TO authenticated;
 GRANT USAGE, SELECT ON SEQUENCE user_roles_id_seq TO authenticated;
-\`
+`
         }, { status: 500 })
       }
     }
