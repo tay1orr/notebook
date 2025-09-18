@@ -92,7 +92,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
   const userEmails = new Set(loans.map(loan => loan.email || loan.student_name))
   // 기본 시스템 사용자들 (고정값)
   const systemUsers = [
-    'admin@gclass.ice.go.kr',
+    'taylorr@gclass.ice.go.kr', // 관리자 (조대영)
     'helper@gclass.ice.go.kr',
     'teacher11@gclass.ice.go.kr'
   ]

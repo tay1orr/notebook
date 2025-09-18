@@ -84,6 +84,11 @@ export function Header({ user }: HeaderProps) {
                   {getRoleText(user.role)}
                 </Badge>
               </div>
+              <Link href="/profile">
+                <Button variant="ghost" size="sm">
+                  프로필
+                </Button>
+              </Link>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 로그아웃
               </Button>
@@ -120,7 +125,15 @@ export function Header({ user }: HeaderProps) {
                   <div className="text-sm text-gray-500">{getRoleText(user.role)}</div>
                 </div>
               </div>
-              <div className="mt-3 px-2">
+              <div className="mt-3 px-2 space-y-2">
+                <Link href="/profile" onClick={() => setIsMenuOpen(false)}>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                  >
+                    프로필
+                  </Button>
+                </Link>
                 <Button
                   variant="outline"
                   className="w-full justify-start"

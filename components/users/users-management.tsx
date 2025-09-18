@@ -47,10 +47,10 @@ export function UsersManagement() {
           const userMap = new Map()
 
           // 기본 관리자 추가
-          userMap.set('admin@gclass.ice.go.kr', {
+          userMap.set('taylorr@gclass.ice.go.kr', {
             id: '1',
-            name: '관리자',
-            email: 'admin@gclass.ice.go.kr',
+            name: '조대영',
+            email: 'taylorr@gclass.ice.go.kr',
             role: 'admin',
             lastLogin: new Date().toISOString(),
             status: 'active',
@@ -108,10 +108,10 @@ export function UsersManagement() {
             const userMap = new Map()
 
             // 기본 관리자 추가
-            userMap.set('admin@gclass.ice.go.kr', {
+            userMap.set('taylorr@gclass.ice.go.kr', {
               id: '1',
-              name: '관리자',
-              email: 'admin@gclass.ice.go.kr',
+              name: '조대영',
+              email: 'taylorr@gclass.ice.go.kr',
               role: 'admin',
               lastLogin: new Date().toISOString(),
               status: 'active',
@@ -150,8 +150,8 @@ export function UsersManagement() {
             const dummyUsers: User[] = [
               {
                 id: '1',
-                name: '관리자',
-                email: 'admin@gclass.ice.go.kr',
+                name: '조대영',
+                email: 'taylorr@gclass.ice.go.kr',
                 role: 'admin',
                 lastLogin: '2025-09-18T10:30:00Z',
                 status: 'active',
@@ -185,8 +185,8 @@ export function UsersManagement() {
           const dummyUsers: User[] = [
             {
               id: '1',
-              name: '관리자',
-              email: 'admin@gclass.ice.go.kr',
+              name: '조대영',
+              email: 'taylorr@gclass.ice.go.kr',
               role: 'admin',
               lastLogin: '2025-09-18T10:30:00Z',
               status: 'active',
@@ -403,20 +403,24 @@ export function UsersManagement() {
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Select
-                        value={user.role}
-                        onValueChange={(value) => handleRoleChange(user.id, value)}
-                      >
-                        <SelectTrigger className="w-36">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">관리자</SelectItem>
-                          <SelectItem value="homeroom">담임교사</SelectItem>
-                          <SelectItem value="helper">도우미</SelectItem>
-                          <SelectItem value="student">학생</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {user.email === 'taylorr@gclass.ice.go.kr' ? (
+                        <Badge variant="secondary">관리자 (고정)</Badge>
+                      ) : (
+                        <Select
+                          value={user.role}
+                          onValueChange={(value) => handleRoleChange(user.id, value)}
+                        >
+                          <SelectTrigger className="w-36">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">관리자</SelectItem>
+                            <SelectItem value="homeroom">담임교사</SelectItem>
+                            <SelectItem value="helper">도우미</SelectItem>
+                            <SelectItem value="student">학생</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                     </TableCell>
                     <TableCell>
                       {user.className || '-'}
