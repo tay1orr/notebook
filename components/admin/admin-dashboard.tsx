@@ -90,17 +90,21 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
 
   // 등록된 총 사용자 수 계산 (관리자 + 담임교사 + 도우미 + 대여 이용한 학생)
   const userEmails = new Set(loans.map(loan => loan.email || loan.student_name))
-  // 기본 관리자, 도우미, 담임교사 추가
-  userEmails.add('admin@gclass.ice.go.kr')
-  userEmails.add('helper@gclass.ice.go.kr')
-  userEmails.add('teacher11@gclass.ice.go.kr')
+  // 기본 시스템 사용자들 (고정값)
+  const systemUsers = [
+    'admin@gclass.ice.go.kr',
+    'helper@gclass.ice.go.kr',
+    'teacher11@gclass.ice.go.kr'
+  ]
+  systemUsers.forEach(email => userEmails.add(email))
   const totalRegisteredUsers = userEmails.size
 
   console.log('AdminDashboard - Statistics:', {
     total: loans.length,
     pending: pendingLoans,
     active: activeLoans,
-    overdue: overdueLoans
+    overdue: overdueLoans,
+    totalRegisteredUsers: totalRegisteredUsers
   }) // 디버깅용
 
   // 최근 대여 현황 (최근 5개)

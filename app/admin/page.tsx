@@ -5,40 +5,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { UserManagement } from '@/components/admin/user-management'
-
-async function getUsers() {
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/users`, {
-      cache: 'no-store'
-    })
-    if (!response.ok) {
-      console.error('Failed to fetch users')
-      return []
-    }
-    const data = await response.json()
-    return data.users || []
-  } catch (error) {
-    console.error('Error fetching users:', error)
-    return []
-  }
-}
+import { UsersManagement } from '@/components/users/users-management'
 
 export default async function AdminPage() {
   const user = await requireRole(['admin'])
-
-  const users = await getUsers()
 
   // 실제 시스템 통계 (실제로는 데이터베이스에서 가져와야 함)
   const totalDevices = 3 * 13 * 35 // 3학년 × 13반 × 35대 = 1,365대
 
   const systemStats = {
-    totalUsers: users.length, // 실제 사용자 수
     totalDevices: totalDevices,
-    totalLoans: 0, // 실제 대여 건수
-    activeLoans: 0, // 현재 대여중
-    overdueLoans: 0, // 현재 연체
-    systemUptime: '99.8%',
     lastBackup: new Date().toISOString().slice(0, 19).replace('T', ' '),
     dbSize: '0KB'
   }
@@ -101,20 +77,7 @@ export default async function AdminPage() {
         </div>
 
         {/* 시스템 상태 카드 */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">총 사용자</CardTitle>
-              <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-              </svg>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{systemStats.totalUsers}</div>
-              <p className="text-xs text-muted-foreground">등록된 사용자</p>
-            </CardContent>
-          </Card>
-
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">전체 기기</CardTitle>
@@ -130,27 +93,14 @@ export default async function AdminPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">전체 대여</CardTitle>
-              <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{systemStats.totalLoans}</div>
-              <p className="text-xs text-muted-foreground">누적 대여 건수</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">시스템 가동률</CardTitle>
+              <CardTitle className="text-sm font-medium">마지막 백업</CardTitle>
               <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{systemStats.systemUptime}</div>
-              <p className="text-xs text-muted-foreground">지난 30일</p>
+              <div className="text-2xl font-bold text-green-600">자동</div>
+              <p className="text-xs text-muted-foreground">{systemStats.lastBackup}</p>
             </CardContent>
           </Card>
         </div>
@@ -158,7 +108,7 @@ export default async function AdminPage() {
         <Tabs defaultValue="users" className="space-y-4">
           <TabsList>
             <TabsTrigger value="users">
-              사용자 관리 ({users.length})
+              사용자 관리
             </TabsTrigger>
             <TabsTrigger value="audit">
               감사 로그 ({auditLogs.length})
@@ -172,7 +122,7 @@ export default async function AdminPage() {
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
-            <UserManagement initialUsers={users} />
+            <UsersManagement />
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-4">
