@@ -88,16 +88,8 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
   const overdueLoans = loans.filter(loan => loan.status === 'picked_up' && isLoanOverdue(loan.due_date || loan.dueDate)).length
   const totalLoans = loans.length
 
-  // 등록된 총 사용자 수 계산 (관리자 + 담임교사 + 도우미 + 대여 이용한 학생)
-  const userEmails = new Set(loans.map(loan => loan.email || loan.student_name))
-  // 기본 시스템 사용자들 (고정값)
-  const systemUsers = [
-    'taylorr@gclass.ice.go.kr', // 관리자 (조대영)
-    'helper@gclass.ice.go.kr',
-    'teacher11@gclass.ice.go.kr'
-  ]
-  systemUsers.forEach(email => userEmails.add(email))
-  const totalRegisteredUsers = userEmails.size
+  // 등록된 총 사용자 수는 실제 DB에서 가져와야 함 (임시로 고정값 사용)
+  const totalRegisteredUsers = 3 // 실제로는 사용자 관리 페이지와 동일한 값을 사용해야 함
 
   console.log('AdminDashboard - Statistics:', {
     total: loans.length,
@@ -180,7 +172,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
 
         <Card
           className="cursor-pointer hover:bg-gray-50 transition-colors"
-          onClick={() => window.location.href = '/users'}
+          onClick={() => window.location.href = '/admin'}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">총 사용자</CardTitle>
@@ -291,6 +283,27 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                           </svg>
                           사용자 관리
                         </a>
+                      </Button>
+                      <Button className="w-full justify-start" variant="outline" onClick={async () => {
+                        try {
+                          const response = await fetch('/api/admin/setup-database', { method: 'POST' })
+                          const result = await response.json()
+                          if (response.ok) {
+                            alert('데이터베이스 설정이 완료되었습니다.')
+                          } else {
+                            alert('설정 실패: ' + result.error)
+                            if (result.sql) {
+                              console.log('수동으로 실행할 SQL:', result.sql)
+                            }
+                          }
+                        } catch (error) {
+                          alert('설정 중 오류가 발생했습니다.')
+                        }
+                      }}>
+                        <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                        </svg>
+                        데이터베이스 설정
                       </Button>
                       <Button className="w-full justify-start" variant="destructive" asChild>
                         <a href="/reset-roles">
