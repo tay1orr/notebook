@@ -36,11 +36,24 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
           const { loans } = await response.json()
           console.log('StudentsManagement - Loaded loans from API:', loans)
 
+          // 먼저 사용자 역할 정보 가져오기
+          const usersResponse = await fetch('/api/users')
+          let userRoles = new Map()
+
+          if (usersResponse.ok) {
+            const { users } = await usersResponse.json()
+            users.forEach(user => {
+              userRoles.set(user.email, user.role)
+            })
+          }
+
           // 대여 데이터에서 학생 정보 추출 (이메일 기준으로 중복 제거)
           const studentMap = new Map()
           loans.forEach(loan => {
             const email = loan.email
             if (!studentMap.has(email)) {
+              const userRole = userRoles.get(email) || ''
+
               studentMap.set(email, {
                 id: email,
                 studentNo: loan.student_no || loan.studentNo,
@@ -49,7 +62,7 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
                 email: email,
                 phone: loan.student_contact || loan.studentContact || '',
                 parentPhone: '',
-                role: 'student',
+                role: userRole, // 실제 사용자 역할 사용
                 currentLoan: null,
                 loanHistory: 0,
                 overdueCount: 0,

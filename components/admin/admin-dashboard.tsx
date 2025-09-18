@@ -82,14 +82,37 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
     }
   }, [])
 
+  // 사용자 수 로드
+  useEffect(() => {
+    const loadUserCount = async () => {
+      try {
+        const response = await fetch('/api/users')
+        if (response.ok) {
+          const { users } = await response.json()
+          setTotalRegisteredUsers(users.length)
+          console.log('AdminDashboard - User count loaded:', users.length)
+        } else {
+          console.error('AdminDashboard - Failed to load user count')
+        }
+      } catch (error) {
+        console.error('AdminDashboard - Error loading user count:', error)
+      }
+    }
+
+    loadUserCount()
+    const userInterval = setInterval(loadUserCount, 30000) // 30초마다
+
+    return () => clearInterval(userInterval)
+  }, [])
+
   // 통계 계산 (실시간 연체 판단 적용)
   const pendingLoans = loans.filter(loan => loan.status === 'requested').length
   const activeLoans = loans.filter(loan => loan.status === 'picked_up' && !isLoanOverdue(loan.due_date || loan.dueDate)).length
   const overdueLoans = loans.filter(loan => loan.status === 'picked_up' && isLoanOverdue(loan.due_date || loan.dueDate)).length
   const totalLoans = loans.length
 
-  // 등록된 총 사용자 수는 실제 DB에서 가져와야 함 (임시로 고정값 사용)
-  const totalRegisteredUsers = 3 // 실제로는 사용자 관리 페이지와 동일한 값을 사용해야 함
+  // 등록된 총 사용자 수 (실제 API에서 가져오기)
+  const [totalRegisteredUsers, setTotalRegisteredUsers] = useState(3)
 
   console.log('AdminDashboard - Statistics:', {
     total: loans.length,

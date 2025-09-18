@@ -8,11 +8,11 @@ export async function GET() {
     // 현재 사용자가 관리자인지 확인
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (authError || !user || user.email !== 'taylorr@gclass.ice.go.kr') {
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('🔍 USERS API - Request from admin:', user.email)
+    console.log('🔍 USERS API - Request from:', user.email)
 
     // Get all users from auth.users table
     const { data, error } = await supabase.auth.admin.listUsers()
