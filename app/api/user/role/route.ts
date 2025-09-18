@@ -57,6 +57,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 학생 정보 저장 (학생 또는 담임교사인 경우)
+    if ((role === 'student' || role === 'homeroom') && grade && className) {
+      const studentData: any = {
+        user_id: user.id,
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
+        email: user.email,
+        grade: parseInt(grade),
+        class: parseInt(className),
+        created_at: new Date().toISOString()
+      }
+
+      if (role === 'student' && studentNo) {
+        studentData.student_no = parseInt(studentNo)
+      }
+
+      console.log('🔍 API - Saving student data:', studentData)
+
+      const { error: studentError } = await supabase
+        .from('students')
+        .upsert(studentData, { onConflict: 'user_id' })
+
+      if (studentError) {
+        console.error('🔍 API - Failed to save student info:', studentError)
+        // 역할은 성공했으므로 경고만 출력하고 계속 진행
+        console.warn('🔍 API - Role saved but student info failed')
+      } else {
+        console.log('🔍 API - Student info saved successfully')
+      }
+    }
+
     console.log('🔍 API - Role update successful for:', user.email)
 
     return NextResponse.json({ success: true })
