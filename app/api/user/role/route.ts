@@ -23,12 +23,39 @@ export async function POST(request: NextRequest) {
       studentNo
     })
 
-    // 임시로 users 테이블에 role 정보를 저장하는 방식으로 변경
-    // localStorage를 사용하여 클라이언트에서 역할 정보 관리
-    console.log('🔍 API - Using localStorage approach due to missing user_roles table')
+    // user_roles 테이블에 역할 저장/업데이트
+    const { data: existingRole, error: selectError } = await supabase
+      .from('user_roles')
+      .select('*')
+      .eq('user_id', user.id)
+      .single()
 
-    // 성공적으로 저장되었다고 응답 (실제로는 클라이언트에서 localStorage로 관리)
-    console.log('🔍 API - Role update successful for:', user.email, 'with role:', role)
+    console.log('🔍 API - Existing role check:', { existingRole, selectError })
+
+    if (existingRole) {
+      // 기존 역할 업데이트
+      console.log('🔍 API - Updating existing role for user:', user.id)
+      const { error: updateError } = await supabase
+        .from('user_roles')
+        .update({ role })
+        .eq('user_id', user.id)
+
+      if (updateError) {
+        console.error('🔍 API - Role update error:', updateError)
+        return NextResponse.json({ error: 'Failed to update role', details: updateError }, { status: 500 })
+      }
+    } else {
+      // 새 역할 생성
+      console.log('🔍 API - Creating new role for user:', user.id, 'role:', role)
+      const { error: insertError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: user.id, role })
+
+      if (insertError) {
+        console.error('🔍 API - Role insert error:', insertError)
+        return NextResponse.json({ error: 'Failed to create role', details: insertError }, { status: 500 })
+      }
+    }
 
     console.log('🔍 API - Role update successful for:', user.email)
 

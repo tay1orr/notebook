@@ -69,19 +69,8 @@ export function RoleSelection({ user, onComplete }: RoleSelectionProps) {
         })
 
         if (response.ok) {
-          console.log('🔍 ROLE SELECTION - API 호출 성공, localStorage에 저장')
-
+          console.log('🔍 ROLE SELECTION - API 호출 성공, 대시보드로 이동')
           if (typeof window !== 'undefined') {
-            // localStorage에 사용자 프로필 정보 저장
-            const profileData = {
-              ...user,
-              ...userData,
-              setupComplete: true
-            }
-            localStorage.setItem('userProfile', JSON.stringify(profileData))
-            localStorage.setItem('userRole', userData.role)
-
-            console.log('🔍 ROLE SELECTION - localStorage 저장 완료, 대시보드로 이동')
             window.location.href = '/dashboard'
           }
         } else {

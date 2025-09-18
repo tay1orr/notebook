@@ -22,18 +22,41 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       return null
     }
 
-    // 임시로 user_roles 테이블 사용을 중단하고 localStorage 기반으로 변경
+    // Get user role from user_roles table
     let role: UserRole = ''
     console.log('🔍 AUTH DEBUG - Checking user:', user.email, 'ID:', user.id)
 
-    // 관리자 확인
-    if (user.email === 'taylorr@gclass.ice.go.kr') {
-      role = 'admin'
-      console.log('🔍 AUTH DEBUG - Admin user detected:', user.email)
-    } else {
-      // 비관리자는 역할이 없는 것으로 처리 (setup 페이지에서 localStorage로 관리)
-      role = ''
-      console.log('🔍 AUTH DEBUG - Non-admin user, role will be set via localStorage:', user.email)
+    try {
+      const { data: roleData, error: roleSelectError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+
+      console.log('🔍 AUTH DEBUG - Role data from DB:', roleData, 'Error:', roleSelectError)
+
+      if (roleData?.role) {
+        role = roleData.role
+        console.log('🔍 AUTH DEBUG - Found existing role:', roleData.role, 'for user:', user.email)
+      } else {
+        console.log('🔍 AUTH DEBUG - No existing role found for:', user.email)
+        // Default admin for specific email
+        if (user.email === 'taylorr@gclass.ice.go.kr') {
+          role = 'admin'
+          console.log('🔍 AUTH DEBUG - Setting admin role for:', user.email)
+          // 관리자 역할 생성
+          const { error: insertError } = await supabase
+            .from('user_roles')
+            .insert({ user_id: user.id, role: 'admin' })
+          console.log('🔍 AUTH DEBUG - Admin insert result:', insertError)
+        }
+      }
+    } catch (roleError) {
+      console.log('🔍 AUTH DEBUG - Role lookup failed:', roleError)
+      // Fallback to admin check
+      if (user.email === 'taylorr@gclass.ice.go.kr') {
+        role = 'admin'
+      }
     }
 
     console.log('🔍 AUTH DEBUG - Final role for', user.email, ':', role)

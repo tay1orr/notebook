@@ -1,6 +1,5 @@
 import { MainLayout } from '@/components/layout/main-layout'
-import { requireAuthWithoutRole } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+import { requireAuth } from '@/lib/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,18 +8,13 @@ import { AdminDashboard } from '@/components/admin/admin-dashboard'
 import { HelperDashboard } from '@/components/helper/helper-dashboard'
 
 export default async function DashboardPage() {
-  const user = await requireAuthWithoutRole()
+  const user = await requireAuth()
 
   console.log('🔍 DASHBOARD DEBUG - User data:', {
     email: user.email,
     role: user.role,
     id: user.id
   })
-
-  // 관리자가 아닌 경우 setup으로 리다이렉트 (localStorage에서 역할 확인은 클라이언트에서)
-  if (user.email !== 'taylorr@gclass.ice.go.kr') {
-    redirect('/setup')
-  }
 
   // 학생용 임시 데이터 - 모두 제거
   const studentCurrentLoans: any[] = []

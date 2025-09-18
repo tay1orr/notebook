@@ -1,67 +1,24 @@
-'use client'
-
-import { useEffect, useState } from 'react'
+import { requireAuthWithoutRole } from '@/lib/auth'
 import { RoleSelection } from '@/components/auth/role-selection'
+import { redirect } from 'next/navigation'
 
-interface User {
-  name: string
-  email: string
-  id: string
-}
+export default async function SetupPage() {
+  const user = await requireAuthWithoutRole()
 
-export default function SetupPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  console.log('🔍 SETUP PAGE DEBUG - User data:', {
+    email: user.email,
+    role: user.role,
+    id: user.id
+  })
 
-  useEffect(() => {
-    // 클라이언트에서 사용자 정보 가져오기
-    const fetchUser = async () => {
-      try {
-        const response = await fetch('/api/auth/user')
-        if (response.ok) {
-          const userData = await response.json()
-          setUser(userData)
-
-          console.log('🔍 SETUP PAGE DEBUG - User data:', userData)
-
-          // 관리자는 대시보드로 리다이렉트
-          if (userData.email === 'taylorr@gclass.ice.go.kr') {
-            window.location.href = '/dashboard'
-            return
-          }
-
-          // localStorage에서 역할 확인
-          const savedRole = localStorage.getItem('userRole')
-          if (savedRole && savedRole !== '') {
-            console.log('🔍 SETUP PAGE DEBUG - Found saved role:', savedRole)
-            window.location.href = '/dashboard'
-            return
-          }
-        }
-      } catch (error) {
-        console.error('Setup page error:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchUser()
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div>로딩 중...</div>
-      </div>
-    )
+  // 관리자는 이 페이지를 볼 수 없음
+  if (user.role === 'admin') {
+    redirect('/dashboard')
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div>사용자 정보를 가져올 수 없습니다.</div>
-      </div>
-    )
+  // 이미 역할이 설정된 사용자는 대시보드로
+  if (user.role && user.role !== '') {
+    redirect('/dashboard')
   }
 
   return <RoleSelection user={user} />
