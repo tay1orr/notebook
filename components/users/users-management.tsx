@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { getRoleText } from '@/lib/utils'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { getRoleText, formatDateTime, getStatusText, getStatusColor } from '@/lib/utils'
 
 interface User {
   id: string
@@ -19,6 +20,7 @@ interface User {
   lastLogin?: string
   status: 'active' | 'inactive'
   createdAt: string
+  allLoans?: any[]
 }
 
 export function UsersManagement() {
@@ -26,6 +28,8 @@ export function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [showActivityLog, setShowActivityLog] = useState(false)
 
   // 모든 사용자 로드
   useEffect(() => {
@@ -63,8 +67,15 @@ export function UsersManagement() {
                 role: 'student',
                 lastLogin: loan.created_at || loan.requestedAt,
                 status: 'active',
-                createdAt: loan.created_at || loan.requestedAt
+                createdAt: loan.created_at || loan.requestedAt,
+                allLoans: []
               })
+            }
+
+            // 사용자별 대여 기록 추가
+            const user = userMap.get(email)
+            if (user) {
+              user.allLoans.push(loan)
             }
           })
 
@@ -117,8 +128,15 @@ export function UsersManagement() {
                   role: 'student',
                   lastLogin: loan.requestedAt,
                   status: 'active',
-                  createdAt: loan.requestedAt
+                  createdAt: loan.requestedAt,
+                  allLoans: []
                 })
+              }
+
+              // 사용자별 대여 기록 추가
+              const user = userMap.get(email)
+              if (user) {
+                user.allLoans.push(loan)
               }
             })
 
@@ -424,7 +442,14 @@ export function UsersManagement() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUser(user)
+                            setShowActivityLog(true)
+                          }}
+                        >
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -445,6 +470,78 @@ export function UsersManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* 활동 로그 모달 */}
+      <Dialog open={showActivityLog} onOpenChange={setShowActivityLog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedUser?.name}님의 활동 로그
+            </DialogTitle>
+            <DialogDescription>
+              {selectedUser?.email} • {getRoleText(selectedUser?.role || '')}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedUser?.allLoans && selectedUser.allLoans.length > 0 ? (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                총 {selectedUser.allLoans.length}건의 활동 기록
+              </div>
+
+              <div className="space-y-3">
+                {selectedUser.allLoans
+                  .sort((a: any, b: any) => new Date(b.requestedAt || b.created_at).getTime() - new Date(a.requestedAt || a.created_at).getTime())
+                  .map((loan: any, index: number) => (
+                    <div key={index} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium">{loan.deviceTag || loan.device_tag}</span>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
+                              ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                              : getStatusColor(loan.status, loan.notes)
+                          }`}>
+                            {getStatusText(loan.status, loan.notes)}
+                          </span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {formatDateTime(loan.requestedAt || loan.created_at)}
+                        </span>
+                      </div>
+
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div>신청일: {formatDateTime(loan.requestedAt || loan.created_at)}</div>
+                        {loan.approved_at && (
+                          <div>승인일: {formatDateTime(loan.approved_at)}</div>
+                        )}
+                        {loan.picked_up_at && (
+                          <div>수령일: {formatDateTime(loan.picked_up_at)}</div>
+                        )}
+                        {loan.returned_at && (
+                          <div>반납일: {formatDateTime(loan.returned_at)}</div>
+                        )}
+                        {loan.dueDate && (
+                          <div>반납예정: {formatDateTime(loan.dueDate || loan.due_date)}</div>
+                        )}
+                        {loan.purpose && (
+                          <div>사용목적: {loan.purpose}</div>
+                        )}
+                        {loan.notes && loan.notes !== 'STUDENT_CANCELLED' && (
+                          <div>비고: {loan.notes}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              활동 기록이 없습니다.
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CSVUpload } from '@/components/forms/csv-upload'
-import { formatDate, maskPhone, getRoleText, isLoanOverdue } from '@/lib/utils'
+import { formatDate, maskPhone, getRoleText, isLoanOverdue, formatDateTime, getStatusText, getStatusColor } from '@/lib/utils'
 
 interface StudentsManagementProps {
   students: any[]
@@ -21,6 +21,8 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
   const [stats, setStats] = useState(initialStats)
   const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [selectedStudent, setSelectedStudent] = useState<any>(null)
+  const [showActivityLog, setShowActivityLog] = useState(false)
 
   // 대여 신청 데이터에서 학생 정보 추출
   useEffect(() => {
@@ -34,31 +36,33 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
           const { loans } = await response.json()
           console.log('StudentsManagement - Loaded loans from API:', loans)
 
-          // 대여 데이터에서 학생 정보 추출
+          // 대여 데이터에서 학생 정보 추출 (이메일 기준으로 중복 제거)
           const studentMap = new Map()
           loans.forEach(loan => {
-            const key = `${loan.class_name || loan.className}-${loan.student_no || loan.studentNo}`
-            if (!studentMap.has(key)) {
-              studentMap.set(key, {
-                id: key,
+            const email = loan.email
+            if (!studentMap.has(email)) {
+              studentMap.set(email, {
+                id: email,
                 studentNo: loan.student_no || loan.studentNo,
                 name: loan.student_name || loan.studentName,
                 className: loan.class_name || loan.className,
-                email: loan.email,
+                email: email,
                 phone: loan.student_contact || loan.studentContact || '',
                 parentPhone: '',
                 role: 'student',
                 currentLoan: null,
                 loanHistory: 0,
                 overdueCount: 0,
-                status: 'active'
+                status: 'active',
+                allLoans: []
               })
             }
 
-            const student = studentMap.get(key)
+            const student = studentMap.get(email)
             student.loanHistory++
+            student.allLoans.push(loan)
 
-            // 현재 대여 중인 기기 확인
+            // 현재 대여 중인 기기 확인 (가장 최근 것)
             if (loan.status === 'picked_up') {
               student.currentLoan = loan.device_tag || loan.deviceTag
               student.dueDate = loan.due_date || loan.dueDate
@@ -105,47 +109,41 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
             const loans = JSON.parse(storedLoans)
             console.log('StudentsManagement - Using localStorage fallback', loans.length, 'loans')
 
-            // 중복 제거하여 고유 학생 목록 생성
+            // 중복 제거하여 고유 학생 목록 생성 (이메일 기준)
             const studentMap = new Map()
 
             loans.forEach((loan: any) => {
-              const key = `${loan.className}-${loan.studentNo}`
-              if (!studentMap.has(key)) {
-                studentMap.set(key, {
-                  id: `${loan.className}-${loan.studentNo}`,
+              const email = loan.email
+              if (!studentMap.has(email)) {
+                studentMap.set(email, {
+                  id: email,
                   studentNo: loan.studentNo,
                   name: loan.studentName,
                   className: loan.className,
-                  email: loan.email,
+                  email: email,
                   phone: loan.studentContact || '',
                   parentPhone: '',
                   role: 'student',
                   currentLoan: null,
                   loanHistory: 0,
                   overdueCount: 0,
-                  status: 'active'
+                  status: 'active',
+                  allLoans: []
                 })
               }
-            })
 
-            // 현재 대여 중인 기기 정보 추가
-            loans.forEach((loan: any) => {
-              const key = `${loan.className}-${loan.studentNo}`
-              if (studentMap.has(key)) {
-                const student = studentMap.get(key)
+              const student = studentMap.get(email)
+              student.loanHistory += 1
+              student.allLoans.push(loan)
 
-                // 대여 이력 카운트
-                student.loanHistory += 1
+              // 현재 대여 중인 기기
+              if (loan.status === 'picked_up') {
+                student.currentLoan = loan.deviceTag
+                student.dueDate = loan.dueDate
 
-                // 현재 대여 중인 기기
-                if (loan.status === 'picked_up') {
-                  student.currentLoan = loan.deviceTag
-                  student.dueDate = loan.dueDate
-
-                  // 연체 확인 (실시간)
-                  if (isLoanOverdue(loan.dueDate)) {
-                    student.overdueCount++
-                  }
+                // 연체 확인 (실시간)
+                if (isLoanOverdue(loan.dueDate)) {
+                  student.overdueCount++
                 }
               }
             })
@@ -474,14 +472,22 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedStudent(student)
+                            setShowActivityLog(true)
+                          }}
+                        >
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                         </Button>
                         <Button variant="ghost" size="sm">
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </Button>
                       </div>
@@ -514,6 +520,78 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
             onUpload={handleCSVUpload}
             isUploading={isUploading}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* 활동 로그 모달 */}
+      <Dialog open={showActivityLog} onOpenChange={setShowActivityLog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedStudent?.name}님의 활동 로그
+            </DialogTitle>
+            <DialogDescription>
+              {selectedStudent?.email} • {selectedStudent?.className} {selectedStudent?.studentNo}번
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedStudent?.allLoans && selectedStudent.allLoans.length > 0 ? (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                총 {selectedStudent.allLoans.length}건의 대여 기록
+              </div>
+
+              <div className="space-y-3">
+                {selectedStudent.allLoans
+                  .sort((a: any, b: any) => new Date(b.requestedAt || b.created_at).getTime() - new Date(a.requestedAt || a.created_at).getTime())
+                  .map((loan: any, index: number) => (
+                    <div key={index} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium">{loan.deviceTag || loan.device_tag}</span>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
+                              ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                              : getStatusColor(loan.status, loan.notes)
+                          }`}>
+                            {getStatusText(loan.status, loan.notes)}
+                          </span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {formatDateTime(loan.requestedAt || loan.created_at)}
+                        </span>
+                      </div>
+
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div>신청일: {formatDateTime(loan.requestedAt || loan.created_at)}</div>
+                        {loan.approved_at && (
+                          <div>승인일: {formatDateTime(loan.approved_at)}</div>
+                        )}
+                        {loan.picked_up_at && (
+                          <div>수령일: {formatDateTime(loan.picked_up_at)}</div>
+                        )}
+                        {loan.returned_at && (
+                          <div>반납일: {formatDateTime(loan.returned_at)}</div>
+                        )}
+                        {loan.dueDate && (
+                          <div>반납예정: {formatDateTime(loan.dueDate || loan.due_date)}</div>
+                        )}
+                        {loan.purpose && (
+                          <div>사용목적: {loan.purpose}</div>
+                        )}
+                        {loan.notes && loan.notes !== 'STUDENT_CANCELLED' && (
+                          <div>비고: {loan.notes}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              활동 기록이 없습니다.
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

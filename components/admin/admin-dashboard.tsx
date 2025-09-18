@@ -88,8 +88,13 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
   const overdueLoans = loans.filter(loan => loan.status === 'picked_up' && isLoanOverdue(loan.due_date || loan.dueDate)).length
   const totalLoans = loans.length
 
-  // 총 사용자 수 계산 (중복 제거)
-  const uniqueUsers = new Set(loans.map(loan => loan.email || loan.student_name)).size
+  // 등록된 총 사용자 수 계산 (관리자 + 담임교사 + 도우미 + 대여 이용한 학생)
+  const userEmails = new Set(loans.map(loan => loan.email || loan.student_name))
+  // 기본 관리자, 도우미, 담임교사 추가
+  userEmails.add('admin@gclass.ice.go.kr')
+  userEmails.add('helper@gclass.ice.go.kr')
+  userEmails.add('teacher11@gclass.ice.go.kr')
+  const totalRegisteredUsers = userEmails.size
 
   console.log('AdminDashboard - Statistics:', {
     total: loans.length,
@@ -180,8 +185,8 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{uniqueUsers}</div>
-            <p className="text-xs text-muted-foreground">이용한 학생 수</p>
+            <div className="text-2xl font-bold text-green-600">{totalRegisteredUsers}</div>
+            <p className="text-xs text-muted-foreground">등록된 총 사용자</p>
           </CardContent>
         </Card>
       </div>
