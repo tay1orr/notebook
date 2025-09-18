@@ -59,7 +59,7 @@ export function RoleSelection({ user, onComplete }: RoleSelectionProps) {
         // 기본 처리: API로 역할 저장하고 대시보드로 이동
         console.log('🔍 ROLE SELECTION - 역할 설정 완료:', userData)
 
-        // API 호출로 데이터베이스에 역할 저장
+        // API 호출로 역할 저장 (현재는 localStorage 사용)
         const response = await fetch('/api/user/role', {
           method: 'POST',
           headers: {
@@ -69,8 +69,19 @@ export function RoleSelection({ user, onComplete }: RoleSelectionProps) {
         })
 
         if (response.ok) {
-          console.log('🔍 ROLE SELECTION - API 호출 성공, 대시보드로 이동')
+          console.log('🔍 ROLE SELECTION - API 호출 성공, localStorage에 저장')
+
           if (typeof window !== 'undefined') {
+            // localStorage에 사용자 프로필 정보 저장
+            const profileData = {
+              ...user,
+              ...userData,
+              setupComplete: true
+            }
+            localStorage.setItem('userProfile', JSON.stringify(profileData))
+            localStorage.setItem('userRole', userData.role)
+
+            console.log('🔍 ROLE SELECTION - localStorage 저장 완료, 대시보드로 이동')
             window.location.href = '/dashboard'
           }
         } else {

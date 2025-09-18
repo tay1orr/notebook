@@ -17,8 +17,8 @@ export default async function DashboardPage() {
     id: user.id
   })
 
-  // 역할이 없거나 빈 문자열인 사용자는 setup으로 리다이렉트
-  if (!user.role || user.role === '' || (user.role !== 'admin' && user.email !== 'taylorr@gclass.ice.go.kr')) {
+  // 관리자가 아닌 경우 setup으로 리다이렉트 (localStorage에서 역할 확인은 클라이언트에서)
+  if (user.email !== 'taylorr@gclass.ice.go.kr') {
     redirect('/setup')
   }
 
