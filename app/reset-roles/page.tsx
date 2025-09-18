@@ -19,6 +19,30 @@ export default function ResetRolesPage() {
     }
   }
 
+  const handleDatabaseReset = async () => {
+    try {
+      const response = await fetch('/api/reset-roles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        alert('데이터베이스에서 모든 사용자 역할이 초기화되었습니다.')
+        // 캐시도 클리어하고 setup 페이지로 이동
+        localStorage.clear()
+        sessionStorage.clear()
+        window.location.href = '/setup'
+      } else {
+        alert('역할 초기화에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('Reset error:', error)
+      alert('오류가 발생했습니다.')
+    }
+  }
+
   const handleLogoutAndLogin = () => {
     // 로그아웃 후 재로그인
     if (typeof window !== 'undefined') {
@@ -46,6 +70,13 @@ export default function ResetRolesPage() {
           </div>
 
           <div className="space-y-3">
+            <Button
+              className="w-full bg-red-600 hover:bg-red-700"
+              onClick={handleDatabaseReset}
+            >
+              데이터베이스에서 역할 초기화
+            </Button>
+
             <Button
               className="w-full"
               onClick={handleForceReset}

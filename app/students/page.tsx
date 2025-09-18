@@ -3,7 +3,7 @@ import { requireRole } from '@/lib/auth'
 import { StudentsManagement } from '@/components/students/students-management'
 
 export default async function StudentsPage() {
-  const user = await requireRole(['admin', 'homeroom', 'helper'])
+  const user = await requireRole(['admin', 'homeroom', 'helper', 'student'])
 
   // 실제 데이터는 클라이언트 컴포넌트에서 로드
   const students: any[] = []
