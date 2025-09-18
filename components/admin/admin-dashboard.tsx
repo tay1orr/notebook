@@ -86,6 +86,10 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
   const pendingLoans = loans.filter(loan => loan.status === 'requested').length
   const activeLoans = loans.filter(loan => loan.status === 'picked_up' && !isLoanOverdue(loan.due_date || loan.dueDate)).length
   const overdueLoans = loans.filter(loan => loan.status === 'picked_up' && isLoanOverdue(loan.due_date || loan.dueDate)).length
+  const totalLoans = loans.length
+
+  // 총 사용자 수 계산 (중복 제거)
+  const uniqueUsers = new Set(loans.map(loan => loan.email || loan.student_name)).size
 
   console.log('AdminDashboard - Statistics:', {
     total: loans.length,
@@ -116,7 +120,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">신청 대기</CardTitle>
@@ -169,6 +173,32 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{overdueLoans}</div>
             <p className="text-xs text-muted-foreground">즉시 확인 필요</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">전체 대여</CardTitle>
+            <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{totalLoans}</div>
+            <p className="text-xs text-muted-foreground">총 대여 기록</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">총 사용자</CardTitle>
+            <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{uniqueUsers}</div>
+            <p className="text-xs text-muted-foreground">이용한 학생 수</p>
           </CardContent>
         </Card>
       </div>
@@ -234,7 +264,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="grid gap-3">
-              {(user.role === 'admin' || user.role === 'helper' || user.role === 'homeroom' || user.role === 'teacher') && (
+              {(user.role === 'admin' || user.role === 'helper' || user.role === 'homeroom') && (
                 <>
                   <Button className="w-full justify-start" variant="outline" asChild>
                     <a href="/loans">
@@ -260,6 +290,16 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                       학생 관리
                     </a>
                   </Button>
+                  {user.role === 'admin' && (
+                    <Button className="w-full justify-start" variant="outline" asChild>
+                      <a href="/users">
+                        <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                        </svg>
+                        사용자 관리
+                      </a>
+                    </Button>
+                  )}
                 </>
               )}
               <Button className="w-full justify-start" variant="outline">

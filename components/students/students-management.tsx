@@ -83,7 +83,9 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
             const newStats = {
               total: studentsArray.length,
               withLoan: studentsArray.filter(s => s.currentLoan).length,
-              overdue: studentsArray.filter(s => s.overdueCount > 0).length
+              overdue: studentsArray.filter(s => s.overdueCount > 0).length,
+              inactive: studentsArray.filter(s => s.loanHistory === 0).length,
+              active: studentsArray.filter(s => s.loanHistory > 0).length
             }
             setStats(newStats)
 
@@ -149,7 +151,9 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
       const newStats = {
         total: updatedStudents.length,
         withLoan: updatedStudents.filter(s => s.currentLoan).length,
-        overdue: updatedStudents.filter(s => s.overdueCount > 0).length
+        overdue: updatedStudents.filter(s => s.overdueCount > 0).length,
+        inactive: updatedStudents.filter(s => s.loanHistory === 0).length,
+        active: updatedStudents.filter(s => s.loanHistory > 0).length
       }
       setStats(newStats)
 
@@ -201,29 +205,65 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">전체 학생</CardTitle>
+            <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+            </svg>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">총 등록된 학생</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">대여 중</CardTitle>
+            <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.withLoan}</div>
+            <p className="text-xs text-muted-foreground">현재 대여 중</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">연체자</CardTitle>
+            <svg className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.081 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
+            <p className="text-xs text-muted-foreground">연체 중인 학생</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">이용 경험</CardTitle>
+            <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+            <p className="text-xs text-muted-foreground">대여 이력 있음</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">미이용</CardTitle>
+            <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-600">{stats.inactive}</div>
+            <p className="text-xs text-muted-foreground">대여 이력 없음</p>
           </CardContent>
         </Card>
       </div>

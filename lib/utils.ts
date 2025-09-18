@@ -182,7 +182,6 @@ export function getRoleText(role: string): string {
     'admin': '관리자',
     'homeroom': '담임교사',
     'helper': '노트북 관리 도우미',
-    'teacher': '교사',
     'student': '학생'
   }
   return roleText[role] || role

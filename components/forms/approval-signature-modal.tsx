@@ -212,9 +212,9 @@ export function ApprovalSignatureModal({
                 <Label>담당자 서명 *</Label>
                 <SignaturePad
                   ref={signaturePadRef}
-                  width={400}
-                  height={120}
-                  className="w-full"
+                  width={300}
+                  height={100}
+                  className="w-full max-w-sm mx-auto"
                   onSignatureChange={setSignatureEmpty}
                 />
                 <div className="flex justify-end">

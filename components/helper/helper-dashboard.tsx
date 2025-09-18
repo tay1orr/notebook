@@ -160,15 +160,17 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
         </Card>
       </div>
 
-      {/* 도우미 전용 탭 */}
+      {/* 도우미/담임교사 전용 탭 */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="management">
             대여 승인 업무
           </TabsTrigger>
-          <TabsTrigger value="personal">
-            개인 대여 신청
-          </TabsTrigger>
+          {user.role === 'helper' && (
+            <TabsTrigger value="personal">
+              개인 대여 신청
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="management">
@@ -229,28 +231,30 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
           </Card>
         </TabsContent>
 
-        <TabsContent value="personal">
-          <Card>
-            <CardHeader>
-              <CardTitle>개인 대여 신청</CardTitle>
-              <CardDescription>
-                도우미도 필요 시 노트북을 대여할 수 있습니다.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <StudentDashboard
-                student={{
-                  name: user.name,
-                  email: user.email,
-                  className: user.className || '',
-                  studentNo: user.studentNo || '',
-                  phone: ''
-                }}
-                userRole="helper"
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {user.role === 'helper' && (
+          <TabsContent value="personal">
+            <Card>
+              <CardHeader>
+                <CardTitle>개인 대여 신청</CardTitle>
+                <CardDescription>
+                  도우미도 필요 시 노트북을 대여할 수 있습니다.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <StudentDashboard
+                  student={{
+                    name: user.name,
+                    email: user.email,
+                    className: user.className || '',
+                    studentNo: user.studentNo || '',
+                    phone: ''
+                  }}
+                  userRole="helper"
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )
