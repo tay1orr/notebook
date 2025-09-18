@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CSVUpload } from '@/components/forms/csv-upload'
-import { formatDate, maskPhone, getRoleText } from '@/lib/utils'
+import { formatDate, maskPhone, getRoleText, isLoanOverdue } from '@/lib/utils'
 
 interface StudentsManagementProps {
   students: any[]
@@ -24,12 +24,86 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
 
   // 대여 신청 데이터에서 학생 정보 추출
   useEffect(() => {
-    const loadStudentsFromLoans = () => {
+    const loadStudentsFromLoans = async () => {
+      // API 시도하되 실패하면 즉시 localStorage로 폴백
+      let useLocalStorage = false
+
+      try {
+        const response = await fetch('/api/loans')
+        if (response.ok) {
+          const { loans } = await response.json()
+          console.log('StudentsManagement - Loaded loans from API:', loans)
+
+          // 대여 데이터에서 학생 정보 추출
+          const studentMap = new Map()
+          loans.forEach(loan => {
+            const key = `${loan.class_name || loan.className}-${loan.student_no || loan.studentNo}`
+            if (!studentMap.has(key)) {
+              studentMap.set(key, {
+                id: key,
+                studentNo: loan.student_no || loan.studentNo,
+                name: loan.student_name || loan.studentName,
+                className: loan.class_name || loan.className,
+                email: loan.email,
+                phone: loan.student_contact || loan.studentContact || '',
+                parentPhone: '',
+                role: 'student',
+                currentLoan: null,
+                loanHistory: 0,
+                overdueCount: 0,
+                status: 'active'
+              })
+            }
+
+            const student = studentMap.get(key)
+            student.loanHistory++
+
+            // 현재 대여 중인 기기 확인
+            if (loan.status === 'picked_up') {
+              student.currentLoan = loan.device_tag || loan.deviceTag
+              student.dueDate = loan.due_date || loan.dueDate
+
+              // 연체 확인 (실시간)
+              if (isLoanOverdue(loan.due_date || loan.dueDate)) {
+                student.overdueCount++
+              }
+            }
+          })
+
+          const studentsArray = Array.from(studentMap.values())
+          setStudents(studentsArray)
+
+          // 통계 계산
+          const newStats = {
+            total: studentsArray.length,
+            withLoan: studentsArray.filter(s => s.currentLoan).length,
+            overdue: studentsArray.filter(s => s.overdueCount > 0).length,
+            inactive: studentsArray.filter(s => s.loanHistory === 0).length,
+            active: studentsArray.filter(s => s.loanHistory > 0).length
+          }
+          setStats(newStats)
+
+          return // API 성공 시 localStorage 실행 안함
+        } else {
+          console.error('StudentsManagement - API failed, using localStorage:', response.statusText)
+          useLocalStorage = true
+        }
+      } catch (error) {
+        console.error('StudentsManagement - API error, using localStorage:', error)
+        useLocalStorage = true
+      }
+
+      // localStorage 폴백 (API 실패 시 또는 기본)
       if (typeof window !== 'undefined') {
-        const storedLoans = localStorage.getItem('loanApplications')
+        let storedLoans = localStorage.getItem('loanApplications')
+        if (!storedLoans) {
+          storedLoans = sessionStorage.getItem('loanApplications')
+          console.log('StudentsManagement - Trying sessionStorage fallback')
+        }
         if (storedLoans) {
           try {
             const loans = JSON.parse(storedLoans)
+            console.log('StudentsManagement - Using localStorage fallback', loans.length, 'loans')
 
             // 중복 제거하여 고유 학생 목록 생성
             const studentMap = new Map()
@@ -45,7 +119,7 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
                   email: loan.email,
                   phone: loan.studentContact || '',
                   parentPhone: '',
-                  role: 'student', // 기본값은 학생
+                  role: 'student',
                   currentLoan: null,
                   loanHistory: 0,
                   overdueCount: 0,
@@ -67,11 +141,11 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
                 if (loan.status === 'picked_up') {
                   student.currentLoan = loan.deviceTag
                   student.dueDate = loan.dueDate
-                }
 
-                // 연체 카운트
-                if (loan.status === 'overdue') {
-                  student.overdueCount += 1
+                  // 연체 확인 (실시간)
+                  if (isLoanOverdue(loan.dueDate)) {
+                    student.overdueCount++
+                  }
                 }
               }
             })
@@ -97,8 +171,29 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
     }
 
     loadStudentsFromLoans()
-    const interval = setInterval(loadStudentsFromLoans, 500)
-    return () => clearInterval(interval)
+
+    // BroadcastChannel 리스너 추가 (탭 간 동기화)
+    let channel: BroadcastChannel | null = null
+    try {
+      channel = new BroadcastChannel('loan-applications')
+      channel.onmessage = (event) => {
+        console.log('StudentsManagement - Received broadcast:', event.data)
+        if (event.data.type === 'NEW_LOAN_APPLICATION') {
+          loadStudentsFromLoans() // 데이터 새로고침
+        }
+      }
+    } catch (error) {
+      console.log('BroadcastChannel not supported:', error)
+    }
+
+    const interval = setInterval(loadStudentsFromLoans, 2000) // 2초마다
+
+    return () => {
+      clearInterval(interval)
+      if (channel) {
+        channel.close()
+      }
+    }
   }, [])
 
   const handleRoleChange = async (studentId: string, newRole: string) => {
