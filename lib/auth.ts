@@ -35,13 +35,29 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
         // 관리자가 아닌 모든 사용자의 역할을 강제 초기화
         if (user.email === 'taylorr@gclass.ice.go.kr') {
           role = 'admin'
+          // 관리자 역할이 없으면 생성
+          if (roleData.role !== 'admin') {
+            await supabase
+              .from('user_roles')
+              .update({ role: 'admin' })
+              .eq('user_id', user.id)
+          }
         } else {
+          // 비관리자 사용자 역할을 데이터베이스에서 삭제
+          await supabase
+            .from('user_roles')
+            .delete()
+            .eq('user_id', user.id)
           role = '' // 모든 비관리자 사용자 역할 초기화
         }
       } else {
         // Default admin for specific email
         if (user.email === 'taylorr@gclass.ice.go.kr') {
           role = 'admin'
+          // 관리자 역할 생성
+          await supabase
+            .from('user_roles')
+            .insert({ user_id: user.id, role: 'admin' })
         }
       }
     } catch (roleError) {
