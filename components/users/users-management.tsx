@@ -34,194 +34,62 @@ export function UsersManagement() {
   // 모든 사용자 로드
   useEffect(() => {
     const loadUsers = async () => {
-      // API 시도하되 실패하면 즉시 localStorage로 폴백
-      let useLocalStorage = false
-
       try {
-        const response = await fetch('/api/loans')
+        console.log('UsersManagement - Loading users from API')
+        const response = await fetch('/api/users')
         if (response.ok) {
-          const { loans } = await response.json()
-          console.log('UsersManagement - Loaded loans from API:', loans)
+          const { users } = await response.json()
+          console.log('UsersManagement - Loaded users from API:', users)
 
-          // 대여 데이터에서 사용자 정보 추출
-          const userMap = new Map()
+          // API에서 받은 사용자 데이터를 컴포넌트 형식으로 변환
+          const formattedUsers = users.map((user: any) => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role || '',
+            lastLogin: user.lastLogin,
+            status: 'active' as const,
+            createdAt: user.createdAt,
+            allLoans: [] // 대여 기록은 별도 API에서 가져와야 함
+          }))
 
-          // 기본 관리자 추가
-          userMap.set('taylorr@gclass.ice.go.kr', {
-            id: '1',
-            name: '조대영',
-            email: 'taylorr@gclass.ice.go.kr',
-            role: 'admin',
-            lastLogin: new Date().toISOString(),
-            status: 'active',
-            createdAt: '2025-01-01T00:00:00Z'
-          })
-
-          loans.forEach(loan => {
-            const email = loan.email
-            if (email && !userMap.has(email)) {
-              userMap.set(email, {
-                id: email,
-                name: loan.student_name || loan.studentName,
-                email: email,
-                role: '', // 역할 초기화 - 역할 선택 필요
-                lastLogin: loan.created_at || loan.requestedAt,
-                status: 'active',
-                createdAt: loan.created_at || loan.requestedAt,
-                allLoans: []
-              })
-            }
-
-            // 사용자별 대여 기록 추가
-            const user = userMap.get(email)
-            if (user) {
-              user.allLoans.push(loan)
-            }
-          })
-
-          const usersArray = Array.from(userMap.values())
-          setUsers(usersArray)
-
-          return // API 성공 시 localStorage 실행 안함
+          setUsers(formattedUsers)
+          return // API 성공 시 localStorage 사용 안함
         } else {
-          console.error('UsersManagement - API failed, using localStorage:', response.statusText)
-          useLocalStorage = true
-        }
-      } catch (error) {
-        console.error('UsersManagement - API error, using localStorage:', error)
-        useLocalStorage = true
-      }
-
-      // localStorage 폴백 (API 실패 시 또는 기본)
-      if (typeof window !== 'undefined') {
-        let storedLoans = localStorage.getItem('loanApplications')
-        if (!storedLoans) {
-          storedLoans = sessionStorage.getItem('loanApplications')
-          console.log('UsersManagement - Trying sessionStorage fallback')
-        }
-        if (storedLoans) {
-          try {
-            const loans = JSON.parse(storedLoans)
-            console.log('UsersManagement - Using localStorage fallback', loans.length, 'loans')
-
-            // 대여 데이터에서 사용자 정보 추출
-            const userMap = new Map()
-
-            // 기본 관리자 추가
-            userMap.set('taylorr@gclass.ice.go.kr', {
-              id: '1',
-              name: '조대영',
-              email: 'taylorr@gclass.ice.go.kr',
-              role: 'admin',
-              lastLogin: new Date().toISOString(),
-              status: 'active',
-              createdAt: '2025-01-01T00:00:00Z'
-            })
-
-            loans.forEach((loan: any) => {
-              const email = loan.email
-              if (email && !userMap.has(email)) {
-                userMap.set(email, {
-                  id: email,
-                  name: loan.studentName,
-                  email: email,
-                  role: '', // 역할 초기화 - 역할 선택 필요
-                  lastLogin: loan.requestedAt,
-                  status: 'active',
-                  createdAt: loan.requestedAt,
-                  allLoans: []
-                })
-              }
-
-              // 사용자별 대여 기록 추가
-              const user = userMap.get(email)
-              if (user) {
-                user.allLoans.push(loan)
-              }
-            })
-
-            const usersArray = Array.from(userMap.values())
-            setUsers(usersArray)
-
-          } catch (error) {
-            console.error('Failed to parse loan data:', error)
-
-            // 완전 폴백: 기본 더미 데이터
-            const dummyUsers: User[] = [
-              {
-                id: '1',
-                name: '조대영',
-                email: 'taylorr@gclass.ice.go.kr',
-                role: 'admin',
-                lastLogin: '2025-09-18T10:30:00Z',
-                status: 'active',
-                createdAt: '2025-01-01T00:00:00Z'
-              },
-              {
-                id: '2',
-                name: '1-1 담임교사',
-                email: 'teacher11@gclass.ice.go.kr',
-                role: 'homeroom',
-                className: '1-1',
-                lastLogin: '2025-09-18T09:15:00Z',
-                status: 'active',
-                createdAt: '2025-01-15T00:00:00Z'
-              },
-              {
-                id: '3',
-                name: '노트북 도우미',
-                email: 'helper@gclass.ice.go.kr',
-                role: 'helper',
-                className: '1-2',
-                lastLogin: '2025-09-18T08:45:00Z',
-                status: 'active',
-                createdAt: '2025-02-01T00:00:00Z'
-              }
-            ]
-            setUsers(dummyUsers)
-          }
-        } else {
-          // localStorage도 없으면 기본 더미 데이터
-          const dummyUsers: User[] = [
+          console.error('UsersManagement - API failed:', response.statusText)
+          // 폴백으로 기본 데이터 사용
+          setUsers([
             {
               id: '1',
               name: '조대영',
               email: 'taylorr@gclass.ice.go.kr',
               role: 'admin',
-              lastLogin: '2025-09-18T10:30:00Z',
-              status: 'active',
-              createdAt: '2025-01-01T00:00:00Z'
+              lastLogin: new Date().toLocaleDateString('ko-KR'),
+              status: 'active' as const,
+              createdAt: new Date().toLocaleDateString('ko-KR'),
+              allLoans: []
             }
-          ]
-          setUsers(dummyUsers)
+          ])
         }
+      } catch (error) {
+        console.error('UsersManagement - API error:', error)
+        // 오류 시 기본 데이터 사용
+        setUsers([
+          {
+            id: '1',
+            name: '조대영',
+            email: 'taylorr@gclass.ice.go.kr',
+            role: 'admin',
+            lastLogin: new Date().toLocaleDateString('ko-KR'),
+            status: 'active' as const,
+            createdAt: new Date().toLocaleDateString('ko-KR'),
+            allLoans: []
+          }
+        ])
       }
     }
 
     loadUsers()
-
-    // BroadcastChannel 리스너 추가 (탭 간 동기화)
-    let channel: BroadcastChannel | null = null
-    try {
-      channel = new BroadcastChannel('loan-applications')
-      channel.onmessage = (event) => {
-        console.log('UsersManagement - Received broadcast:', event.data)
-        if (event.data.type === 'NEW_LOAN_APPLICATION') {
-          loadUsers() // 데이터 새로고침
-        }
-      }
-    } catch (error) {
-      console.log('BroadcastChannel not supported:', error)
-    }
-
-    const interval = setInterval(loadUsers, 2000) // 2초마다
-
-    return () => {
-      clearInterval(interval)
-      if (channel) {
-        channel.close()
-      }
-    }
   }, [])
 
   const handleRoleChange = async (userId: string, newRole: string) => {
