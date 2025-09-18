@@ -51,14 +51,16 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
             console.log('🔍 AUTH DEBUG - Admin update result:', updateError)
           }
         } else {
-          console.log('🔍 AUTH DEBUG - Deleting role for non-admin user:', user.email)
-          // 비관리자 사용자 역할을 데이터베이스에서 삭제
-          const { error: deleteError } = await supabase
-            .from('user_roles')
-            .delete()
-            .eq('user_id', user.id)
-          console.log('🔍 AUTH DEBUG - Delete result:', deleteError)
-          role = '' // 모든 비관리자 사용자 역할 초기화
+          console.log('🔍 AUTH DEBUG - Non-admin user found with role:', roleData.role, 'for:', user.email)
+          // 임시로 역할 삭제를 비활성화 - 역할 선택 후에는 유지해야 함
+          role = roleData.role
+          // console.log('🔍 AUTH DEBUG - Deleting role for non-admin user:', user.email)
+          // const { error: deleteError } = await supabase
+          //   .from('user_roles')
+          //   .delete()
+          //   .eq('user_id', user.id)
+          // console.log('🔍 AUTH DEBUG - Delete result:', deleteError)
+          // role = '' // 모든 비관리자 사용자 역할 초기화
         }
       } else {
         console.log('🔍 AUTH DEBUG - No existing role found for:', user.email)
