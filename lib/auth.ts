@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
@@ -18,6 +18,7 @@ export interface AuthUser {
 export async function getCurrentUser(): Promise<AuthUser | null> {
   try {
     const supabase = createServerClient()
+    const adminSupabase = createAdminClient()
 
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -25,12 +26,12 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       return null
     }
 
-    // Get user role from user_roles table
+    // Get user role from user_roles table using admin client
     let role: UserRole = ''
     console.log('🔍 AUTH DEBUG - Checking user:', user.email, 'ID:', user.id)
 
     try {
-      const { data: roleData, error: roleSelectError } = await supabase
+      const { data: roleData, error: roleSelectError } = await adminSupabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
@@ -48,7 +49,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
           role = 'admin'
           console.log('🔍 AUTH DEBUG - Setting admin role for:', user.email)
           // 관리자 역할 생성
-          const { error: insertError } = await supabase
+          const { error: insertError } = await adminSupabase
             .from('user_roles')
             .insert({ user_id: user.id, role: 'admin' })
           console.log('🔍 AUTH DEBUG - Admin insert result:', insertError)
@@ -64,11 +65,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
     console.log('🔍 AUTH DEBUG - Final role for', user.email, ':', role)
 
-    // 학생 정보도 함께 가져오기
+    // 학생 정보도 함께 가져오기 using admin client
     let studentInfo = null
     if (role === 'student' || role === 'homeroom') {
       try {
-        const { data: studentData, error: studentError } = await supabase
+        const { data: studentData, error: studentError } = await adminSupabase
           .from('students')
           .select('grade, class, student_no')
           .eq('user_id', user.id)
@@ -77,9 +78,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
         if (!studentError && studentData) {
           studentInfo = studentData
           console.log('🔍 AUTH DEBUG - Student info loaded:', studentInfo)
+        } else {
+          console.log('🔍 AUTH DEBUG - No student info found, error:', studentError)
         }
       } catch (error) {
-        console.log('🔍 AUTH DEBUG - No student info found')
+        console.log('🔍 AUTH DEBUG - Student info lookup failed:', error)
       }
     }
 
