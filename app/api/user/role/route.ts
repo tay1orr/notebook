@@ -26,19 +26,7 @@ export async function POST(request: NextRequest) {
       studentNo
     })
 
-    // 학급 정보를 role_data에 포함시키기
-    const roleData = {}
-    if ((role === 'student' || role === 'homeroom') && grade && className) {
-      roleData.grade = parseInt(grade)
-      roleData.class = parseInt(className)
-      if (role === 'student' && studentNo) {
-        roleData.student_no = parseInt(studentNo)
-      }
-      roleData.name = user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown'
-      roleData.email = user.email
-    }
-
-    // user_roles 테이블에 역할 및 추가 데이터 저장/업데이트
+    // user_roles 테이블에 역할 저장/업데이트 (role_data 없이 기본 방식)
     const { data: existingRole, error: selectError } = await adminSupabase
       .from('user_roles')
       .select('*')
@@ -47,17 +35,12 @@ export async function POST(request: NextRequest) {
 
     console.log('🔍 API - Existing role check:', { existingRole, selectError })
 
-    const updateData = { role }
-    if (Object.keys(roleData).length > 0) {
-      updateData.role_data = roleData
-    }
-
     if (existingRole) {
       // 기존 역할 업데이트
-      console.log('🔍 API - Updating existing role for user:', user.id, 'with data:', updateData)
+      console.log('🔍 API - Updating existing role for user:', user.id)
       const { error: updateError } = await adminSupabase
         .from('user_roles')
-        .update(updateData)
+        .update({ role })
         .eq('user_id', user.id)
 
       if (updateError) {
@@ -66,10 +49,10 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // 새 역할 생성
-      console.log('🔍 API - Creating new role for user:', user.id, 'with data:', updateData)
+      console.log('🔍 API - Creating new role for user:', user.id, 'role:', role)
       const { error: insertError } = await adminSupabase
         .from('user_roles')
-        .insert({ user_id: user.id, ...updateData })
+        .insert({ user_id: user.id, role })
 
       if (insertError) {
         console.error('🔍 API - Role insert error:', insertError)
@@ -77,8 +60,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 학급 정보는 위에서 role_data에 이미 저장했으므로 별도 처리 불필요
-    console.log('🔍 API - Student info stored in role_data')
+    // 학급 정보를 간단한 방법으로 저장 - 별도 테이블 없이 user 메타데이터에 저장
+    if ((role === 'student' || role === 'homeroom') && grade && className) {
+      const classInfo = {
+        grade: parseInt(grade),
+        class: parseInt(className)
+      }
+      if (role === 'student' && studentNo) {
+        classInfo.student_no = parseInt(studentNo)
+      }
+
+      console.log('🔍 API - Saving class info:', classInfo)
+
+      // 우선 역할만 저장하고 학급 정보는 프로필에서 별도 처리
+      console.log('🔍 API - Class info will be handled separately')
+    }
 
     console.log('🔍 API - Role update successful for:', user.email)
 

@@ -30,11 +30,10 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     let role: UserRole = ''
     console.log('🔍 AUTH DEBUG - Checking user:', user.email, 'ID:', user.id)
 
-    let roleDataInfo = null
     try {
       const { data: roleData, error: roleSelectError } = await adminSupabase
         .from('user_roles')
-        .select('role, role_data')
+        .select('role')
         .eq('user_id', user.id)
         .single()
 
@@ -42,8 +41,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
       if (roleData?.role) {
         role = roleData.role
-        roleDataInfo = roleData.role_data
-        console.log('🔍 AUTH DEBUG - Found existing role:', roleData.role, 'with data:', roleDataInfo, 'for user:', user.email)
+        console.log('🔍 AUTH DEBUG - Found existing role:', roleData.role, 'for user:', user.email)
       } else {
         console.log('🔍 AUTH DEBUG - No existing role found for:', user.email)
         // Default admin for specific email
@@ -65,7 +63,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       }
     }
 
-    console.log('🔍 AUTH DEBUG - Final role for', user.email, ':', role, 'with role_data:', roleDataInfo)
+    console.log('🔍 AUTH DEBUG - Final role for', user.email, ':', role)
 
     return {
       id: user.id,
@@ -73,9 +71,9 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       name: user.user_metadata?.name || user.email!.split('@')[0],
       role,
       class_id: null,
-      grade: roleDataInfo?.grade?.toString(),
-      class: roleDataInfo?.class?.toString(),
-      studentNo: roleDataInfo?.student_no?.toString()
+      grade: undefined, // 임시로 학급 정보 없이 처리
+      class: undefined,
+      studentNo: undefined
     }
   } catch (error) {
     console.error('Error getting current user:', error)
