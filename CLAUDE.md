@@ -85,4 +85,4 @@ FEATURE_NOTIFICATIONS_ENABLED=false
 이 프로젝트를 Claude Code에서 작업할 때 위 설정들을 참고하여 개발해주세요.
 
 ## 최근 업데이트
-- 2024-09-19: Supabase 환경변수 설정 및 API 오류 수정
+- 2024-09-19: Supabase 환경변수 설정 및 API 오류 수정 (올바른 프로젝트 ID: rjpcfssnplnkexwvmhuf)
