@@ -48,17 +48,6 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       if (roleData?.role) {
         role = roleData.role
         console.log('🔍 AUTH DEBUG - Found existing role:', roleData.role, 'for user:', user.email)
-
-        // 학급 정보를 user 메타데이터에서 가져오기
-        if (user.user_metadata?.class_info) {
-          const classInfo = user.user_metadata.class_info
-          if (classInfo.grade) grade = classInfo.grade.toString()
-          if (classInfo.class) className = classInfo.class.toString()
-          if (classInfo.student_no) studentNo = classInfo.student_no.toString()
-          console.log('🔍 AUTH DEBUG - Found class info from metadata:', { grade, className, studentNo })
-        } else {
-          console.log('🔍 AUTH DEBUG - No class info found in user metadata')
-        }
       } else {
         console.log('🔍 AUTH DEBUG - No existing role found for:', user.email)
         // Default admin for specific email
@@ -71,6 +60,22 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
             .insert({ user_id: user.id, role: 'admin' })
           console.log('🔍 AUTH DEBUG - Admin insert result:', insertError)
         }
+      }
+
+      // 학급 정보를 user 메타데이터에서 가져오기 (역할과 상관없이 항상 체크)
+      console.log('🔍 AUTH DEBUG - Full user metadata:', JSON.stringify(user.user_metadata, null, 2))
+
+      if (user.user_metadata?.class_info) {
+        const classInfo = user.user_metadata.class_info
+        console.log('🔍 AUTH DEBUG - Class info object:', JSON.stringify(classInfo, null, 2))
+
+        if (classInfo.grade) grade = classInfo.grade.toString()
+        if (classInfo.class) className = classInfo.class.toString()
+        if (classInfo.student_no) studentNo = classInfo.student_no.toString()
+        console.log('🔍 AUTH DEBUG - Found class info from metadata:', { grade, className, studentNo })
+      } else {
+        console.log('🔍 AUTH DEBUG - No class info found in user metadata')
+        console.log('🔍 AUTH DEBUG - Available metadata keys:', Object.keys(user.user_metadata || {}))
       }
     } catch (roleError) {
       console.log('🔍 AUTH DEBUG - Role lookup failed:', roleError)

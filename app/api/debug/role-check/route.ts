@@ -1,4 +1,4 @@
-import { createServerClient, createAdminClient } from '@/lib/supabase-server'
+import { getCurrentUser } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 
 // Force dynamic rendering
@@ -6,39 +6,20 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    const supabase = createServerClient()
-    const adminSupabase = createAdminClient()
+    // getCurrentUser 함수를 사용해서 제대로 처리된 사용자 정보 가져오기
+    const authUser = await getCurrentUser()
 
-    // 현재 사용자 확인
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    if (!authUser) {
       return NextResponse.json({
-        error: 'Not authenticated',
-        authError: authError?.message
+        error: 'Not authenticated'
       }, { status: 401 })
     }
 
-    console.log('🔍 ROLE CHECK - Current user:', user.email, user.id)
-
-    // user_roles 테이블에서 직접 확인
-    const { data: roleData, error: roleError } = await adminSupabase
-      .from('user_roles')
-      .select('*')
-      .eq('user_id', user.id)
-
-    console.log('🔍 ROLE CHECK - Direct DB query result:', { roleData, roleError })
+    console.log('🔍 ROLE CHECK - Current user from auth:', authUser)
 
     return NextResponse.json({
       success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.user_metadata?.name || user.email?.split('@')[0],
-        full_user_metadata: user.user_metadata
-      },
-      roleData: roleData || [],
-      roleError: roleError?.message,
+      user: authUser,
       timestamp: new Date().toISOString()
     })
   } catch (error) {

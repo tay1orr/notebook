@@ -43,14 +43,15 @@ export function DevicesManagementWrapper() {
         let currentUserInfo: UserInfo | null = null
         if (userResponse.ok) {
           const userData = await userResponse.json()
+          const user = userData.user  // getCurrentUser()의 결과
           currentUserInfo = {
-            id: userData.user.id,
-            email: userData.user.email,
-            name: userData.user.name,
-            role: userData.roleData?.[0]?.role || 'student',
-            grade: userData.user.grade,
-            class: userData.user.class,
-            isApprovedHomeroom: userData.user.isApprovedHomeroom
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role || 'student',
+            grade: user.grade,
+            class: user.class,
+            isApprovedHomeroom: user.isApprovedHomeroom
           }
           setUser(currentUserInfo)
           console.log('DevicesManagement - User info loaded:', currentUserInfo)
