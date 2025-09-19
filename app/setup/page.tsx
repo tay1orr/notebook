@@ -11,7 +11,9 @@ export default async function SetupPage() {
   console.log('🔍 SETUP PAGE DEBUG - User data:', {
     email: user.email,
     role: user.role,
-    id: user.id
+    roleType: typeof user.role,
+    id: user.id,
+    fullUser: user
   })
 
   // 관리자는 이 페이지를 볼 수 없음
