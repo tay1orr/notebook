@@ -34,7 +34,8 @@ export async function GET() {
       user: {
         id: user.id,
         email: user.email,
-        name: user.user_metadata?.name || user.email?.split('@')[0]
+        name: user.user_metadata?.name || user.email?.split('@')[0],
+        full_user_metadata: user.user_metadata
       },
       roleData: roleData || [],
       roleError: roleError?.message,
