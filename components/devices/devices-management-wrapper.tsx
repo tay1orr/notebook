@@ -40,9 +40,10 @@ export function DevicesManagementWrapper() {
         ])
 
         // 사용자 정보 처리
+        let currentUserInfo: UserInfo | null = null
         if (userResponse.ok) {
           const userData = await userResponse.json()
-          const userInfo: UserInfo = {
+          currentUserInfo = {
             id: userData.user.id,
             email: userData.user.email,
             name: userData.user.name,
@@ -51,8 +52,8 @@ export function DevicesManagementWrapper() {
             class: userData.user.class,
             isApprovedHomeroom: userData.user.isApprovedHomeroom
           }
-          setUser(userInfo)
-          console.log('DevicesManagement - User info loaded:', userInfo)
+          setUser(currentUserInfo)
+          console.log('DevicesManagement - User info loaded:', currentUserInfo)
         }
 
         if (devicesResponse.ok && loansResponse.ok) {
@@ -101,9 +102,9 @@ export function DevicesManagementWrapper() {
           })
 
           // 담임교사인 경우 자신의 반 기기만 필터링
-          if (userInfo && userInfo.role === 'homeroom' && userInfo.isApprovedHomeroom && userInfo.grade && userInfo.class) {
-            const userGrade = parseInt(userInfo.grade)
-            const userClass = parseInt(userInfo.class)
+          if (currentUserInfo && currentUserInfo.role === 'homeroom' && currentUserInfo.isApprovedHomeroom && currentUserInfo.grade && currentUserInfo.class) {
+            const userGrade = parseInt(currentUserInfo.grade)
+            const userClass = parseInt(currentUserInfo.class)
 
             updatedDeviceList = updatedDeviceList.filter(device => {
               // 기기 번호에서 학년과 반 추출 (예: ICH-20111 -> 2학년 1반)

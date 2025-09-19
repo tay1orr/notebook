@@ -40,10 +40,10 @@ export function StudentsManagementWrapper() {
         ])
 
         // 사용자 정보 처리
-        let userInfo: UserInfo | null = null
+        let currentUserInfo: UserInfo | null = null
         if (userResponse.ok) {
           const userData = await userResponse.json()
-          userInfo = {
+          currentUserInfo = {
             id: userData.user.id,
             email: userData.user.email,
             name: userData.user.name,
@@ -52,8 +52,8 @@ export function StudentsManagementWrapper() {
             class: userData.user.class,
             isApprovedHomeroom: userData.user.isApprovedHomeroom
           }
-          setUser(userInfo)
-          console.log('StudentsManagement - User info loaded:', userInfo)
+          setUser(currentUserInfo)
+          console.log('StudentsManagement - User info loaded:', currentUserInfo)
         }
 
         if (loansResponse.ok && usersResponse.ok) {
@@ -115,9 +115,9 @@ export function StudentsManagementWrapper() {
           let studentsArray = Array.from(studentMap.values())
 
           // 담임교사인 경우 자신의 반 학생만 필터링 + 자신도 포함
-          if (userInfo && userInfo.role === 'homeroom' && userInfo.isApprovedHomeroom && userInfo.grade && userInfo.class) {
-            const userGrade = parseInt(userInfo.grade)
-            const userClass = parseInt(userInfo.class)
+          if (currentUserInfo && currentUserInfo.role === 'homeroom' && currentUserInfo.isApprovedHomeroom && currentUserInfo.grade && currentUserInfo.class) {
+            const userGrade = parseInt(currentUserInfo.grade)
+            const userClass = parseInt(currentUserInfo.class)
 
             // 자신의 반 학생들만 필터링
             studentsArray = studentsArray.filter(student => {
@@ -142,14 +142,14 @@ export function StudentsManagementWrapper() {
             })
 
             // 담임교사 본인을 목록에 추가 (이미 없는 경우)
-            const teacherExists = studentsArray.some(student => student.email === userInfo.email)
+            const teacherExists = studentsArray.some(student => student.email === currentUserInfo.email)
             if (!teacherExists) {
               studentsArray.unshift({
-                id: userInfo.email,
+                id: currentUserInfo.email,
                 studentNo: '',
-                name: `${userInfo.name} (담임교사)`,
-                className: `${userInfo.grade}-${userInfo.class}`,
-                email: userInfo.email,
+                name: `${currentUserInfo.name} (담임교사)`,
+                className: `${currentUserInfo.grade}-${currentUserInfo.class}`,
+                email: currentUserInfo.email,
                 phone: '',
                 parentPhone: '',
                 role: 'homeroom',
