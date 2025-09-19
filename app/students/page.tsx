@@ -1,5 +1,5 @@
 import { MainLayout } from '@/components/layout/main-layout'
-import { requireRole } from '@/lib/auth'
+import { requireApprovedHomeroom } from '@/lib/auth'
 import { StudentsManagementWrapper } from '@/components/students/students-management-wrapper'
 
 // Force dynamic rendering
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function StudentsPage() {
   try {
-    const user = await requireRole(['admin', 'homeroom', 'helper', 'student'])
+    const user = await requireApprovedHomeroom(['admin', 'homeroom', 'helper'])
 
     return (
       <MainLayout>

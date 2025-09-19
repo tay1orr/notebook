@@ -114,11 +114,12 @@ export function StudentsManagementWrapper() {
 
           let studentsArray = Array.from(studentMap.values())
 
-          // 담임교사인 경우 자신의 반 학생만 필터링
+          // 담임교사인 경우 자신의 반 학생만 필터링 + 자신도 포함
           if (userInfo && userInfo.role === 'homeroom' && userInfo.isApprovedHomeroom && userInfo.grade && userInfo.class) {
             const userGrade = parseInt(userInfo.grade)
             const userClass = parseInt(userInfo.class)
 
+            // 자신의 반 학생들만 필터링
             studentsArray = studentsArray.filter(student => {
               // 학생의 학급 정보에서 학년과 반 추출
               if (student.className) {
@@ -140,7 +141,28 @@ export function StudentsManagementWrapper() {
               return false
             })
 
-            console.log(`StudentsManagement - Filtered for homeroom teacher ${userGrade}-${userClass}:`, studentsArray.length, 'students')
+            // 담임교사 본인을 목록에 추가 (이미 없는 경우)
+            const teacherExists = studentsArray.some(student => student.email === userInfo.email)
+            if (!teacherExists) {
+              studentsArray.unshift({
+                id: userInfo.email,
+                studentNo: '',
+                name: `${userInfo.name} (담임교사)`,
+                className: `${userInfo.grade}-${userInfo.class}`,
+                email: userInfo.email,
+                phone: '',
+                parentPhone: '',
+                role: 'homeroom',
+                currentLoan: null,
+                loanHistory: 0,
+                overdueCount: 0,
+                status: 'active',
+                allLoans: [],
+                isTeacher: true // 교사임을 표시하는 플래그
+              })
+            }
+
+            console.log(`StudentsManagement - Filtered for homeroom teacher ${userGrade}-${userClass}:`, studentsArray.length, 'students (including teacher)')
           } else {
             console.log('StudentsManagement - No filtering applied (admin or non-homeroom user)')
           }
