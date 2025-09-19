@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getRoleText, getStatusColor, getStatusText, formatDateTime, getPurposeText, getCurrentKoreaTime, getLoanStatus } from '@/lib/utils'
 import { LoansManagement } from '@/components/loans/loans-management'
 import { StudentDashboard } from '@/components/student/student-dashboard'
+import { ApprovalSignatureModal } from '@/components/forms/approval-signature-modal'
 
 interface HelperDashboardProps {
   user: {
@@ -26,6 +27,8 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
   const [activeTab, setActiveTab] = useState<string>('management')
   const [loans, setLoans] = useState<any[]>([])
   const [myLoans, setMyLoans] = useState<any[]>([])
+  const [selectedLoan, setSelectedLoan] = useState<any>(null)
+  const [showApprovalModal, setShowApprovalModal] = useState(false)
 
   useEffect(() => {
     const loadLoans = async () => {
@@ -99,6 +102,102 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
   const activeLoans = helperClassLoans.filter((loan: any) => loan.status === 'picked_up')
   const overdueLoans = helperClassLoans.filter((loan: any) => getLoanStatus(loan) === 'overdue')
 
+  // 승인 처리 함수
+  const handleApprove = (loan: any) => {
+    setSelectedLoan(loan)
+    setShowApprovalModal(true)
+  }
+
+  // 거절 처리 함수
+  const handleReject = async (loan: any) => {
+    if (confirm('정말로 이 신청을 거절하시겠습니까?')) {
+      try {
+        const response = await fetch('/api/loans', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: loan.id,
+            status: 'rejected',
+            rejected_at: new Date().toISOString()
+          })
+        })
+
+        if (response.ok) {
+          console.log('HelperDashboard - Successfully rejected via API')
+          // 로컬 상태 업데이트
+          setLoans(prev => prev.map(l =>
+            l.id === loan.id
+              ? { ...l, status: 'rejected', rejected_at: new Date().toISOString() }
+              : l
+          ))
+        } else {
+          throw new Error('API failed')
+        }
+      } catch (error) {
+        console.error('HelperDashboard - API reject failed:', error)
+        alert('거절 처리 중 오류가 발생했습니다.')
+      }
+    }
+  }
+
+  // 승인 서명 처리 함수
+  const handleApprovalSignature = async (data: {
+    signature: string
+    deviceTag: string
+    approverName: string
+  }) => {
+    if (!selectedLoan) return
+
+    try {
+      const response = await fetch('/api/loans', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: selectedLoan.id,
+          status: 'picked_up',
+          device_tag: data.deviceTag,
+          approver_signature: data.signature,
+          approved_by: data.approverName,
+          approved_at: new Date().toISOString()
+        })
+      })
+
+      if (response.ok) {
+        console.log('HelperDashboard - Successfully approved via API')
+        // 로컬 상태 업데이트
+        setLoans(prev => prev.map(l =>
+          l.id === selectedLoan.id
+            ? {
+                ...l,
+                status: 'picked_up',
+                device_tag: data.deviceTag,
+                approver_signature: data.signature,
+                approved_by: data.approverName,
+                approved_at: new Date().toISOString()
+              }
+            : l
+        ))
+      } else {
+        throw new Error('API failed')
+      }
+    } catch (error) {
+      console.error('HelperDashboard - API approval failed:', error)
+      alert('승인 처리 중 오류가 발생했습니다.')
+    }
+
+    setSelectedLoan(null)
+    setShowApprovalModal(false)
+  }
+
+  const closeModal = () => {
+    setSelectedLoan(null)
+    setShowApprovalModal(false)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -119,7 +218,7 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className={`grid gap-4 md:grid-cols-2 ${user.role === 'homeroom' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">담당반 신청대기</CardTitle>
@@ -128,7 +227,7 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingLoans.length}</div>
+            <div className="text-2xl font-bold text-yellow-600">{pendingLoans.length}</div>
             <p className="text-xs text-muted-foreground">처리 대기 중인 신청</p>
           </CardContent>
         </Card>
@@ -141,7 +240,7 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeLoans.length}</div>
+            <div className="text-2xl font-bold text-blue-600">{activeLoans.length}</div>
             <p className="text-xs text-muted-foreground">현재 대여 중</p>
           </CardContent>
         </Card>
@@ -159,18 +258,20 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">내 대여 신청</CardTitle>
-            <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{myLoans.length}</div>
-            <p className="text-xs text-muted-foreground">내 대여 기록</p>
-          </CardContent>
-        </Card>
+        {user.role === 'helper' && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">내 대여 신청</CardTitle>
+              <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{myLoans.length}</div>
+              <p className="text-xs text-muted-foreground">내 대여 기록</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* 도우미/담임교사 전용 탭 */}
@@ -197,37 +298,51 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
             <CardContent>
               {(user.role === 'homeroom' && user.grade && user.class) || user.className ? (
                 <div className="space-y-4">
-                  {/* 간단한 대여 관리 UI를 여기에 구현 */}
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-bold text-yellow-600">{pendingLoans.length}</div>
-                      <p className="text-sm text-muted-foreground">승인 대기</p>
-                    </div>
-                    <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{activeLoans.length}</div>
-                      <p className="text-sm text-muted-foreground">사용 중</p>
-                    </div>
-                    <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-bold text-red-600">{overdueLoans.length}</div>
-                      <p className="text-sm text-muted-foreground">연체</p>
-                    </div>
-                  </div>
 
                   {pendingLoans.length > 0 && (
                     <div className="space-y-2">
                       <h3 className="font-semibold">승인 대기 중인 신청</h3>
                       {pendingLoans.map((loan: any) => (
-                        <div key={loan.id} className="p-3 border rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <span className="font-medium">{loan.student_name || loan.studentName}</span>
-                              <span className="text-sm text-muted-foreground ml-2">
-                                {loan.class_name || loan.className} {loan.student_no || loan.studentNo}번
-                              </span>
+                        <div key={loan.id} className="p-4 border rounded-lg">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium">{loan.student_name || loan.studentName}</span>
+                                <span className="text-sm text-muted-foreground">
+                                  {loan.class_name || loan.className} {loan.student_no || loan.studentNo}번
+                                </span>
+                              </div>
+                              <div className="text-sm text-muted-foreground mt-1">
+                                사용 목적: {getPurposeText(loan.purpose)} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                반납 예정: {loan.return_date || loan.dueDate} • 연락처: {loan.student_contact || loan.studentContact}
+                              </div>
+                              {loan.purposeDetail && (
+                                <div className="text-sm text-blue-600 mt-1">
+                                  상세 목적: {loan.purposeDetail}
+                                </div>
+                              )}
+                              {loan.notes && (
+                                <div className="text-sm text-gray-600 mt-1">
+                                  추가 사항: {loan.notes}
+                                </div>
+                              )}
                             </div>
-                            <div className="flex space-x-2">
-                              <Button size="sm" variant="outline">거절</Button>
-                              <Button size="sm">승인</Button>
+                            <div className="flex space-x-2 ml-4">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleReject(loan)}
+                              >
+                                거절
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleApprove(loan)}
+                              >
+                                승인
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -269,6 +384,17 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* 승인 서명 모달 */}
+      {showApprovalModal && selectedLoan && (
+        <ApprovalSignatureModal
+          isOpen={true}
+          onClose={closeModal}
+          onConfirm={handleApprovalSignature}
+          loanData={selectedLoan}
+          approverName={user.name}
+        />
+      )}
     </div>
   )
 }
