@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { UsersManagement } from '@/components/users/users-management'
+import { UsersManagementWrapper } from '@/components/users/users-management-wrapper'
 
 export default async function AdminPage() {
   const user = await requireRole(['admin'])
@@ -122,7 +122,7 @@ export default async function AdminPage() {
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
-            <UsersManagement />
+            <UsersManagementWrapper />
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-4">

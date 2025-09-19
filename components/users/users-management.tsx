@@ -23,56 +23,22 @@ interface User {
   allLoans?: any[]
 }
 
-export function UsersManagement() {
-  const [users, setUsers] = useState<User[]>([])
+interface UsersManagementProps {
+  users: User[]
+}
+
+export function UsersManagement({ users: initialUsers }: UsersManagementProps) {
+  const [users, setUsers] = useState<User[]>(initialUsers)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showActivityLog, setShowActivityLog] = useState(false)
 
-  // 모든 사용자 로드
+  // props가 변경되면 로컬 상태 업데이트
   useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        console.log('UsersManagement - Loading users from API')
-        const response = await fetch('/api/users')
-        if (response.ok) {
-          const { users } = await response.json()
-          console.log('UsersManagement - Loaded users from API:', users)
-
-          // API에서 받은 사용자 데이터를 컴포넌트 형식으로 변환
-          const formattedUsers = users.map((user: any) => ({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role || '',
-            lastLogin: user.lastLogin,
-            status: 'active' as const,
-            createdAt: user.createdAt,
-            allLoans: [] // 대여 기록은 별도 API에서 가져와야 함
-          }))
-
-          console.log('UsersManagement - Formatted users:', formattedUsers)
-          setUsers(formattedUsers)
-        } else {
-          console.error('UsersManagement - API failed:', response.statusText)
-          // API 실패 시 빈 배열로 설정
-          setUsers([])
-        }
-      } catch (error) {
-        console.error('UsersManagement - API error:', error)
-        // 오류 시 빈 배열로 설정
-        setUsers([])
-      }
-    }
-
-    loadUsers()
-
-    // 30초마다 사용자 목록 새로고침
-    const interval = setInterval(loadUsers, 30000)
-    return () => clearInterval(interval)
-  }, [])
+    setUsers(initialUsers)
+  }, [initialUsers])
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
