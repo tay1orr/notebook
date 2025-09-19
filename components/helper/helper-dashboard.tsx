@@ -16,6 +16,9 @@ interface HelperDashboardProps {
     email: string
     className?: string
     studentNo?: string
+    grade?: string
+    class?: string
+    isApprovedHomeroom?: boolean
   }
 }
 
@@ -73,8 +76,18 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
     return () => clearInterval(interval)
   }, [user.email, user.className, user.studentNo])
 
-  // 도우미가 담당하는 반의 대여 신청 필터링
+  // 도우미/담임교사가 담당하는 반의 대여 신청 필터링
   const getHelperClassLoans = () => {
+    // 담임교사인 경우
+    if (user.role === 'homeroom' && user.isApprovedHomeroom && user.grade && user.class) {
+      const teacherClass = `${user.grade}-${user.class}`
+      console.log(`Dashboard - Filtering for homeroom teacher class: ${teacherClass}`)
+      return loans.filter((loan: any) => {
+        const loanClass = loan.class_name || loan.className
+        return loanClass === teacherClass
+      })
+    }
+    // 도우미인 경우 (기존 로직)
     if (!user.className) return []
     return loans.filter((loan: any) =>
       loan.class_name === user.className || loan.className === user.className
@@ -95,7 +108,7 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
           </h1>
           <p className="text-muted-foreground">
             안녕하세요, <strong>{user.name}</strong>님 ({getRoleText(user.role)})
-            {user.className && ` • 담당 반: ${user.className}`}
+            {user.role === 'homeroom' && user.grade && user.class ? ` • 담당 반: ${user.grade}-${user.class}` : user.className ? ` • 담당 반: ${user.className}` : ''}
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -178,11 +191,11 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
             <CardHeader>
               <CardTitle>담당반 대여 관리</CardTitle>
               <CardDescription>
-                {user.className ? `${user.className}반 학생들의 대여 신청을 승인하고 관리할 수 있습니다.` : '담당반이 설정되지 않았습니다.'}
+                {(user.role === 'homeroom' && user.grade && user.class) ? `${user.grade}-${user.class}반 학생들의 대여 신청을 승인하고 관리할 수 있습니다.` : user.className ? `${user.className}반 학생들의 대여 신청을 승인하고 관리할 수 있습니다.` : '담당반이 설정되지 않았습니다.'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {user.className ? (
+              {(user.role === 'homeroom' && user.grade && user.class) || user.className ? (
                 <div className="space-y-4">
                   {/* 간단한 대여 관리 UI를 여기에 구현 */}
                   <div className="grid gap-4 md:grid-cols-3">
