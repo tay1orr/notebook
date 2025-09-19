@@ -63,8 +63,8 @@ export function Header({ user }: HeaderProps) {
 
     loadNotifications()
 
-    // 10초마다 업데이트
-    const interval = setInterval(loadNotifications, 10000)
+    // 5초마다 업데이트 (더 빠른 실시간 반영)
+    const interval = setInterval(loadNotifications, 5000)
     return () => clearInterval(interval)
   }, [user])
 
@@ -111,8 +111,10 @@ export function Header({ user }: HeaderProps) {
     if (count === 0) return null
 
     return (
-      <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full min-w-[18px] h-[18px]">
-        {count > 99 ? '99+' : count}
+      <span className="ml-1 inline-flex items-center justify-center text-xs font-bold text-white bg-red-500 rounded-full min-w-[20px] h-[20px] leading-none">
+        <span className="flex items-center justify-center w-full h-full">
+          {count > 99 ? '99+' : count}
+        </span>
       </span>
     )
   }
