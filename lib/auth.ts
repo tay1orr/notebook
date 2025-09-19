@@ -26,14 +26,17 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       return null
     }
 
-    // Get user role from user_roles table using admin client
+    // Get user role and class info from user_roles table using admin client
     let role: UserRole = ''
+    let grade: string | undefined
+    let className: string | undefined
+    let studentNo: string | undefined
     console.log('🔍 AUTH DEBUG - Checking user:', user.email, 'ID:', user.id)
 
     try {
       const { data: roleData, error: roleSelectError } = await adminSupabase
         .from('user_roles')
-        .select('role')
+        .select('role, grade, class_name, student_no')
         .eq('user_id', user.id)
         .single()
 
@@ -41,7 +44,14 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
       if (roleData?.role) {
         role = roleData.role
-        console.log('🔍 AUTH DEBUG - Found existing role:', roleData.role, 'for user:', user.email)
+        if (roleData.grade) grade = roleData.grade.toString()
+        if (roleData.class_name) className = roleData.class_name.toString()
+        if (roleData.student_no) studentNo = roleData.student_no.toString()
+        console.log('🔍 AUTH DEBUG - Found existing role:', roleData.role, 'with class info:', {
+          grade,
+          className,
+          studentNo
+        }, 'for user:', user.email)
       } else {
         console.log('🔍 AUTH DEBUG - No existing role found for:', user.email)
         // Default admin for specific email
@@ -63,7 +73,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       }
     }
 
-    console.log('🔍 AUTH DEBUG - Final role for', user.email, ':', role)
+    console.log('🔍 AUTH DEBUG - Final role for', user.email, ':', role, 'Class info:', {
+      grade,
+      class: className,
+      studentNo
+    })
 
     return {
       id: user.id,
@@ -71,9 +85,9 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       name: user.user_metadata?.name || user.email!.split('@')[0],
       role,
       class_id: null,
-      grade: undefined, // 임시로 학급 정보 없이 처리
-      class: undefined,
-      studentNo: undefined
+      grade,
+      class: className,
+      studentNo
     }
   } catch (error) {
     console.error('Error getting current user:', error)

@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerClient()
+    const adminSupabase = createAdminClient()
 
     // 현재 사용자 확인
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
       studentNo
     })
 
-    // user_roles 테이블에 역할 저장/업데이트 (role_data 없이 기본 방식)
+    // user_roles 테이블에 역할 저장/업데이트
     const { data: existingRole, error: selectError } = await adminSupabase
       .from('user_roles')
       .select('*')
@@ -34,6 +35,9 @@ export async function POST(request: NextRequest) {
       .single()
 
     console.log('🔍 API - Existing role check:', { existingRole, selectError })
+
+    // 우선 기본 역할만 저장 (학급 정보는 나중에 처리)
+    console.log('🔍 API - Saving role:', role)
 
     if (existingRole) {
       // 기존 역할 업데이트
@@ -60,20 +64,32 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 학급 정보를 간단한 방법으로 저장 - 별도 테이블 없이 user 메타데이터에 저장
+    // 학급 정보를 별도로 저장 시도 (실패해도 무시)
     if ((role === 'student' || role === 'homeroom') && grade && className) {
-      const classInfo = {
-        grade: parseInt(grade),
-        class: parseInt(className)
-      }
-      if (role === 'student' && studentNo) {
-        classInfo.student_no = parseInt(studentNo)
-      }
+      console.log('🔍 API - Attempting to save class info:', { grade, className, studentNo })
 
-      console.log('🔍 API - Saving class info:', classInfo)
+      try {
+        const updateData: any = { role }
+        updateData.grade = parseInt(grade)
+        updateData.class_name = parseInt(className)
 
-      // 우선 역할만 저장하고 학급 정보는 프로필에서 별도 처리
-      console.log('🔍 API - Class info will be handled separately')
+        if (role === 'student' && studentNo) {
+          updateData.student_no = parseInt(studentNo)
+        }
+
+        const { error: classUpdateError } = await adminSupabase
+          .from('user_roles')
+          .update(updateData)
+          .eq('user_id', user.id)
+
+        if (classUpdateError) {
+          console.log('🔍 API - Class info save failed (ignoring):', classUpdateError.message)
+        } else {
+          console.log('🔍 API - Class info saved successfully')
+        }
+      } catch (classError) {
+        console.log('🔍 API - Class info save attempt failed (ignoring):', classError)
+      }
     }
 
     console.log('🔍 API - Role update successful for:', user.email)

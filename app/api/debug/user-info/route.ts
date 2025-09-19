@@ -18,7 +18,7 @@ export async function GET() {
 
     console.log('🔍 DEBUG - Current user:', user.email, user.id)
 
-    // user_roles 테이블에서 역할 확인
+    // user_roles 테이블에서 역할과 학급 정보 확인
     const { data: roleData, error: roleError } = await adminSupabase
       .from('user_roles')
       .select('*')
