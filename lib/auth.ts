@@ -30,10 +30,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     let role: UserRole = ''
     console.log('🔍 AUTH DEBUG - Checking user:', user.email, 'ID:', user.id)
 
+    let roleDataInfo = null
     try {
       const { data: roleData, error: roleSelectError } = await adminSupabase
         .from('user_roles')
-        .select('role')
+        .select('role, role_data')
         .eq('user_id', user.id)
         .single()
 
@@ -41,7 +42,8 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
       if (roleData?.role) {
         role = roleData.role
-        console.log('🔍 AUTH DEBUG - Found existing role:', roleData.role, 'for user:', user.email)
+        roleDataInfo = roleData.role_data
+        console.log('🔍 AUTH DEBUG - Found existing role:', roleData.role, 'with data:', roleDataInfo, 'for user:', user.email)
       } else {
         console.log('🔍 AUTH DEBUG - No existing role found for:', user.email)
         // Default admin for specific email
@@ -63,28 +65,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       }
     }
 
-    console.log('🔍 AUTH DEBUG - Final role for', user.email, ':', role)
-
-    // 학생 정보도 함께 가져오기 using admin client
-    let studentInfo = null
-    if (role === 'student' || role === 'homeroom') {
-      try {
-        const { data: studentData, error: studentError } = await adminSupabase
-          .from('students')
-          .select('grade, class, student_no')
-          .eq('user_id', user.id)
-          .single()
-
-        if (!studentError && studentData) {
-          studentInfo = studentData
-          console.log('🔍 AUTH DEBUG - Student info loaded:', studentInfo)
-        } else {
-          console.log('🔍 AUTH DEBUG - No student info found, error:', studentError)
-        }
-      } catch (error) {
-        console.log('🔍 AUTH DEBUG - Student info lookup failed:', error)
-      }
-    }
+    console.log('🔍 AUTH DEBUG - Final role for', user.email, ':', role, 'with role_data:', roleDataInfo)
 
     return {
       id: user.id,
@@ -92,9 +73,9 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       name: user.user_metadata?.name || user.email!.split('@')[0],
       role,
       class_id: null,
-      grade: studentInfo?.grade?.toString(),
-      class: studentInfo?.class?.toString(),
-      studentNo: studentInfo?.student_no?.toString()
+      grade: roleDataInfo?.grade?.toString(),
+      class: roleDataInfo?.class?.toString(),
+      studentNo: roleDataInfo?.student_no?.toString()
     }
   } catch (error) {
     console.error('Error getting current user:', error)

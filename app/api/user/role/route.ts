@@ -26,8 +26,20 @@ export async function POST(request: NextRequest) {
       studentNo
     })
 
-    // user_roles 테이블에 역할 저장/업데이트
-    const { data: existingRole, error: selectError } = await supabase
+    // 학급 정보를 role_data에 포함시키기
+    const roleData = {}
+    if ((role === 'student' || role === 'homeroom') && grade && className) {
+      roleData.grade = parseInt(grade)
+      roleData.class = parseInt(className)
+      if (role === 'student' && studentNo) {
+        roleData.student_no = parseInt(studentNo)
+      }
+      roleData.name = user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown'
+      roleData.email = user.email
+    }
+
+    // user_roles 테이블에 역할 및 추가 데이터 저장/업데이트
+    const { data: existingRole, error: selectError } = await adminSupabase
       .from('user_roles')
       .select('*')
       .eq('user_id', user.id)
@@ -35,12 +47,17 @@ export async function POST(request: NextRequest) {
 
     console.log('🔍 API - Existing role check:', { existingRole, selectError })
 
+    const updateData = { role }
+    if (Object.keys(roleData).length > 0) {
+      updateData.role_data = roleData
+    }
+
     if (existingRole) {
       // 기존 역할 업데이트
-      console.log('🔍 API - Updating existing role for user:', user.id)
-      const { error: updateError } = await supabase
+      console.log('🔍 API - Updating existing role for user:', user.id, 'with data:', updateData)
+      const { error: updateError } = await adminSupabase
         .from('user_roles')
-        .update({ role })
+        .update(updateData)
         .eq('user_id', user.id)
 
       if (updateError) {
@@ -49,10 +66,10 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // 새 역할 생성
-      console.log('🔍 API - Creating new role for user:', user.id, 'role:', role)
-      const { error: insertError } = await supabase
+      console.log('🔍 API - Creating new role for user:', user.id, 'with data:', updateData)
+      const { error: insertError } = await adminSupabase
         .from('user_roles')
-        .insert({ user_id: user.id, role })
+        .insert({ user_id: user.id, ...updateData })
 
       if (insertError) {
         console.error('🔍 API - Role insert error:', insertError)
@@ -60,35 +77,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 학생 정보 저장 (학생 또는 담임교사인 경우)
-    if ((role === 'student' || role === 'homeroom') && grade && className) {
-      const studentData: any = {
-        user_id: user.id,
-        name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
-        email: user.email,
-        grade: parseInt(grade),
-        class: parseInt(className),
-        created_at: new Date().toISOString()
-      }
-
-      if (role === 'student' && studentNo) {
-        studentData.student_no = parseInt(studentNo)
-      }
-
-      console.log('🔍 API - Saving student data:', studentData)
-
-      const { error: studentError } = await supabase
-        .from('students')
-        .upsert(studentData, { onConflict: 'user_id' })
-
-      if (studentError) {
-        console.error('🔍 API - Failed to save student info:', studentError)
-        // 역할은 성공했으므로 경고만 출력하고 계속 진행
-        console.warn('🔍 API - Role saved but student info failed')
-      } else {
-        console.log('🔍 API - Student info saved successfully')
-      }
-    }
+    // 학급 정보는 위에서 role_data에 이미 저장했으므로 별도 처리 불필요
+    console.log('🔍 API - Student info stored in role_data')
 
     console.log('🔍 API - Role update successful for:', user.email)
 
