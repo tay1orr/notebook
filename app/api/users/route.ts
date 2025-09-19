@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 
 // Force dynamic rendering
@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const supabase = createServerClient()
+    const adminSupabase = createAdminClient()
 
     // 현재 사용자가 관리자인지 확인
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -17,8 +18,8 @@ export async function GET() {
 
     console.log('🔍 USERS API - Request from:', user.email)
 
-    // Get all users from auth.users table
-    const { data, error } = await supabase.auth.admin.listUsers()
+    // Get all users from auth.users table using admin client
+    const { data, error } = await adminSupabase.auth.admin.listUsers()
 
     if (error) {
       console.error('🔍 USERS API - Failed to fetch users:', error)
@@ -30,8 +31,8 @@ export async function GET() {
     // Transform users to include role information from user_roles table
     const usersWithRoles = await Promise.all(
       data.users.map(async (authUser) => {
-        // Get role from user_roles table
-        const { data: roleData, error: roleError } = await supabase
+        // Get role from user_roles table using admin client
+        const { data: roleData, error: roleError } = await adminSupabase
           .from('user_roles')
           .select('role')
           .eq('user_id', authUser.id)
@@ -67,6 +68,7 @@ export async function GET() {
 export async function PATCH(request: Request) {
   try {
     const supabase = createServerClient()
+    const adminSupabase = createAdminClient()
     const { userId, role } = await request.json()
 
     // 현재 사용자가 관리자인지 확인
@@ -82,8 +84,8 @@ export async function PATCH(request: Request) {
 
     console.log('🔍 USERS API - PATCH - Updating role:', userId, '->', role)
 
-    // Update or insert user role
-    const { error } = await supabase
+    // Update or insert user role using admin client
+    const { error } = await adminSupabase
       .from('user_roles')
       .upsert({ user_id: userId, role }, { onConflict: 'user_id' })
 
