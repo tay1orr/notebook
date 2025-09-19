@@ -13,6 +13,8 @@ export interface AuthUser {
   grade?: string
   class?: string
   studentNo?: string
+  pendingHomeroom?: boolean
+  isApprovedHomeroom?: boolean
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
@@ -84,6 +86,16 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       studentNo
     })
 
+    // 담임교사 승인 상태 확인
+    const pendingHomeroom = user.user_metadata?.pending_homeroom?.status === 'pending'
+    const approvedHomeroom = user.user_metadata?.approved_homeroom === true
+
+    console.log('🔍 AUTH DEBUG - Homeroom status:', {
+      pendingHomeroom,
+      approvedHomeroom,
+      metadata: user.user_metadata
+    })
+
     return {
       id: user.id,
       email: user.email!,
@@ -92,7 +104,9 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       class_id: null,
       grade,
       class: className,
-      studentNo
+      studentNo,
+      pendingHomeroom,
+      isApprovedHomeroom: approvedHomeroom
     }
   } catch (error) {
     console.error('Error getting current user:', error)

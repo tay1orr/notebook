@@ -36,15 +36,18 @@ export async function POST(request: NextRequest) {
 
     console.log('🔍 API - Existing role check:', { existingRole, selectError })
 
-    // 우선 기본 역할만 저장 (학급 정보는 나중에 처리)
-    console.log('🔍 API - Saving role:', role)
+    // 담임교사는 승인 대기 상태로, 학생은 바로 활성화
+    const finalRole = role === 'homeroom' ? 'student' : role // 담임교사는 일단 학생으로 설정
+    const isPending = role === 'homeroom' // 담임교사 신청인지 확인
+
+    console.log('🔍 API - Saving role:', finalRole, isPending ? '(homeroom pending)' : '')
 
     if (existingRole) {
       // 기존 역할 업데이트
       console.log('🔍 API - Updating existing role for user:', user.id)
       const { error: updateError } = await adminSupabase
         .from('user_roles')
-        .update({ role })
+        .update({ role: finalRole })
         .eq('user_id', user.id)
 
       if (updateError) {
@@ -53,10 +56,10 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // 새 역할 생성
-      console.log('🔍 API - Creating new role for user:', user.id, 'role:', role)
+      console.log('🔍 API - Creating new role for user:', user.id, 'role:', finalRole)
       const { error: insertError } = await adminSupabase
         .from('user_roles')
-        .insert({ user_id: user.id, role })
+        .insert({ user_id: user.id, role: finalRole })
 
       if (insertError) {
         console.error('🔍 API - Role insert error:', insertError)
@@ -78,15 +81,23 @@ export async function POST(request: NextRequest) {
           classInfo.student_no = parseInt(studentNo)
         }
 
-        // Supabase auth user 메타데이터에 학급 정보 저장
+        // Supabase auth user 메타데이터에 학급 정보와 승인 상태 저장
+        const metadata = {
+          ...user.user_metadata,
+          class_info: classInfo
+        }
+
+        // 담임교사 신청인 경우 승인 대기 상태 추가
+        if (isPending) {
+          metadata.pending_homeroom = {
+            requested_at: new Date().toISOString(),
+            status: 'pending'
+          }
+        }
+
         const { error: metadataError } = await adminSupabase.auth.admin.updateUserById(
           user.id,
-          {
-            user_metadata: {
-              ...user.user_metadata,
-              class_info: classInfo
-            }
-          }
+          { user_metadata: metadata }
         )
 
         if (metadataError) {

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { UsersManagementWrapper } from '@/components/users/users-management-wrapper'
+import { HomeRoomApprovalWrapper } from '@/components/admin/homeroom-approval-wrapper'
 
 export default async function AdminPage() {
   const user = await requireRole(['admin'])
@@ -113,6 +114,9 @@ export default async function AdminPage() {
             <TabsTrigger value="users">
               사용자 관리
             </TabsTrigger>
+            <TabsTrigger value="homeroom">
+              담임교사 승인
+            </TabsTrigger>
             <TabsTrigger value="audit">
               감사 로그 ({auditLogs.length})
             </TabsTrigger>
@@ -126,6 +130,10 @@ export default async function AdminPage() {
 
           <TabsContent value="users" className="space-y-4">
             <UsersManagementWrapper />
+          </TabsContent>
+
+          <TabsContent value="homeroom" className="space-y-4">
+            <HomeRoomApprovalWrapper />
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-4">
