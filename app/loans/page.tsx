@@ -1,12 +1,12 @@
 import { MainLayout } from '@/components/layout/main-layout'
-import { requireRole } from '@/lib/auth'
+import { requireApprovedHomeroom } from '@/lib/auth'
 import { LoansManagement } from '@/components/loans/loans-management'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
 export default async function LoansPage() {
-  const user = await requireRole(['admin', 'homeroom', 'helper'])
+  const user = await requireApprovedHomeroom(['admin', 'homeroom', 'helper'])
 
   // TODO: 실제로는 데이터베이스에서 가져와야 함
   // 지금은 임시로 빈 배열로 시작 (실제 신청 내역은 클라이언트 컴포넌트에서 관리)
@@ -23,6 +23,7 @@ export default async function LoansPage() {
           overdueLoans={overdueLoans}
           userRole={user.role}
           userName={user.name}
+          user={user}
         />
       </div>
     </MainLayout>

@@ -3,6 +3,16 @@
 import { useState, useEffect } from 'react'
 import { StudentsManagement } from './students-management'
 
+interface UserInfo {
+  id: string
+  email: string
+  name: string
+  role: string
+  grade?: string
+  class?: string
+  isApprovedHomeroom?: boolean
+}
+
 export function StudentsManagementWrapper() {
   const [students, setStudents] = useState<any[]>([])
   const [stats, setStats] = useState({
@@ -14,6 +24,7 @@ export function StudentsManagementWrapper() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<UserInfo | null>(null)
 
   useEffect(() => {
     const loadStudents = async () => {
@@ -21,11 +32,29 @@ export function StudentsManagementWrapper() {
         setLoading(true)
         console.log('StudentsManagement - Loading students from API...')
 
-        // 대여 목록과 사용자 목록을 동시에 가져오기
-        const [loansResponse, usersResponse] = await Promise.all([
+        // 사용자 정보, 대여 목록, 사용자 목록을 동시에 가져오기
+        const [userResponse, loansResponse, usersResponse] = await Promise.all([
+          fetch('/api/debug/role-check', { cache: 'no-store' }),
           fetch('/api/loans', { cache: 'no-store' }),
           fetch('/api/users', { cache: 'no-store' })
         ])
+
+        // 사용자 정보 처리
+        let userInfo: UserInfo | null = null
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          userInfo = {
+            id: userData.user.id,
+            email: userData.user.email,
+            name: userData.user.name,
+            role: userData.roleData?.[0]?.role || 'student',
+            grade: userData.user.grade,
+            class: userData.user.class,
+            isApprovedHomeroom: userData.user.isApprovedHomeroom
+          }
+          setUser(userInfo)
+          console.log('StudentsManagement - User info loaded:', userInfo)
+        }
 
         if (loansResponse.ok && usersResponse.ok) {
           const { loans } = await loansResponse.json()
@@ -83,7 +112,39 @@ export function StudentsManagementWrapper() {
             }
           })
 
-          const studentsArray = Array.from(studentMap.values())
+          let studentsArray = Array.from(studentMap.values())
+
+          // 담임교사인 경우 자신의 반 학생만 필터링
+          if (userInfo && userInfo.role === 'homeroom' && userInfo.isApprovedHomeroom && userInfo.grade && userInfo.class) {
+            const userGrade = parseInt(userInfo.grade)
+            const userClass = parseInt(userInfo.class)
+
+            studentsArray = studentsArray.filter(student => {
+              // 학생의 학급 정보에서 학년과 반 추출
+              if (student.className) {
+                // 학급 형태: "2-1", "2학년 1반" 등
+                let match = student.className.match(/(\d+)-(\d+)/) // "2-1" 형태
+                if (!match) {
+                  match = student.className.match(/(\d+)학년\s*(\d+)반/) // "2학년 1반" 형태
+                }
+                if (!match) {
+                  match = student.className.match(/(\d+)\.(\d+)/) // "2.1" 형태
+                }
+
+                if (match) {
+                  const studentGrade = parseInt(match[1])
+                  const studentClass = parseInt(match[2])
+                  return studentGrade === userGrade && studentClass === userClass
+                }
+              }
+              return false
+            })
+
+            console.log(`StudentsManagement - Filtered for homeroom teacher ${userGrade}-${userClass}:`, studentsArray.length, 'students')
+          } else {
+            console.log('StudentsManagement - No filtering applied (admin or non-homeroom user)')
+          }
+
           console.log('StudentsManagement - Final students array:', studentsArray.length)
           setStudents(studentsArray)
 

@@ -18,9 +18,10 @@ interface LoansManagementProps {
   overdueLoans: any[]
   userRole: string
   userName: string
+  user?: any
 }
 
-export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans: initialActiveLoans, overdueLoans: initialOverdueLoans, userRole, userName }: LoansManagementProps) {
+export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans: initialActiveLoans, overdueLoans: initialOverdueLoans, userRole, userName, user }: LoansManagementProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [selectedLoan, setSelectedLoan] = useState<any>(null)
@@ -89,18 +90,33 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
 
       // 역할별 필터링 - 도우미/담임교사는 자기 반만, 관리자는 전체
       let filteredLoans = loans
-      if (userRole === 'helper' || userRole === 'homeroom') {
-        // 도우미/담임교사의 경우 담당 반만 필터링
-        const helperClass = userName.includes('1-1') ? '1-1' :
-                          userName.includes('1-2') ? '1-2' :
-                          userName.includes('1-3') ? '1-3' :
-                          userName.includes('2-1') ? '2-1' :
-                          userName.includes('2-2') ? '2-2' :
-                          userName.includes('2-3') ? '2-3' :
-                          userName.includes('3-1') ? '3-1' :
-                          userName.includes('3-2') ? '3-2' :
-                          userName.includes('3-3') ? '3-3' : '1-1' // 기본값
-        filteredLoans = loans.filter((loan: any) => loan.class_name === helperClass || loan.className === helperClass)
+      if ((userRole === 'helper' || userRole === 'homeroom') && user) {
+        // 담임교사인 경우 승인된 사용자만 필터링 권한 부여
+        if (userRole === 'homeroom' && user.isApprovedHomeroom && user.grade && user.class) {
+          const teacherClass = `${user.grade}-${user.class}`
+          console.log(`LoansManagement - Filtering for homeroom teacher class: ${teacherClass}`)
+          filteredLoans = loans.filter((loan: any) => {
+            const loanClass = loan.class_name || loan.className
+            return loanClass === teacherClass
+          })
+          console.log(`LoansManagement - Filtered loans for ${teacherClass}:`, filteredLoans.length)
+        } else if (userRole === 'helper') {
+          // 도우미는 기존 방식 유지
+          const helperClass = userName.includes('1-1') ? '1-1' :
+                            userName.includes('1-2') ? '1-2' :
+                            userName.includes('1-3') ? '1-3' :
+                            userName.includes('2-1') ? '2-1' :
+                            userName.includes('2-2') ? '2-2' :
+                            userName.includes('2-3') ? '2-3' :
+                            userName.includes('3-1') ? '3-1' :
+                            userName.includes('3-2') ? '3-2' :
+                            userName.includes('3-3') ? '3-3' : '1-1'
+          filteredLoans = loans.filter((loan: any) => loan.class_name === helperClass || loan.className === helperClass)
+        } else {
+          // 승인되지 않은 담임교사는 모든 대여 목록을 볼 수 없음
+          console.log('LoansManagement - User not approved for homeroom access')
+          filteredLoans = []
+        }
       }
 
       // 상태별로 분류 (실시간 연체 판단 적용)
@@ -126,7 +142,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
     const interval = setInterval(loadLoanData, 500)
 
     return () => clearInterval(interval)
-  }, [userRole, userName])
+  }, [userRole, userName, user])
 
   // 관리자용 추가 필터링 (학급별)
   const filterByClass = (loans: any[]) => {

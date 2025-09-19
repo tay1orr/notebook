@@ -139,6 +139,21 @@ export async function requireRole(allowedRoles: UserRole[]): Promise<AuthUser> {
   return user
 }
 
+export async function requireApprovedHomeroom(allowedRoles: UserRole[]): Promise<AuthUser> {
+  const user = await requireAuth()
+
+  // 담임교사인 경우 승인 여부 확인
+  if (user.role === 'homeroom' && !user.isApprovedHomeroom) {
+    redirect('/unauthorized')
+  }
+
+  if (!allowedRoles.includes(user.role)) {
+    redirect('/unauthorized')
+  }
+
+  return user
+}
+
 export async function requireAuthWithoutRole(): Promise<AuthUser> {
   const user = await getCurrentUser()
 

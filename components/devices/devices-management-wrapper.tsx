@@ -3,6 +3,16 @@
 import { useState, useEffect } from 'react'
 import { DevicesManagement } from './devices-management'
 
+interface UserInfo {
+  id: string
+  email: string
+  name: string
+  role: string
+  grade?: string
+  class?: string
+  isApprovedHomeroom?: boolean
+}
+
 export function DevicesManagementWrapper() {
   const [devices, setDevices] = useState<any[]>([])
   const [stats, setStats] = useState({
@@ -14,18 +24,36 @@ export function DevicesManagementWrapper() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<UserInfo | null>(null)
 
   useEffect(() => {
     const loadDevices = async () => {
       try {
         setLoading(true)
-        console.log('DevicesManagement - Loading devices from API...')
+        console.log('DevicesManagement - Loading user info and devices from API...')
 
-        // 기기 목록과 대여 현황을 동시에 가져오기
-        const [devicesResponse, loansResponse] = await Promise.all([
+        // 사용자 정보, 기기 목록, 대여 현황을 동시에 가져오기
+        const [userResponse, devicesResponse, loansResponse] = await Promise.all([
+          fetch('/api/debug/role-check', { cache: 'no-store' }),
           fetch('/api/devices', { cache: 'no-store' }),
           fetch('/api/loans', { cache: 'no-store' })
         ])
+
+        // 사용자 정보 처리
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          const userInfo: UserInfo = {
+            id: userData.user.id,
+            email: userData.user.email,
+            name: userData.user.name,
+            role: userData.roleData?.[0]?.role || 'student',
+            grade: userData.user.grade,
+            class: userData.user.class,
+            isApprovedHomeroom: userData.user.isApprovedHomeroom
+          }
+          setUser(userInfo)
+          console.log('DevicesManagement - User info loaded:', userInfo)
+        }
 
         if (devicesResponse.ok && loansResponse.ok) {
           const devicesData = await devicesResponse.json()
@@ -52,7 +80,7 @@ export function DevicesManagementWrapper() {
           })
 
           // 기기 상태 업데이트: 수령됨 상태인 대여가 있으면 대여중으로 표시
-          const updatedDeviceList = deviceList.map(device => {
+          let updatedDeviceList = deviceList.map(device => {
             if (activeLoanDevices.has(device.assetNumber)) {
               const loan = loansList.find(l => {
                 if (!l.device_tag) return false
@@ -71,6 +99,27 @@ export function DevicesManagementWrapper() {
             }
             return device
           })
+
+          // 담임교사인 경우 자신의 반 기기만 필터링
+          if (userInfo && userInfo.role === 'homeroom' && userInfo.isApprovedHomeroom && userInfo.grade && userInfo.class) {
+            const userGrade = parseInt(userInfo.grade)
+            const userClass = parseInt(userInfo.class)
+
+            updatedDeviceList = updatedDeviceList.filter(device => {
+              // 기기 번호에서 학년과 반 추출 (예: ICH-20111 -> 2학년 1반)
+              const match = device.assetNumber.match(/ICH-(\d)(\d{2})(\d{2})/)
+              if (match) {
+                const deviceGrade = parseInt(match[1])
+                const deviceClass = parseInt(match[2])
+                return deviceGrade === userGrade && deviceClass === userClass
+              }
+              return false
+            })
+
+            console.log(`DevicesManagement - Filtered for homeroom teacher ${userGrade}-${userClass}:`, updatedDeviceList.length, 'devices')
+          } else {
+            console.log('DevicesManagement - No filtering applied (admin or non-homeroom user)')
+          }
 
           console.log('DevicesManagement - Loaded devices:', updatedDeviceList.length)
           console.log('DevicesManagement - Active loans found:', activeLoanDevices.size)
