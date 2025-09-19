@@ -211,21 +211,34 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
     }
   }, [])
 
-  const handleRoleChange = async (studentId: string, newRole: string) => {
+  const handleRoleChange = async (studentEmail: string, newRole: string) => {
     try {
+      // API 호출로 서버에 역할 변경 저장
+      const response = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: students.find(s => s.id === studentEmail)?.email || studentEmail,
+          role: newRole
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('역할 변경 실패')
+      }
+
       // 로컬 상태 업데이트
       setStudents(prevStudents =>
         prevStudents.map(student =>
-          student.id === studentId
+          student.id === studentEmail
             ? { ...student, role: newRole }
             : student
         )
       )
 
-      // TODO: API 호출로 서버에 역할 변경 저장
-      console.log(`학생 ${studentId}의 역할을 ${newRole}로 변경`)
-
-      // 성공 알림
+      console.log(`학생 ${studentEmail}의 역할을 ${newRole}로 변경`)
       alert(`역할이 ${getRoleText(newRole)}(으)로 변경되었습니다.`)
     } catch (error) {
       console.error('역할 변경 실패:', error)
@@ -455,19 +468,25 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={student.role}
-                        onValueChange={(value) => handleRoleChange(student.id, value)}
-                      >
-                        <SelectTrigger className="w-28">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="student">학생</SelectItem>
-                          <SelectItem value="helper">노트북 관리 도우미</SelectItem>
-                          <SelectItem value="homeroom">담임교사</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {student.role ? (
+                        <Select
+                          value={student.role}
+                          onValueChange={(value) => handleRoleChange(student.id, value)}
+                        >
+                          <SelectTrigger className="w-28">
+                            <SelectValue placeholder={getRoleText(student.role)} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="student">학생</SelectItem>
+                            <SelectItem value="helper">노트북 관리 도우미</SelectItem>
+                            <SelectItem value="homeroom">담임교사</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+                          역할 선택 필요
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {student.currentLoan ? (

@@ -53,43 +53,25 @@ export function UsersManagement() {
             allLoans: [] // 대여 기록은 별도 API에서 가져와야 함
           }))
 
+          console.log('UsersManagement - Formatted users:', formattedUsers)
           setUsers(formattedUsers)
-          return // API 성공 시 localStorage 사용 안함
         } else {
           console.error('UsersManagement - API failed:', response.statusText)
-          // 폴백으로 기본 데이터 사용
-          setUsers([
-            {
-              id: '1',
-              name: '조대영',
-              email: 'taylorr@gclass.ice.go.kr',
-              role: 'admin',
-              lastLogin: new Date().toLocaleDateString('ko-KR'),
-              status: 'active' as const,
-              createdAt: new Date().toLocaleDateString('ko-KR'),
-              allLoans: []
-            }
-          ])
+          // API 실패 시 빈 배열로 설정
+          setUsers([])
         }
       } catch (error) {
         console.error('UsersManagement - API error:', error)
-        // 오류 시 기본 데이터 사용
-        setUsers([
-          {
-            id: '1',
-            name: '조대영',
-            email: 'taylorr@gclass.ice.go.kr',
-            role: 'admin',
-            lastLogin: new Date().toLocaleDateString('ko-KR'),
-            status: 'active' as const,
-            createdAt: new Date().toLocaleDateString('ko-KR'),
-            allLoans: []
-          }
-        ])
+        // 오류 시 빈 배열로 설정
+        setUsers([])
       }
     }
 
     loadUsers()
+
+    // 30초마다 사용자 목록 새로고침
+    const interval = setInterval(loadUsers, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   const handleRoleChange = async (userId: string, newRole: string) => {

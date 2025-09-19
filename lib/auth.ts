@@ -10,6 +10,9 @@ export interface AuthUser {
   name: string
   role: UserRole
   class_id: string | null
+  grade?: string
+  class?: string
+  studentNo?: string
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
@@ -61,12 +64,34 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
     console.log('🔍 AUTH DEBUG - Final role for', user.email, ':', role)
 
+    // 학생 정보도 함께 가져오기
+    let studentInfo = null
+    if (role === 'student' || role === 'homeroom') {
+      try {
+        const { data: studentData, error: studentError } = await supabase
+          .from('students')
+          .select('grade, class, student_no')
+          .eq('user_id', user.id)
+          .single()
+
+        if (!studentError && studentData) {
+          studentInfo = studentData
+          console.log('🔍 AUTH DEBUG - Student info loaded:', studentInfo)
+        }
+      } catch (error) {
+        console.log('🔍 AUTH DEBUG - No student info found')
+      }
+    }
+
     return {
       id: user.id,
       email: user.email!,
       name: user.user_metadata?.name || user.email!.split('@')[0],
       role,
-      class_id: null
+      class_id: null,
+      grade: studentInfo?.grade?.toString(),
+      class: studentInfo?.class?.toString(),
+      studentNo: studentInfo?.student_no?.toString()
     }
   } catch (error) {
     console.error('Error getting current user:', error)
