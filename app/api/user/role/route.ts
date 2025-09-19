@@ -64,28 +64,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 학급 정보를 별도로 저장 시도 (실패해도 무시)
+    // 학급 정보를 user 메타데이터에 저장
     if ((role === 'student' || role === 'homeroom') && grade && className) {
-      console.log('🔍 API - Attempting to save class info:', { grade, className, studentNo })
+      console.log('🔍 API - Saving class info to user metadata:', { grade, className, studentNo })
 
       try {
-        const updateData: any = { role }
-        updateData.grade = parseInt(grade)
-        updateData.class_name = parseInt(className)
-
-        if (role === 'student' && studentNo) {
-          updateData.student_no = parseInt(studentNo)
+        const classInfo: any = {
+          grade: parseInt(grade),
+          class: parseInt(className)
         }
 
-        const { error: classUpdateError } = await adminSupabase
-          .from('user_roles')
-          .update(updateData)
-          .eq('user_id', user.id)
+        if (role === 'student' && studentNo) {
+          classInfo.student_no = parseInt(studentNo)
+        }
 
-        if (classUpdateError) {
-          console.log('🔍 API - Class info save failed (ignoring):', classUpdateError.message)
+        // Supabase auth user 메타데이터에 학급 정보 저장
+        const { error: metadataError } = await adminSupabase.auth.admin.updateUserById(
+          user.id,
+          {
+            user_metadata: {
+              ...user.user_metadata,
+              class_info: classInfo
+            }
+          }
+        )
+
+        if (metadataError) {
+          console.log('🔍 API - Metadata save failed (ignoring):', metadataError.message)
         } else {
-          console.log('🔍 API - Class info saved successfully')
+          console.log('🔍 API - Class info saved to user metadata successfully')
         }
       } catch (classError) {
         console.log('🔍 API - Class info save attempt failed (ignoring):', classError)

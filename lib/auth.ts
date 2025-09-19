@@ -47,24 +47,15 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
         role = roleData.role
         console.log('🔍 AUTH DEBUG - Found existing role:', roleData.role, 'for user:', user.email)
 
-        // 학급 정보는 별도로 시도해보기 (실패해도 무시)
-        try {
-          const { data: classData, error: classError } = await adminSupabase
-            .from('user_roles')
-            .select('grade, class_name, student_no')
-            .eq('user_id', user.id)
-            .single()
-
-          if (classData && !classError) {
-            if (classData.grade) grade = classData.grade.toString()
-            if (classData.class_name) className = classData.class_name.toString()
-            if (classData.student_no) studentNo = classData.student_no.toString()
-            console.log('🔍 AUTH DEBUG - Found class info:', { grade, className, studentNo })
-          } else {
-            console.log('🔍 AUTH DEBUG - No class info found (columns may not exist)')
-          }
-        } catch (classInfoError) {
-          console.log('🔍 AUTH DEBUG - Class info columns do not exist, skipping')
+        // 학급 정보를 user 메타데이터에서 가져오기
+        if (user.user_metadata?.class_info) {
+          const classInfo = user.user_metadata.class_info
+          if (classInfo.grade) grade = classInfo.grade.toString()
+          if (classInfo.class) className = classInfo.class.toString()
+          if (classInfo.student_no) studentNo = classInfo.student_no.toString()
+          console.log('🔍 AUTH DEBUG - Found class info from metadata:', { grade, className, studentNo })
+        } else {
+          console.log('🔍 AUTH DEBUG - No class info found in user metadata')
         }
       } else {
         console.log('🔍 AUTH DEBUG - No existing role found for:', user.email)
