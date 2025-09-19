@@ -69,9 +69,10 @@ export function RoleSelection({ user, onComplete }: RoleSelectionProps) {
         })
 
         if (response.ok) {
-          console.log('🔍 ROLE SELECTION - API 호출 성공, 대시보드로 이동')
+          console.log('🔍 ROLE SELECTION - API 호출 성공, 페이지 새로고침 후 대시보드로 이동')
           if (typeof window !== 'undefined') {
-            window.location.href = '/dashboard'
+            // 역할 설정 완료 후 페이지를 새로고침해서 업데이트된 사용자 정보 반영
+            window.location.reload()
           }
         } else {
           console.error('🔍 ROLE SELECTION - API 호출 실패:', await response.text())
