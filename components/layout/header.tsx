@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-client'
@@ -15,8 +15,58 @@ interface HeaderProps {
 
 export function Header({ user }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [notifications, setNotifications] = useState({
+    loans: 0,
+    admin: 0
+  })
   const router = useRouter()
   const supabase = createClient()
+
+  // 알림 데이터 로드
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        // 대여 관리 알림 (승인 대기 + 연체)
+        const loansResponse = await fetch('/api/loans', { cache: 'no-store' })
+        if (loansResponse.ok) {
+          const { loans } = await loansResponse.json()
+
+          let pendingCount = 0
+
+          if (user.role === 'homeroom' && user.isApprovedHomeroom && user.grade && user.class) {
+            // 담임교사: 자신의 반 승인 대기 신청
+            const teacherClass = `${user.grade}-${user.class}`
+            pendingCount = loans.filter((loan: any) =>
+              loan.status === 'requested' &&
+              (loan.class_name === teacherClass || loan.className === teacherClass)
+            ).length
+          } else if (user.role === 'admin' || user.role === 'helper') {
+            // 관리자/도우미: 전체 승인 대기 신청
+            pendingCount = loans.filter((loan: any) => loan.status === 'requested').length
+          }
+
+          setNotifications(prev => ({ ...prev, loans: pendingCount }))
+        }
+
+        // 관리자 알림 (담임교사 승인 대기)
+        if (user.role === 'admin') {
+          const adminResponse = await fetch('/api/admin/pending-homeroom', { cache: 'no-store' })
+          if (adminResponse.ok) {
+            const { pendingTeachers } = await adminResponse.json()
+            setNotifications(prev => ({ ...prev, admin: pendingTeachers?.length || 0 }))
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load notifications:', error)
+      }
+    }
+
+    loadNotifications()
+
+    // 10초마다 업데이트
+    const interval = setInterval(loadNotifications, 10000)
+    return () => clearInterval(interval)
+  }, [user])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -24,12 +74,48 @@ export function Header({ user }: HeaderProps) {
   }
 
   const navigationItems = [
-    { href: '/dashboard', label: '대시보드', roles: ['admin', 'homeroom', 'helper', 'teacher', 'student'] },
-    { href: '/loans', label: '대여 관리', roles: ['admin', 'homeroom', 'helper'] },
-    { href: '/devices', label: '기기 관리', roles: ['admin', 'homeroom'] },
-    { href: '/students', label: '학생 관리', roles: ['admin', 'homeroom', 'helper'] },
-    { href: '/admin', label: '관리자', roles: ['admin'] }
+    {
+      href: '/dashboard',
+      label: '대시보드',
+      roles: ['admin', 'homeroom', 'helper', 'teacher', 'student'],
+      badge: 0
+    },
+    {
+      href: '/loans',
+      label: '대여 관리',
+      roles: ['admin', 'homeroom', 'helper'],
+      badge: notifications.loans
+    },
+    {
+      href: '/devices',
+      label: '기기 관리',
+      roles: ['admin', 'homeroom'],
+      badge: 0
+    },
+    {
+      href: '/students',
+      label: '학생 관리',
+      roles: ['admin', 'homeroom', 'helper'],
+      badge: 0
+    },
+    {
+      href: '/admin',
+      label: '관리자',
+      roles: ['admin'],
+      badge: notifications.admin
+    }
   ]
+
+  // 알림 배지 컴포넌트
+  const NotificationBadge = ({ count }: { count: number }) => {
+    if (count === 0) return null
+
+    return (
+      <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full min-w-[18px] h-[18px]">
+        {count > 99 ? '99+' : count}
+      </span>
+    )
+  }
 
   const filteredNavigation = navigationItems.filter(item =>
     item.roles.includes(user.role)
@@ -54,9 +140,10 @@ export function Header({ user }: HeaderProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="transition-colors hover:text-foreground/80 text-foreground/60"
+                className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center"
               >
                 {item.label}
+                <NotificationBadge count={item.badge} />
               </Link>
             ))}
           </nav>
@@ -105,10 +192,11 @@ export function Header({ user }: HeaderProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="block rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                className="block rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 flex items-center justify-between"
                 onClick={() => setIsMenuOpen(false)}
               >
-                {item.label}
+                <span>{item.label}</span>
+                <NotificationBadge count={item.badge} />
               </Link>
             ))}
             <div className="border-t border-gray-200 pt-4">
