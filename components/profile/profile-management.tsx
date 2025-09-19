@@ -30,6 +30,7 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
     studentNo: user.studentNo || ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
 
   const handleSave = async () => {
     if (formData.role === 'student' && (!formData.grade || !formData.class || !formData.studentNo)) {
@@ -80,6 +81,38 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
       studentNo: user.studentNo || ''
     })
     setIsEditing(false)
+  }
+
+  const handleResetRole = async () => {
+    if (!confirm('정말로 역할을 초기화하시겠습니까? 역할과 학급 정보가 모두 삭제되며, 다시 설정해야 합니다.')) {
+      return
+    }
+
+    setIsResetting(true)
+
+    try {
+      const response = await fetch('/api/profile/reset-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('역할 초기화 실패')
+      }
+
+      alert('역할이 초기화되었습니다. 잠시 후 역할 설정 페이지로 이동합니다.')
+      // 잠시 기다린 후 페이지 새로고침
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
+    } catch (error) {
+      console.error('역할 초기화 실패:', error)
+      alert('역할 초기화 중 오류가 발생했습니다.')
+    } finally {
+      setIsResetting(false)
+    }
   }
 
   const getRoleText = (role: string) => {
@@ -271,6 +304,34 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
           <div>• 문제가 있을 경우 관리자에게 문의해주세요.</div>
         </CardContent>
       </Card>
+
+      {/* 역할 초기화 */}
+      {!isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-red-600">역할 초기화</CardTitle>
+            <CardDescription>
+              학급 정보가 잘못되었거나 역할을 다시 설정하고 싶을 때 사용하세요.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="text-sm text-yellow-800">
+                  <strong>주의:</strong> 역할을 초기화하면 현재 설정된 역할과 학급 정보가 모두 삭제됩니다. 초기화 후에는 다시 역할 설정 페이지에서 정보를 입력해야 합니다.
+                </div>
+              </div>
+              <Button
+                variant="destructive"
+                onClick={handleResetRole}
+                disabled={isResetting || isEditing}
+              >
+                {isResetting ? '초기화 중...' : '역할 다시 설정하기'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
