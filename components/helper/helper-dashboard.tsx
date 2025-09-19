@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getRoleText, getStatusColor, getStatusText, formatDateTime, getPurposeText, getCurrentKoreaTime, getLoanStatus } from '@/lib/utils'
 import { LoansManagement } from '@/components/loans/loans-management'
 import { StudentDashboard } from '@/components/student/student-dashboard'
@@ -26,7 +25,6 @@ interface HelperDashboardProps {
 
 export function HelperDashboard({ user }: HelperDashboardProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<string>('management')
   const [loans, setLoans] = useState<any[]>([])
   const [myLoans, setMyLoans] = useState<any[]>([])
   const [selectedLoan, setSelectedLoan] = useState<any>(null)
@@ -285,116 +283,90 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
         )}
       </div>
 
-      {/* 도우미/담임교사 전용 탭 */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="management">
-            대여 승인 업무
-          </TabsTrigger>
-          {user.role === 'helper' && (
-            <TabsTrigger value="personal">
-              개인 대여 신청
-            </TabsTrigger>
-          )}
-        </TabsList>
-
-        <TabsContent value="management">
-          <Card>
-            <CardHeader>
-              <CardTitle>담당반 대여 관리</CardTitle>
-              <CardDescription>
-                {(user.role === 'homeroom' && user.grade && user.class) ? `${user.grade}-${user.class}반 학생들의 대여 신청을 승인하고 관리할 수 있습니다.` : user.className ? `${user.className}반 학생들의 대여 신청을 승인하고 관리할 수 있습니다.` : '담당반이 설정되지 않았습니다.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {(user.role === 'homeroom' && user.grade && user.class) || user.className ? (
-                <div className="space-y-4">
-
-                  {pendingLoans.length > 0 && (
-                    <div className="space-y-2">
-                      <h3 className="font-semibold">승인 대기 중인 신청</h3>
-                      {pendingLoans.map((loan: any) => (
-                        <div key={loan.id} className="p-4 border rounded-lg">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2">
-                                <span className="font-medium">{loan.student_name || loan.studentName}</span>
-                                <span className="text-sm text-muted-foreground">
-                                  {loan.class_name || loan.className} {loan.student_no || loan.studentNo}번
-                                </span>
-                              </div>
-                              <div className="text-sm text-muted-foreground mt-1">
-                                사용 목적: {getPurposeText(loan.purpose)} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                반납 예정: {loan.return_date || loan.dueDate} • 연락처: {loan.student_contact || loan.studentContact}
-                              </div>
-                              {loan.purposeDetail && (
-                                <div className="text-sm text-blue-600 mt-1">
-                                  상세 목적: {loan.purposeDetail}
-                                </div>
-                              )}
-                              {loan.notes && (
-                                <div className="text-sm text-gray-600 mt-1">
-                                  추가 사항: {loan.notes}
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex space-x-2 ml-4">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleReject(loan)}
-                              >
-                                거절
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleApprove(loan)}
-                              >
-                                승인
-                              </Button>
-                            </div>
-                          </div>
+      {/* 승인 대기 중인 신청 */}
+      {pendingLoans.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>승인 대기 중인 신청</CardTitle>
+            <CardDescription>
+              {(user.role === 'homeroom' && user.grade && user.class) ? `${user.grade}-${user.class}반 학생들의 대여 신청을 승인하고 관리할 수 있습니다.` : user.className ? `${user.className}반 학생들의 대여 신청을 승인하고 관리할 수 있습니다.` : '담당반이 설정되지 않았습니다.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {pendingLoans.map((loan: any) => (
+                <div key={loan.id} className="p-4 border rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{loan.student_name || loan.studentName}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {loan.class_name || loan.className} {loan.student_no || loan.studentNo}번
+                        </span>
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        사용 목적: {getPurposeText(loan.purpose)} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        반납 예정: {loan.return_date || loan.dueDate} • 연락처: {loan.student_contact || loan.studentContact}
+                      </div>
+                      {loan.purposeDetail && (
+                        <div className="text-sm text-blue-600 mt-1">
+                          상세 목적: {loan.purposeDetail}
                         </div>
-                      ))}
+                      )}
+                      {loan.notes && (
+                        <div className="text-sm text-gray-600 mt-1">
+                          추가 사항: {loan.notes}
+                        </div>
+                      )}
                     </div>
-                  )}
+                    <div className="flex space-x-2 ml-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleReject(loan)}
+                      >
+                        거절
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApprove(loan)}
+                      >
+                        승인
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  담당반이 설정되지 않았습니다. 관리자에게 문의하세요.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-        {user.role === 'helper' && (
-          <TabsContent value="personal">
-            <Card>
-              <CardHeader>
-                <CardTitle>개인 대여 신청</CardTitle>
-                <CardDescription>
-                  도우미도 필요 시 노트북을 대여할 수 있습니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <StudentDashboard
-                  student={{
-                    name: user.name,
-                    email: user.email,
-                    className: user.className || '',
-                    studentNo: user.studentNo || '',
-                    phone: ''
-                  }}
-                  userRole="helper"
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-      </Tabs>
+      {/* 도우미 전용 개인 대여 신청 */}
+      {user.role === 'helper' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>개인 대여 신청</CardTitle>
+            <CardDescription>
+              도우미도 필요 시 노트북을 대여할 수 있습니다.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StudentDashboard
+              student={{
+                name: user.name,
+                email: user.email,
+                className: user.className || '',
+                studentNo: user.studentNo || '',
+                phone: ''
+              }}
+              userRole="helper"
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* 승인 서명 모달 */}
       {showApprovalModal && selectedLoan && (
