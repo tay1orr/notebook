@@ -2,6 +2,9 @@ import { requireAuthWithoutRole } from '@/lib/auth'
 import { RoleSelection } from '@/components/auth/role-selection'
 import { redirect } from 'next/navigation'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export default async function SetupPage() {
   const user = await requireAuthWithoutRole()
 
