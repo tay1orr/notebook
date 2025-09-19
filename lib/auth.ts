@@ -34,9 +34,10 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     console.log('🔍 AUTH DEBUG - Checking user:', user.email, 'ID:', user.id)
 
     try {
+      // 먼저 기본 role만 조회
       const { data: roleData, error: roleSelectError } = await adminSupabase
         .from('user_roles')
-        .select('role, grade, class_name, student_no')
+        .select('role')
         .eq('user_id', user.id)
         .single()
 
@@ -44,14 +45,27 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
       if (roleData?.role) {
         role = roleData.role
-        if (roleData.grade) grade = roleData.grade.toString()
-        if (roleData.class_name) className = roleData.class_name.toString()
-        if (roleData.student_no) studentNo = roleData.student_no.toString()
-        console.log('🔍 AUTH DEBUG - Found existing role:', roleData.role, 'with class info:', {
-          grade,
-          className,
-          studentNo
-        }, 'for user:', user.email)
+        console.log('🔍 AUTH DEBUG - Found existing role:', roleData.role, 'for user:', user.email)
+
+        // 학급 정보는 별도로 시도해보기 (실패해도 무시)
+        try {
+          const { data: classData, error: classError } = await adminSupabase
+            .from('user_roles')
+            .select('grade, class_name, student_no')
+            .eq('user_id', user.id)
+            .single()
+
+          if (classData && !classError) {
+            if (classData.grade) grade = classData.grade.toString()
+            if (classData.class_name) className = classData.class_name.toString()
+            if (classData.student_no) studentNo = classData.student_no.toString()
+            console.log('🔍 AUTH DEBUG - Found class info:', { grade, className, studentNo })
+          } else {
+            console.log('🔍 AUTH DEBUG - No class info found (columns may not exist)')
+          }
+        } catch (classInfoError) {
+          console.log('🔍 AUTH DEBUG - Class info columns do not exist, skipping')
+        }
       } else {
         console.log('🔍 AUTH DEBUG - No existing role found for:', user.email)
         // Default admin for specific email
