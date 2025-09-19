@@ -1,6 +1,9 @@
 import { getCurrentUser } from '@/lib/auth'
 import Link from 'next/link'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export default async function UnauthorizedPage() {
   const user = await getCurrentUser()
 
