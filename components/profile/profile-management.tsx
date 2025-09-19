@@ -19,10 +19,9 @@ interface ProfileManagementProps {
     studentNo?: string
     pendingApproval?: boolean
   }
-  onUpdate: (userData: any) => void
 }
 
-export function ProfileManagement({ user, onUpdate }: ProfileManagementProps) {
+export function ProfileManagement({ user }: ProfileManagementProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
     role: user.role,
@@ -46,12 +45,25 @@ export function ProfileManagement({ user, onUpdate }: ProfileManagementProps) {
     setIsSubmitting(true)
 
     try {
-      await onUpdate({
-        ...formData,
-        pendingApproval: formData.role === 'homeroom' && user.role !== 'homeroom'
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          pendingApproval: formData.role === 'homeroom' && user.role !== 'homeroom'
+        }),
       })
+
+      if (!response.ok) {
+        throw new Error('프로필 업데이트 실패')
+      }
+
       setIsEditing(false)
       alert('프로필이 성공적으로 업데이트되었습니다.')
+      // 페이지 새로고침으로 업데이트된 정보 반영
+      window.location.reload()
     } catch (error) {
       console.error('프로필 업데이트 실패:', error)
       alert('프로필 업데이트 중 오류가 발생했습니다.')

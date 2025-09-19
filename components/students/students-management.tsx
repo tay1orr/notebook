@@ -42,9 +42,13 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
 
           if (usersResponse.ok) {
             const { users } = await usersResponse.json()
+            console.log('StudentsManagement - Users with roles:', users)
             users.forEach(user => {
               userRoles.set(user.email, user.role)
+              console.log('StudentsManagement - Mapped role:', user.email, '->', user.role)
             })
+          } else {
+            console.error('StudentsManagement - Failed to load users:', usersResponse.statusText)
           }
 
           // 대여 데이터에서 학생 정보 추출 (이메일 기준으로 중복 제거)
