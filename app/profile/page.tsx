@@ -2,6 +2,9 @@ import { MainLayout } from '@/components/layout/main-layout'
 import { requireAuth } from '@/lib/auth'
 import { ProfileManagement } from '@/components/profile/profile-management'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export default async function ProfilePage() {
   try {
     const user = await requireAuth()

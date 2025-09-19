@@ -2,6 +2,9 @@ import { MainLayout } from '@/components/layout/main-layout'
 import { requireRole } from '@/lib/auth'
 import { DevicesManagementWrapper } from '@/components/devices/devices-management-wrapper'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export default async function DevicesPage() {
   const user = await requireRole(['admin', 'homeroom'])
 

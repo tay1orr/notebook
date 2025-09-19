@@ -2,6 +2,9 @@ import { MainLayout } from '@/components/layout/main-layout'
 import { requireRole } from '@/lib/auth'
 import { LoansManagement } from '@/components/loans/loans-management'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export default async function LoansPage() {
   const user = await requireRole(['admin', 'homeroom', 'helper'])
 
