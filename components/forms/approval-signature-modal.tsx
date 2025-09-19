@@ -210,13 +210,13 @@ export function ApprovalSignatureModal({
 
               <div className="space-y-2">
                 <Label>담당자 서명 *</Label>
-                <SignaturePad
-                  ref={signaturePadRef}
-                  width={300}
-                  height={100}
-                  className="w-full max-w-sm mx-auto"
-                  onSignatureChange={setSignatureEmpty}
-                />
+                <div className="w-full max-w-md mx-auto">
+                  <SignaturePad
+                    ref={signaturePadRef}
+                    className="w-full h-24 sm:h-28 md:h-32"
+                    onSignatureChange={setSignatureEmpty}
+                  />
+                </div>
                 <div className="flex justify-end">
                   <Button
                     type="button"

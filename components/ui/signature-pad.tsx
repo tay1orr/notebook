@@ -16,7 +16,7 @@ export interface SignaturePadRef {
 }
 
 export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
-  ({ width = 400, height = 150, className = '', onSignatureChange }, ref) => {
+  ({ width = 350, height = 120, className = '', onSignatureChange }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const isDrawing = useRef(false)
     const hasDrawn = useRef(false)
@@ -47,9 +47,17 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
       const ctx = canvas.getContext('2d')
       if (!ctx) return
 
-      // Set canvas size
-      canvas.width = width
-      canvas.height = height
+      // Get parent container size for responsive design
+      const container = canvas.parentElement
+      const containerWidth = container ? container.clientWidth : width
+      const containerHeight = container ? container.clientHeight : height
+
+      // Set canvas size (responsive)
+      const finalWidth = Math.min(containerWidth, width)
+      const finalHeight = height
+
+      canvas.width = finalWidth
+      canvas.height = finalHeight
 
       // Set drawing properties
       ctx.strokeStyle = '#000000'
@@ -124,8 +132,12 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
       <div className={`border border-gray-300 rounded-md bg-white ${className}`}>
         <canvas
           ref={canvasRef}
-          className="block"
-          style={{ touchAction: 'none' }}
+          className="w-full h-full block"
+          style={{
+            touchAction: 'none',
+            maxWidth: '100%',
+            height: 'auto'
+          }}
         />
       </div>
     )

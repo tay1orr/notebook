@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ interface HelperDashboardProps {
 }
 
 export function HelperDashboard({ user }: HelperDashboardProps) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<string>('management')
   const [loans, setLoans] = useState<any[]>([])
   const [myLoans, setMyLoans] = useState<any[]>([])
@@ -219,7 +221,10 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
 
       {/* 통계 카드 */}
       <div className={`grid gap-4 md:grid-cols-2 ${user.role === 'homeroom' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
-        <Card>
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => router.push('/loans?tab=pending')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">담당반 신청대기</CardTitle>
             <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,7 +237,10 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => router.push('/loans?tab=active')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">담당반 사용중</CardTitle>
             <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -245,7 +253,10 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => router.push('/loans?tab=overdue')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">담당반 연체</CardTitle>
             <svg className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
