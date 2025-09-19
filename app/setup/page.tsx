@@ -1,4 +1,4 @@
-import { requireAuthWithoutRole } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
 import { RoleSelection } from '@/components/auth/role-selection'
 import { redirect } from 'next/navigation'
 
@@ -6,7 +6,12 @@ import { redirect } from 'next/navigation'
 export const dynamic = 'force-dynamic'
 
 export default async function SetupPage() {
-  const user = await requireAuthWithoutRole()
+  const user = await getCurrentUser()
+
+  // 인증되지 않은 사용자는 로그인 페이지로
+  if (!user) {
+    redirect('/auth')
+  }
 
   console.log('🔍 SETUP PAGE DEBUG - User data:', {
     email: user.email,
