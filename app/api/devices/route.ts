@@ -333,21 +333,41 @@ export async function PATCH(request: NextRequest) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    const { data: existingDevice, error: checkError } = await supabaseAdmin
+    const { data: existingDevices, error: checkError } = await supabaseAdmin
       .from('devices')
       .select('asset_tag, status')
       .eq('asset_tag', assetTag)
-      .single()
 
     if (checkError) {
       console.error('Device lookup error:', checkError)
       return NextResponse.json({
-        error: `Device not found: ${assetTag}`,
+        error: `Device lookup failed: ${assetTag}`,
         details: checkError.message
-      }, { status: 404 })
+      }, { status: 500 })
     }
 
-    console.log('Found device:', existingDevice)
+    if (!existingDevices || existingDevices.length === 0) {
+      console.log('Device not found, creating new device:', assetTag)
+      // 기기가 없으면 새로 생성
+      const { error: createError } = await supabaseAdmin
+        .from('devices')
+        .insert({
+          asset_tag: assetTag,
+          model: 'Samsung Galaxy Book3',
+          serial_number: assetTag.replace('ICH-', ''),
+          status: '충전함'
+        })
+
+      if (createError) {
+        console.error('Device creation error:', createError)
+        return NextResponse.json({
+          error: `Failed to create device: ${assetTag}`,
+          details: createError.message
+        }, { status: 500 })
+      }
+    }
+
+    console.log('Found device(s):', existingDevices?.length || 0)
 
     // 기기 상태 업데이트 (updated_at은 자동으로 처리되도록 제거)
     const updateData = {
@@ -357,12 +377,13 @@ export async function PATCH(request: NextRequest) {
 
     console.log('Updating device with data:', updateData)
 
-    const { data: device, error } = await supabaseAdmin
+    const { data: devices, error } = await supabaseAdmin
       .from('devices')
       .update(updateData)
       .eq('asset_tag', assetTag)
       .select()
-      .single()
+
+    const device = devices && devices.length > 0 ? devices[0] : null
 
     if (error) {
       console.error('Database update error:', error)
@@ -376,6 +397,13 @@ export async function PATCH(request: NextRequest) {
         error: 'Failed to update device',
         details: error.message,
         code: error.code
+      }, { status: 500 })
+    }
+
+    if (!device) {
+      return NextResponse.json({
+        error: 'Device update failed',
+        details: 'No device returned after update'
       }, { status: 500 })
     }
 

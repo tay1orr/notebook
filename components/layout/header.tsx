@@ -105,6 +105,12 @@ export function Header({ user }: HeaderProps) {
       badge: 0
     },
     {
+      href: '/statistics',
+      label: '통계',
+      roles: ['admin'],
+      badge: 0
+    },
+    {
       href: '/admin',
       label: '관리자',
       roles: ['admin'],
