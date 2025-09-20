@@ -20,8 +20,6 @@ export function Header({ user }: HeaderProps) {
     admin: 0
   })
 
-  // 디버깅용
-  console.log('🔔 Header notifications state:', notifications, 'User role:', user.role)
   const router = useRouter()
   const supabase = createClient()
 
@@ -55,23 +53,13 @@ export function Header({ user }: HeaderProps) {
         if (user.role === 'admin') {
           try {
             const adminResponse = await fetch('/api/admin/pending-homeroom', { cache: 'no-store' })
-            console.log('🔔 Header notifications - Admin API response status:', adminResponse.status)
             if (adminResponse.ok) {
               const data = await adminResponse.json()
-              console.log('🔔 Header notifications - Admin API data:', data)
               const pendingCount = data.pendingUsers?.length || 0
-              console.log('🔔 Header notifications - Admin pending homeroom count:', pendingCount)
-              // 임시로 1로 강제 설정 (테스트용)
-              setNotifications(prev => ({ ...prev, admin: pendingCount || 1 }))
-            } else {
-              console.error('🔔 Header notifications - Admin API failed:', adminResponse.statusText)
-              // API 실패 시에도 테스트용으로 1 설정
-              setNotifications(prev => ({ ...prev, admin: 1 }))
+              setNotifications(prev => ({ ...prev, admin: pendingCount }))
             }
           } catch (adminError) {
-            console.error('🔔 Header notifications - Admin API error:', adminError)
-            // 에러 시에도 테스트용으로 1 설정
-            setNotifications(prev => ({ ...prev, admin: 1 }))
+            console.error('Header admin notifications error:', adminError)
           }
         }
       } catch (error) {

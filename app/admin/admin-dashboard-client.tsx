@@ -17,7 +17,7 @@ interface AdminDashboardClientProps {
 }
 
 export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
-  const [pendingHomeroomCount, setPendingHomeroomCount] = useState(1) // 임시로 1로 설정
+  const [pendingHomeroomCount, setPendingHomeroomCount] = useState(0)
 
   // 담임교사 승인 대기 건수 실시간 로드
   useEffect(() => {
@@ -25,11 +25,12 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
       try {
         const response = await fetch('/api/admin/pending-homeroom', { cache: 'no-store' })
         if (response.ok) {
-          const { pendingUsers } = await response.json()
-          setPendingHomeroomCount(pendingUsers?.length || 0)
+          const data = await response.json()
+          const count = data.pendingUsers?.length || 0
+          setPendingHomeroomCount(count)
         }
       } catch (error) {
-        console.error('Failed to load pending homeroom count:', error)
+        console.error('Admin dashboard pending homeroom count error:', error)
       }
     }
 
