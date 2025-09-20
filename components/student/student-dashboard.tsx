@@ -152,8 +152,8 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
     loadStudentLoans()
 
-    // 30초마다 체크 (성능 최적화)
-    const interval = setInterval(loadStudentLoans, 30000)
+    // 5초마다 체크 (실시간 상태 변화 반영)
+    const interval = setInterval(loadStudentLoans, 5000)
     return () => clearInterval(interval)
   }, [student.email])
 
@@ -257,7 +257,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 • 연락처: ${requestData.studentContact}
 
 ✅ 다음 단계:
-1. 승인 결과를 기다려 주세요 (보통 1일 이내)
+1. 승인 결과를 기다려 주세요
 2. 승인되면 즉시 교실 충전함에서 기기를 사용하실 수 있습니다
 
 ⚠️ 주의사항:
@@ -307,6 +307,9 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
           }
 
           alert('대여 신청이 취소되었습니다.')
+
+          // 즉시 데이터 새로고침으로 취소 상태 반영
+          loadStudentLoans()
         } else {
           const errorData = await response.json()
           console.error('Cancel loan API error:', errorData)
