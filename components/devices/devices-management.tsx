@@ -174,6 +174,53 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
     }
   }
 
+  // 기기 대여 기록 보기 함수
+  const handleViewLoanHistory = async (assetNumber: string) => {
+    try {
+      const response = await fetch(`/api/loans?deviceTag=${assetNumber}`)
+      if (response.ok) {
+        const { loans } = await response.json()
+        const deviceLoans = loans.filter((loan: any) => {
+          // device_tag 매칭 확인
+          if (loan.device_tag) {
+            const parts = loan.device_tag.split('-')
+            if (parts.length === 3) {
+              const serialNumber = `${parts[0]}${parts[1]}${parts[2]}`
+              const assetTag = `ICH-${serialNumber}`
+              return assetTag === assetNumber
+            }
+          }
+          return loan.device_tag === assetNumber
+        })
+
+        if (deviceLoans.length === 0) {
+          alert(`${assetNumber} 기기의 대여 기록이 없습니다.`)
+          return
+        }
+
+        // 대여 기록을 시간순으로 정렬
+        const sortedLoans = deviceLoans.sort((a: any, b: any) =>
+          new Date(b.created_at || b.requestedAt).getTime() - new Date(a.created_at || a.requestedAt).getTime()
+        )
+
+        const historyText = sortedLoans.map((loan: any, index: number) => {
+          const date = new Date(loan.created_at || loan.requestedAt).toLocaleDateString('ko-KR')
+          const status = loan.status === 'picked_up' ? '대여중' :
+                        loan.status === 'returned' ? '반납완료' :
+                        loan.status === 'requested' ? '신청중' : loan.status
+          return `${index + 1}. ${loan.student_name || loan.studentName} (${loan.class_name || loan.className}) - ${status} (${date})`
+        }).join('\n')
+
+        alert(`${assetNumber} 대여 기록:\n\n${historyText}`)
+      } else {
+        alert('대여 기록을 불러오는데 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('Loan history error:', error)
+      alert('대여 기록을 불러오는 중 오류가 발생했습니다.')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -329,46 +376,29 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        {/* 대여가능 버튼 */}
-                        <Button
-                          variant={device.status === 'available' ? 'default' : 'outline'}
-                          size="sm"
-                          className={`text-xs ${device.status === 'available' ? 'bg-green-600 hover:bg-green-700' : 'border-green-200 text-green-700 hover:bg-green-50'}`}
-                          title="대여 가능으로 설정"
-                          onClick={() => handleStatusChange(device.id, 'available')}
-                        >
-                          <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          가능
-                        </Button>
+                        {/* 상태 변경 선택 */}
+                        <Select onValueChange={(value) => handleStatusChange(device.id, value)} value={device.status}>
+                          <SelectTrigger className="w-24 h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="available">대여가능</SelectItem>
+                            <SelectItem value="loaned">대여중</SelectItem>
+                            <SelectItem value="maintenance">점검중</SelectItem>
+                          </SelectContent>
+                        </Select>
 
-                        {/* 대여중 버튼 */}
+                        {/* 대여 기록 보기 버튼 */}
                         <Button
-                          variant={device.status === 'loaned' ? 'default' : 'outline'}
+                          variant="ghost"
                           size="sm"
-                          className={`text-xs ${device.status === 'loaned' ? 'bg-blue-600 hover:bg-blue-700' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
-                          title="대여중으로 설정"
-                          onClick={() => handleStatusChange(device.id, 'loaned')}
+                          title="대여 기록 보기"
+                          onClick={() => handleViewLoanHistory(device.assetNumber)}
                         >
-                          <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
-                          대여중
-                        </Button>
-
-                        {/* 점검중 버튼 */}
-                        <Button
-                          variant={device.status === 'maintenance' ? 'default' : 'outline'}
-                          size="sm"
-                          className={`text-xs ${device.status === 'maintenance' ? 'bg-yellow-600 hover:bg-yellow-700' : 'border-yellow-200 text-yellow-700 hover:bg-yellow-50'}`}
-                          title="점검중으로 설정"
-                          onClick={() => handleStatusChange(device.id, 'maintenance')}
-                        >
-                          <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                          </svg>
-                          점검
                         </Button>
 
                         {/* 기기 정보 버튼 */}

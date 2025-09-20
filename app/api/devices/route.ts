@@ -325,8 +325,15 @@ export async function PATCH(request: NextRequest) {
 
     console.log(`Converting deviceTag '${deviceTag}' to assetTag '${assetTag}'`)
 
-    // 기기가 존재하는지 먼저 확인
-    const { data: existingDevice, error: checkError } = await supabase
+    // 서비스 역할로 기기가 존재하는지 먼저 확인 (RLS 우회)
+    const { createClient } = require('@supabase/supabase-js')
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    const { data: existingDevice, error: checkError } = await supabaseAdmin
       .from('devices')
       .select('asset_tag, status')
       .eq('asset_tag', assetTag)
@@ -350,7 +357,7 @@ export async function PATCH(request: NextRequest) {
 
     console.log('Updating device with data:', updateData)
 
-    const { data: device, error } = await supabase
+    const { data: device, error } = await supabaseAdmin
       .from('devices')
       .update(updateData)
       .eq('asset_tag', assetTag)
