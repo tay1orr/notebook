@@ -52,12 +52,11 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   }
 
   // 초기 데이터를 정규화하여 상태에 설정
-  const [currentLoans, setCurrentLoans] = useState<any[]>(
-    initialCurrentLoans.map(normalizeLoanData)
-  )
-  const [loanHistoryData, setLoanHistoryData] = useState(
-    loanHistory.map(normalizeLoanData)
-  )
+  const normalizedInitialLoans = initialCurrentLoans.map(normalizeLoanData)
+  const normalizedInitialHistory = loanHistory.map(normalizeLoanData)
+
+  const [currentLoans, setCurrentLoans] = useState<any[]>(normalizedInitialLoans)
+  const [loanHistoryData, setLoanHistoryData] = useState(normalizedInitialHistory)
   const [showAllHistory, setShowAllHistory] = useState(false)
   const [isDataLoaded, setIsDataLoaded] = useState(false)
 
@@ -149,18 +148,39 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
       }
     }
 
-  // localStorage에서 현재 학생의 대여 데이터 로드 (API 문제로 인한 임시 폴백)
+  // 초기 해시 설정 및 데이터 로드
   useEffect(() => {
-    // 초기 데이터가 있으면 로딩 완료로 설정
-    if (initialCurrentLoans.length > 0) {
+    // 초기 데이터의 해시를 설정하여 중복 업데이트 방지
+    if (normalizedInitialLoans.length > 0) {
+      const initialHash = JSON.stringify({
+        current: normalizedInitialLoans.map((l: any) => ({
+          id: l.id,
+          status: l.status,
+          created_at: l.created_at,
+          device_tag: l.device_tag
+        })),
+        history: normalizedInitialHistory.map((l: any) => ({
+          id: l.id,
+          status: l.status,
+          created_at: l.created_at
+        }))
+      })
+      lastDataHashRef.current = initialHash
       setIsDataLoaded(true)
     }
 
-    loadStudentLoans()
+    // 약간의 지연 후 API 데이터 로드 (초기 데이터 표시 후)
+    const loadTimeout = setTimeout(() => {
+      loadStudentLoans()
+    }, 100)
 
     // 5초마다 체크 (실시간 상태 변화 반영)
     const interval = setInterval(loadStudentLoans, 5000)
-    return () => clearInterval(interval)
+
+    return () => {
+      clearTimeout(loadTimeout)
+      clearInterval(interval)
+    }
   }, [student.email])
 
   const handleLoanRequest = async (requestData: any) => {
@@ -472,21 +492,33 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                         </span>
                       </div>
 
-                      {/* 학년 반 번호 정보를 항상 표시 */}
+                      {/* 학년 반 번호 정보를 항상 표시 - 완전 통일된 형식 */}
                       <div className="text-sm font-medium text-blue-800">
-                        {(loan.device_tag || (loan.class_name && loan.student_no)) ? (
-                          <>
-                            <span className="text-green-700">📱 할당된 기기:</span>{' '}
-                            {(() => {
-                              // device_tag가 있으면 그것을 사용, 없으면 class_name과 student_no 조합
-                              const tag = loan.device_tag || `${loan.class_name}-${loan.student_no}`;
-                              const parts = tag.split('-');
-                              return `${parts[0]}학년 ${parts[1]}반 ${parts[2]}번 노트북`;
-                            })()}
-                          </>
-                        ) : (
-                          <span className="text-gray-600">📋 기기 정보 확인 중...</span>
-                        )}
+                        {(() => {
+                          // 모든 경우에 대해 통일된 태그 생성
+                          let deviceTag = loan.device_tag
+
+                          // device_tag가 없으면 class_name과 student_no로 생성
+                          if (!deviceTag && loan.class_name && loan.student_no) {
+                            deviceTag = `${loan.class_name}-${loan.student_no}`
+                          }
+
+                          // deviceTag가 있는 경우에만 표시
+                          if (deviceTag) {
+                            const parts = deviceTag.split('-')
+                            if (parts.length === 3) {
+                              return (
+                                <>
+                                  <span className="text-green-700">📱 할당된 기기:</span>{' '}
+                                  {`${parts[0]}학년 ${parts[1]}반 ${parts[2]}번 노트북`}
+                                </>
+                              )
+                            }
+                          }
+
+                          // 기본 fallback
+                          return <span className="text-gray-600">📋 기기 정보 확인 중...</span>
+                        })()}
                       </div>
 
                       {/* 시리얼 번호 정보 */}
