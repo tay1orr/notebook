@@ -471,10 +471,10 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                           </>
                         ) : loan.class_name && loan.student_no ? (
                           <>
-                            <span className="text-blue-700">📝 신청 정보:</span>{' '}
+                            <span className="text-green-700">📱 할당된 기기:</span>{' '}
                             {(() => {
                               const parts = loan.class_name.split('-');
-                              return `${parts[0]}학년 ${parts[1]}반 ${loan.student_no}번 노트북 신청`;
+                              return `${parts[0]}학년 ${parts[1]}반 ${loan.student_no}번 노트북`;
                             })()}
                           </>
                         ) : (
