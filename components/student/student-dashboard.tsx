@@ -23,19 +23,33 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   const [showLoanRequest, setShowLoanRequest] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // 대여 데이터 정규화 함수
+  // 대여 데이터 정규화 함수 - 더 강력한 처리
   const normalizeLoanData = (loan: any) => {
+    console.log('Normalizing loan data:', loan)
+
     // device_tag 정규화 (3-1-35 -> 3-01-35 형식으로 통일)
     let normalizedDeviceTag = loan.device_tag || loan.deviceTag
-    if (normalizedDeviceTag) {
+    if (normalizedDeviceTag && normalizedDeviceTag !== 'null') {
       const parts = normalizedDeviceTag.split('-')
       if (parts.length === 3) {
         normalizedDeviceTag = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`
       }
+    } else {
+      // device_tag가 없으면 class_name과 student_no로 생성
+      const className = loan.class_name || loan.className || loan.currentClass
+      const studentNo = loan.student_no || loan.studentNo
+      if (className && studentNo) {
+        const classParts = className.split('-')
+        if (classParts.length === 2) {
+          const normalizedClass = `${classParts[0]}-${classParts[1].padStart(2, '0')}`
+          const normalizedStudentNo = studentNo.toString().padStart(2, '0')
+          normalizedDeviceTag = `${normalizedClass}-${normalizedStudentNo}`
+        }
+      }
     }
 
     // class_name 정규화
-    let normalizedClassName = loan.class_name || loan.className
+    let normalizedClassName = loan.class_name || loan.className || loan.currentClass
     if (normalizedClassName) {
       const parts = normalizedClassName.split('-')
       if (parts.length === 2) {
@@ -43,12 +57,18 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
       }
     }
 
-    return {
+    // student_no 정규화
+    const normalizedStudentNo = (loan.student_no || loan.studentNo || '').toString().padStart(2, '0')
+
+    const normalized = {
       ...loan,
       device_tag: normalizedDeviceTag,
       class_name: normalizedClassName,
-      student_no: (loan.student_no || loan.studentNo || '').toString().padStart(2, '0')
+      student_no: normalizedStudentNo
     }
+
+    console.log('Normalized result:', normalized)
+    return normalized
   }
 
   // 초기 데이터를 정규화하여 상태에 설정
@@ -198,6 +218,11 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
       const currentKoreaTime = getCurrentKoreaTime()
       const tempId = `temp-${Date.now()}`
 
+      // 데이터 정규화를 위한 기본 값 설정
+      const deviceTag = requestData.device_tag || requestData.deviceTag || null
+      const className = requestData.className || requestData.currentClass || student.className
+      const studentNo = requestData.studentNo || student.studentNo
+
       const newLoanRequest = {
         id: tempId,
         status: 'requested',
@@ -207,10 +232,10 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         due_date: `${requestData.returnDate} 09:00`,
         student_contact: requestData.studentContact,
         notes: requestData.notes || '',
-        device_tag: requestData.device_tag || null,
+        device_tag: deviceTag,
         student_name: requestData.studentName || student.name,
-        student_no: requestData.studentNo || student.studentNo,
-        class_name: requestData.className || student.className,
+        student_no: studentNo,
+        class_name: className,
         email: student.email,
         signature: requestData.studentSignature || requestData.signature || null
       }
@@ -233,7 +258,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             return_date: requestData.returnDate,
             return_time: '09:00',
             due_date: newLoanRequest.due_date,
-            device_tag: requestData.deviceTag,
+            device_tag: deviceTag,
             signature: requestData.studentSignature || requestData.signature || null,
             notes: requestData.notes || ''
           })
@@ -243,10 +268,13 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
           const { loan: apiLoanRequest } = await response.json()
           console.log('API success:', apiLoanRequest)
           // API에서 받은 실제 데이터로 교체
+          console.log('API response loan data:', apiLoanRequest)
           Object.assign(newLoanRequest, {
             id: apiLoanRequest.id,
             created_at: apiLoanRequest.created_at,
-            device_tag: apiLoanRequest.device_tag
+            device_tag: apiLoanRequest.device_tag,
+            class_name: apiLoanRequest.class_name,
+            student_no: apiLoanRequest.student_no
           })
         } else {
           console.error('API failed, using localStorage:', response.statusText)
