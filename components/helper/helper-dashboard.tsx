@@ -284,17 +284,17 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
       </div>
 
       {/* 승인 대기 중인 신청 */}
-      {pendingLoans.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>승인 대기 중인 신청</CardTitle>
-            <CardDescription>
-              {(user.role === 'homeroom' && user.grade && user.class) ? `${user.grade}-${user.class}반 학생들의 대여 신청을 승인하고 관리할 수 있습니다.` : user.className ? `${user.className}반 학생들의 대여 신청을 승인하고 관리할 수 있습니다.` : '담당반이 설정되지 않았습니다.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {pendingLoans.map((loan: any) => (
+      <Card>
+        <CardHeader>
+          <CardTitle>승인 대기 중인 신청</CardTitle>
+          <CardDescription>
+            {(user.role === 'homeroom' && user.grade && user.class) ? `${user.grade}-${user.class}반 학생들의 대여 신청을 승인하고 관리할 수 있습니다.` : user.className ? `${user.className}반 학생들의 대여 신청을 승인하고 관리할 수 있습니다.` : '담당반이 설정되지 않았습니다.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {pendingLoans.length > 0 ? (
+              pendingLoans.map((loan: any) => (
                 <div key={loan.id} className="p-4 border rounded-lg">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -338,11 +338,23 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <div className="flex flex-col items-center space-y-2">
+                  <svg className="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="text-lg font-medium">대여 신청이 없습니다</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(user.role === 'homeroom' && user.grade && user.class) ? `${user.grade}-${user.class}반 학생들의 새로운 대여 신청을 기다리고 있습니다.` : user.className ? `${user.className}반 학생들의 새로운 대여 신청을 기다리고 있습니다.` : '담당반 설정 후 대여 신청을 관리할 수 있습니다.'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 도우미 전용 개인 대여 신청 */}
       {user.role === 'helper' && (
