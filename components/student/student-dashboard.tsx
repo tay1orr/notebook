@@ -22,12 +22,6 @@ interface StudentDashboardProps {
 export function StudentDashboard({ student, currentLoans: initialCurrentLoans, loanHistory }: StudentDashboardProps) {
   const [showLoanRequest, setShowLoanRequest] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [currentLoans, setCurrentLoans] = useState<any[]>([])
-  const [loanHistoryData, setLoanHistoryData] = useState(loanHistory)
-  const [showAllHistory, setShowAllHistory] = useState(false)
-
-  // 데이터 해시를 useRef로 관리하여 새로고침 시에도 유지
-  const lastDataHashRef = useRef('')
 
   // 대여 데이터 정규화 함수
   const normalizeLoanData = (loan: any) => {
@@ -56,6 +50,19 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
       student_no: (loan.student_no || loan.studentNo || '').toString().padStart(2, '0')
     }
   }
+
+  // 초기 데이터를 정규화하여 상태에 설정
+  const [currentLoans, setCurrentLoans] = useState<any[]>(
+    initialCurrentLoans.map(normalizeLoanData)
+  )
+  const [loanHistoryData, setLoanHistoryData] = useState(
+    loanHistory.map(normalizeLoanData)
+  )
+  const [showAllHistory, setShowAllHistory] = useState(false)
+  const [isDataLoaded, setIsDataLoaded] = useState(false)
+
+  // 데이터 해시를 useRef로 관리하여 새로고침 시에도 유지
+  const lastDataHashRef = useRef('')
 
   // 데이터 로딩 함수 - 단순화하여 일관성 문제 해결
   const loadStudentLoans = async () => {
@@ -106,6 +113,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             })
             setLoanHistoryData(studentHistory)
             lastDataHashRef.current = currentDataHash
+            setIsDataLoaded(true)
           }
           return
         }
@@ -143,6 +151,11 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
   // localStorage에서 현재 학생의 대여 데이터 로드 (API 문제로 인한 임시 폴백)
   useEffect(() => {
+    // 초기 데이터가 있으면 로딩 완료로 설정
+    if (initialCurrentLoans.length > 0) {
+      setIsDataLoaded(true)
+    }
+
     loadStudentLoans()
 
     // 5초마다 체크 (실시간 상태 변화 반영)
