@@ -29,6 +29,34 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   // 데이터 해시를 useRef로 관리하여 새로고침 시에도 유지
   const lastDataHashRef = useRef('')
 
+  // 대여 데이터 정규화 함수
+  const normalizeLoanData = (loan: any) => {
+    // device_tag 정규화 (3-1-35 -> 3-01-35 형식으로 통일)
+    let normalizedDeviceTag = loan.device_tag || loan.deviceTag
+    if (normalizedDeviceTag) {
+      const parts = normalizedDeviceTag.split('-')
+      if (parts.length === 3) {
+        normalizedDeviceTag = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`
+      }
+    }
+
+    // class_name 정규화
+    let normalizedClassName = loan.class_name || loan.className
+    if (normalizedClassName) {
+      const parts = normalizedClassName.split('-')
+      if (parts.length === 2) {
+        normalizedClassName = `${parts[0]}-${parts[1].padStart(2, '0')}`
+      }
+    }
+
+    return {
+      ...loan,
+      device_tag: normalizedDeviceTag,
+      class_name: normalizedClassName,
+      student_no: (loan.student_no || loan.studentNo || '').toString().padStart(2, '0')
+    }
+  }
+
   // 데이터 로딩 함수 - 단순화하여 일관성 문제 해결
   const loadStudentLoans = async () => {
       try {
@@ -65,7 +93,17 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
           // 데이터가 변경된 경우에만 상태 업데이트
           if (currentDataHash !== lastDataHashRef.current) {
             console.log('Data updated from API')
-            setCurrentLoans(studentLoans)
+            // 임시 ID 항목들 제거 후 API 데이터로 교체 (데이터 정규화 적용)
+            setCurrentLoans(prev => {
+              const nonTempLoans = prev.filter(loan => !loan.id.startsWith('temp-'))
+              // API에서 온 데이터와 중복되지 않는 로컬 데이터만 유지
+              const apiIds = studentLoans.map(l => l.id)
+              const uniqueLocalLoans = nonTempLoans.filter(loan => !apiIds.includes(loan.id))
+              // 데이터 정규화 적용
+              const normalizedApiLoans = studentLoans.map(normalizeLoanData)
+              const normalizedLocalLoans = uniqueLocalLoans.map(normalizeLoanData)
+              return [...normalizedApiLoans, ...normalizedLocalLoans]
+            })
             setLoanHistoryData(studentHistory)
             lastDataHashRef.current = currentDataHash
           }
@@ -90,8 +128,11 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
               ['returned', 'rejected', 'cancelled'].includes(loan.status)
             )
 
-            setCurrentLoans(studentLoans)
-            setLoanHistoryData(studentHistory)
+            // localStorage 데이터도 정규화 적용
+            const normalizedCurrentLoans = studentLoans.map(normalizeLoanData)
+            const normalizedHistory = studentHistory.map(normalizeLoanData)
+            setCurrentLoans(normalizedCurrentLoans)
+            setLoanHistoryData(normalizedHistory)
             console.log('Using localStorage fallback')
           } catch (parseError) {
             console.error('Failed to parse fallback data:', parseError)
@@ -202,12 +243,19 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         }
       }
 
-      // 로컬 상태 즉시 업데이트
-      setCurrentLoans(prev => [newLoanRequest, ...prev])
+      // 로컬 상태 즉시 업데이트 (임시 ID가 실제 ID로 교체된 경우 고려)
+      setCurrentLoans(prev => {
+        // 임시 ID가 실제 ID로 교체된 경우 중복 방지
+        const filteredPrev = prev.filter(loan => !loan.id.startsWith('temp-'))
+        // 새 데이터도 정규화 적용
+        const normalizedNewLoan = normalizeLoanData(newLoanRequest)
+        return [normalizedNewLoan, ...filteredPrev]
+      })
 
       // 해시 업데이트로 다음 폴링에서 중복 업데이트 방지
+      const normalizedForHash = normalizeLoanData(newLoanRequest)
       const updatedHash = JSON.stringify({
-        current: [newLoanRequest].map((l: any) => ({
+        current: [normalizedForHash].map((l: any) => ({
           id: l.id,
           status: l.status,
           created_at: l.created_at,
@@ -396,12 +444,10 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                     <div className="flex flex-col space-y-1">
                       <div className="flex items-center space-x-2">
                         <h4 className="font-medium">
-                          {loan.deviceTag || loan.device_tag ?
-                            `신청기기: ${loan.deviceTag || loan.device_tag}번 노트북` :
-                           loan.className && loan.studentNo ?
-                            `신청기기: ${loan.className}-${loan.studentNo.padStart(2, '0')}번 노트북` :
+                          {loan.device_tag ?
+                            `신청기기: ${loan.device_tag}번 노트북` :
                            loan.class_name && loan.student_no ?
-                            `신청기기: ${loan.class_name}-${loan.student_no.padStart(2, '0')}번 노트북` :
+                            `신청기기: ${loan.class_name}-${loan.student_no}번 노트북` :
                            '기기 배정 대기 중'}
                         </h4>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -415,23 +461,20 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
                       {/* 학년 반 번호 정보를 항상 표시 */}
                       <div className="text-sm font-medium text-blue-800">
-                        {loan.deviceTag || loan.device_tag ? (
+                        {loan.device_tag ? (
                           <>
                             <span className="text-green-700">📱 할당된 기기:</span>{' '}
                             {(() => {
-                              const tag = loan.deviceTag || loan.device_tag;
-                              const parts = tag.split('-');
+                              const parts = loan.device_tag.split('-');
                               return `${parts[0]}학년 ${parts[1]}반 ${parts[2]}번 노트북`;
                             })()}
                           </>
-                        ) : loan.className || loan.class_name ? (
+                        ) : loan.class_name && loan.student_no ? (
                           <>
                             <span className="text-blue-700">📝 신청 정보:</span>{' '}
                             {(() => {
-                              const className = loan.className || loan.class_name;
-                              const studentNo = loan.studentNo || loan.student_no;
-                              const parts = className.split('-');
-                              return `${parts[0]}학년 ${parts[1]}반 ${studentNo.padStart(2, '0')}번 노트북 신청`;
+                              const parts = loan.class_name.split('-');
+                              return `${parts[0]}학년 ${parts[1]}반 ${loan.student_no}번 노트북 신청`;
                             })()}
                           </>
                         ) : (
@@ -440,20 +483,17 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                       </div>
 
                       {/* 시리얼 번호 정보 */}
-                      {(loan.deviceTag || loan.device_tag || ((loan.className || loan.class_name) && (loan.studentNo || loan.student_no))) && (
+                      {(loan.device_tag || (loan.class_name && loan.student_no)) && (
                         <div className="text-xs text-blue-600">
-                          {loan.deviceTag || loan.device_tag ? (
+                          {loan.device_tag ? (
                             <>시리얼번호: {(() => {
-                              const tag = loan.deviceTag || loan.device_tag;
-                              const parts = tag.split('-');
-                              return `${parts[0]}${parts[1].padStart(2, '0')}${parts[2].padStart(2, '0')}`;
+                              const parts = loan.device_tag.split('-');
+                              return `${parts[0]}${parts[1]}${parts[2]}`;
                             })()}</>
                           ) : (
                             <>예상 시리얼번호: {(() => {
-                              const className = loan.className || loan.class_name;
-                              const studentNo = loan.studentNo || loan.student_no;
-                              const parts = className.split('-');
-                              return `${parts[0]}${parts[1].padStart(2, '0')}${studentNo.padStart(2, '0')}`;
+                              const parts = loan.class_name.split('-');
+                              return `${parts[0]}${parts[1]}${loan.student_no}`;
                             })()}</>
                           )}
                         </div>
