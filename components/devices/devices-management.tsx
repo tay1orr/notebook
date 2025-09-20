@@ -29,8 +29,7 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
     const statusMap = {
       'available': '대여 가능',
       'loaned': '대여 중',
-      'maintenance': '점검 중',
-      'retired': '폐기'
+      'maintenance': '점검 중'
     }
     return statusMap[status as keyof typeof statusMap] || status
   }
@@ -39,8 +38,7 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
     const colorMap = {
       'available': 'bg-green-100 text-green-800',
       'loaned': 'bg-blue-100 text-blue-800',
-      'maintenance': 'bg-yellow-100 text-yellow-800',
-      'retired': 'bg-red-100 text-red-800'
+      'maintenance': 'bg-yellow-100 text-yellow-800'
     }
     return colorMap[status as keyof typeof colorMap] || 'bg-gray-100 text-gray-800'
   }
@@ -73,7 +71,7 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
         available: updatedDevices.filter(d => d.status === 'available').length,
         loaned: updatedDevices.filter(d => d.status === 'loaned').length,
         maintenance: updatedDevices.filter(d => d.status === 'maintenance').length,
-        retired: updatedDevices.filter(d => d.status === 'retired').length
+        // retired 제거
       }
       setStats(newStats)
 
@@ -115,19 +113,34 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
 
   // 기기 상태 변경 함수
   const handleStatusChange = async (deviceId: string, newStatus: string) => {
+    console.log('handleStatusChange called:', { deviceId, newStatus })
+
     try {
+      // deviceId가 실제로는 assetNumber일 수 있으므로 확인
+      const device = devices.find(d => d.id === deviceId)
+      const assetNumber = device?.assetNumber || deviceId
+
+      const requestBody = {
+        deviceTag: assetNumber,
+        status: newStatus,
+        currentUser: newStatus === 'loaned' ? '관리자 설정' : null,
+        notes: `상태 변경: ${getDeviceStatusText(newStatus)}`
+      }
+
+      console.log('Request body:', requestBody)
+
       const response = await fetch('/api/devices', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          deviceTag: deviceId,
-          status: newStatus,
-          currentUser: newStatus === 'loaned' ? '관리자 설정' : null,
-          notes: `상태 변경: ${getDeviceStatusText(newStatus)}`
-        })
+        body: JSON.stringify(requestBody)
       })
+
+      console.log('Response status:', response.status)
+
+      const responseData = await response.json()
+      console.log('Response data:', responseData)
 
       if (response.ok) {
         // 로컬 상태 업데이트
@@ -146,17 +159,18 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
           available: updatedDevices.filter(d => d.status === 'available').length,
           loaned: updatedDevices.filter(d => d.status === 'loaned').length,
           maintenance: updatedDevices.filter(d => d.status === 'maintenance').length,
-          retired: updatedDevices.filter(d => d.status === 'retired').length
+          // retired 제거
         }
         setStats(newStats)
 
         alert('기기 상태가 변경되었습니다.')
       } else {
-        alert('상태 변경에 실패했습니다.')
+        console.error('API error response:', responseData)
+        alert(`상태 변경에 실패했습니다.\n오류: ${responseData.error || '알 수 없는 오류'}\n세부사항: ${responseData.details || '없음'}`)
       }
     } catch (error) {
       console.error('Status change error:', error)
-      alert('상태 변경 중 오류가 발생했습니다.')
+      alert(`상태 변경 중 오류가 발생했습니다.\n오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
     }
   }
 
@@ -219,14 +233,6 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
             <div className="text-2xl font-bold text-yellow-600">{stats.maintenance}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">폐기</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.retired}</div>
-          </CardContent>
-        </Card>
       </div>
 
       <Card>
@@ -254,7 +260,6 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
                 <SelectItem value="available">대여 가능</SelectItem>
                 <SelectItem value="loaned">대여 중</SelectItem>
                 <SelectItem value="maintenance">점검 중</SelectItem>
-                <SelectItem value="retired">폐기</SelectItem>
               </SelectContent>
             </Select>
             <Select value={gradeFilter} onValueChange={setGradeFilter}>
@@ -324,34 +329,54 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        <Select onValueChange={(value) => handleStatusChange(device.id, value)}>
-                          <SelectTrigger className="w-8 h-8 p-0 border-none bg-transparent hover:bg-muted">
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="available">대여 가능</SelectItem>
-                            <SelectItem value="loaned">대여 중</SelectItem>
-                            <SelectItem value="maintenance">점검 중</SelectItem>
-                            <SelectItem value="retired">폐기</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {/* 대여가능 버튼 */}
                         <Button
-                          variant="ghost"
+                          variant={device.status === 'available' ? 'default' : 'outline'}
                           size="sm"
-                          title="유지보수"
+                          className={`text-xs ${device.status === 'available' ? 'bg-green-600 hover:bg-green-700' : 'border-green-200 text-green-700 hover:bg-green-50'}`}
+                          title="대여 가능으로 설정"
+                          onClick={() => handleStatusChange(device.id, 'available')}
+                        >
+                          <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          가능
+                        </Button>
+
+                        {/* 대여중 버튼 */}
+                        <Button
+                          variant={device.status === 'loaned' ? 'default' : 'outline'}
+                          size="sm"
+                          className={`text-xs ${device.status === 'loaned' ? 'bg-blue-600 hover:bg-blue-700' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                          title="대여중으로 설정"
+                          onClick={() => handleStatusChange(device.id, 'loaned')}
+                        >
+                          <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          대여중
+                        </Button>
+
+                        {/* 점검중 버튼 */}
+                        <Button
+                          variant={device.status === 'maintenance' ? 'default' : 'outline'}
+                          size="sm"
+                          className={`text-xs ${device.status === 'maintenance' ? 'bg-yellow-600 hover:bg-yellow-700' : 'border-yellow-200 text-yellow-700 hover:bg-yellow-50'}`}
+                          title="점검중으로 설정"
                           onClick={() => handleStatusChange(device.id, 'maintenance')}
                         >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
+                          점검
                         </Button>
+
+                        {/* 기기 정보 버튼 */}
                         <Button
                           variant="ghost"
                           size="sm"
                           title="기기 정보"
-                          onClick={() => alert(`기기 정보\n자산번호: ${device.assetNumber}\n모델: ${device.model}\n시리얼: ${device.serialNumber}\n배정학급: ${device.assignedClass}\n상태: ${getDeviceStatusText(device.status)}`)}
+                          onClick={() => alert(`기기 정보\n자산번호: ${device.assetNumber}\n모델: ${device.model}\n시리얼: ${device.serialNumber}\n배정학급: ${device.assignedClass}\n상태: ${getDeviceStatusText(device.status)}\n현재 사용자: ${device.currentUser || '없음'}`)}
                         >
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

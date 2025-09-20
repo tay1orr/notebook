@@ -289,8 +289,7 @@ function mapDeviceStatus(dbStatus: string): string {
   const statusMap: Record<string, string> = {
     '충전함': 'available',
     '대여중': 'loaned',
-    '점검': 'maintenance',
-    '분실': 'retired'
+    '점검': 'maintenance'
   }
   return statusMap[dbStatus] || 'available'
 }
@@ -302,12 +301,16 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json()
     const { deviceTag, status, currentUser, notes } = body
 
+    console.log('PATCH devices - Request body:', { deviceTag, status, currentUser, notes })
+
     if (!deviceTag || !status) {
+      console.error('Missing required fields:', { deviceTag, status })
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     // 프론트엔드 상태를 DB 상태로 매핑
     const dbStatus = mapFrontendStatusToDb(status)
+    console.log(`Status mapping: '${status}' -> '${dbStatus}'`)
 
     // deviceTag를 asset_tag 형식으로 변환
     let assetTag = deviceTag
@@ -322,24 +325,54 @@ export async function PATCH(request: NextRequest) {
 
     console.log(`Converting deviceTag '${deviceTag}' to assetTag '${assetTag}'`)
 
-    // 기기 상태 업데이트
+    // 기기가 존재하는지 먼저 확인
+    const { data: existingDevice, error: checkError } = await supabase
+      .from('devices')
+      .select('asset_tag, status')
+      .eq('asset_tag', assetTag)
+      .single()
+
+    if (checkError) {
+      console.error('Device lookup error:', checkError)
+      return NextResponse.json({
+        error: `Device not found: ${assetTag}`,
+        details: checkError.message
+      }, { status: 404 })
+    }
+
+    console.log('Found device:', existingDevice)
+
+    // 기기 상태 업데이트 (updated_at은 자동으로 처리되도록 제거)
+    const updateData = {
+      status: dbStatus,
+      notes: notes || null
+    }
+
+    console.log('Updating device with data:', updateData)
+
     const { data: device, error } = await supabase
       .from('devices')
-      .update({
-        status: dbStatus,
-        notes: notes || null,
-        updated_at: getCurrentKoreaDateTimeString()
-      })
+      .update(updateData)
       .eq('asset_tag', assetTag)
       .select()
       .single()
 
     if (error) {
-      console.error('Database error:', error)
-      return NextResponse.json({ error: 'Failed to update device' }, { status: 500 })
+      console.error('Database update error:', error)
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      })
+      return NextResponse.json({
+        error: 'Failed to update device',
+        details: error.message,
+        code: error.code
+      }, { status: 500 })
     }
 
-    console.log(`Device ${deviceTag} status updated to ${dbStatus}`)
+    console.log(`Device ${deviceTag} status updated successfully:`, device)
 
     return NextResponse.json({
       success: true,
@@ -350,8 +383,11 @@ export async function PATCH(request: NextRequest) {
       updatedAt: device.updated_at
     })
   } catch (error) {
-    console.error('Unexpected error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Unexpected error in PATCH devices:', error)
+    return NextResponse.json({
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
@@ -360,8 +396,7 @@ function mapFrontendStatusToDb(frontendStatus: string): string {
   const statusMap: Record<string, string> = {
     'available': '충전함',
     'loaned': '대여중',
-    'maintenance': '점검',
-    'retired': '분실'
+    'maintenance': '점검'
   }
   return statusMap[frontendStatus] || '충전함'
 }

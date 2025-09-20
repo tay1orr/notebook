@@ -227,10 +227,11 @@ export function generateQRCodeUrl(text: string): string {
 export function isLoanOverdue(dueDate: string | Date): boolean {
   if (!dueDate) return false
 
-  const now = new Date()
+  // 한국 시간 기준으로 연체 판단
+  const nowKorea = getCurrentKoreaDateTime()
   const due = new Date(dueDate)
 
-  return now > due
+  return nowKorea > due
 }
 
 export function getOverdueDays(dueDate: string | Date): number {

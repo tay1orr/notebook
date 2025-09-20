@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getRoleText, getStatusColor, getStatusText, formatDateTime, getPurposeText, isLoanOverdue, getLoanStatus } from '@/lib/utils'
+import { ClassUsageStats } from '@/components/admin/class-usage-stats'
 
 interface AdminDashboardProps {
   user: {
@@ -350,6 +351,9 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* 학급별 이용률 통계 */}
+      <ClassUsageStats loans={loans} />
 
     </div>
   )
