@@ -354,7 +354,6 @@ export async function PATCH(request: NextRequest) {
         .insert({
           asset_tag: assetTag,
           model: 'Samsung Galaxy Book3',
-          serial_number: assetTag.replace('ICH-', ''),
           status: '충전함'
         })
 

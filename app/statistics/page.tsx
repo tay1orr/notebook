@@ -24,17 +24,18 @@ export default async function StatisticsPage() {
     redirect('/dashboard')
   }
 
-  // 대여 데이터 로드
+  // 대여 데이터 로드 (서버 사이드에서 직접 supabase 사용)
   let loans: any[] = []
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/loans`, {
-      headers: {
-        'Cookie': cookies().toString()
-      }
-    })
-    if (response.ok) {
-      const data = await response.json()
-      loans = data.loans || []
+    const { data: loansData, error } = await supabase
+      .from('loan_applications')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Failed to load loans:', error)
+    } else {
+      loans = loansData || []
     }
   } catch (error) {
     console.error('Failed to load loans for statistics:', error)

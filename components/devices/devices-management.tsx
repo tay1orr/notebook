@@ -20,6 +20,9 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
   const [stats, setStats] = useState(initialStats)
   const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [showLoanHistory, setShowLoanHistory] = useState(false)
+  const [selectedDeviceLoanHistory, setSelectedDeviceLoanHistory] = useState<any[]>([])
+  const [selectedDeviceAsset, setSelectedDeviceAsset] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [gradeFilter, setGradeFilter] = useState('all')
@@ -104,8 +107,8 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
     const deviceGrade = device.assignedClass?.split('-')[0]
     const matchesGrade = gradeFilter === 'all' || deviceGrade === gradeFilter
 
-    // 반 필터링
-    const deviceClass = device.assignedClass?.split('-')[1]
+    // 반 필터링 (예: "1반" -> "1")
+    const deviceClass = device.assignedClass?.split('-')[1]?.replace('반', '')
     const matchesClass = classFilter === 'all' || deviceClass === classFilter
 
     return matchesSearch && matchesStatus && matchesGrade && matchesClass
@@ -193,25 +196,14 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
           return loan.device_tag === assetNumber
         })
 
-        if (deviceLoans.length === 0) {
-          alert(`${assetNumber} 기기의 대여 기록이 없습니다.`)
-          return
-        }
-
         // 대여 기록을 시간순으로 정렬
         const sortedLoans = deviceLoans.sort((a: any, b: any) =>
           new Date(b.created_at || b.requestedAt).getTime() - new Date(a.created_at || a.requestedAt).getTime()
         )
 
-        const historyText = sortedLoans.map((loan: any, index: number) => {
-          const date = new Date(loan.created_at || loan.requestedAt).toLocaleDateString('ko-KR')
-          const status = loan.status === 'picked_up' ? '대여중' :
-                        loan.status === 'returned' ? '반납완료' :
-                        loan.status === 'requested' ? '신청중' : loan.status
-          return `${index + 1}. ${loan.student_name || loan.studentName} (${loan.class_name || loan.className}) - ${status} (${date})`
-        }).join('\n')
-
-        alert(`${assetNumber} 대여 기록:\n\n${historyText}`)
+        setSelectedDeviceAsset(assetNumber)
+        setSelectedDeviceLoanHistory(sortedLoans)
+        setShowLoanHistory(true)
       } else {
         alert('대여 기록을 불러오는데 실패했습니다.')
       }
@@ -455,6 +447,82 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
             onUpload={handleCSVUpload}
             isUploading={isUploading}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* 대여 기록 모달 */}
+      <Dialog open={showLoanHistory} onOpenChange={setShowLoanHistory}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedDeviceAsset} 대여 기록
+            </DialogTitle>
+            <DialogDescription>
+              이 기기의 모든 대여 기록을 확인할 수 있습니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            {selectedDeviceLoanHistory.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">대여 기록 없음</h3>
+                <p className="mt-1 text-sm text-gray-500">이 기기의 대여 기록이 없습니다.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {selectedDeviceLoanHistory.map((loan, index) => {
+                  const date = new Date(loan.created_at || loan.requestedAt).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'long'
+                  })
+                  const time = new Date(loan.created_at || loan.requestedAt).toLocaleTimeString('ko-KR')
+                  const status = loan.status === 'picked_up' ? '대여중' :
+                               loan.status === 'returned' ? '반납완료' :
+                               loan.status === 'requested' ? '신청중' :
+                               loan.status === 'approved' ? '승인됨' : loan.status
+
+                  const statusColor = loan.status === 'picked_up' ? 'bg-blue-100 text-blue-800' :
+                                     loan.status === 'returned' ? 'bg-gray-100 text-gray-800' :
+                                     loan.status === 'requested' ? 'bg-yellow-100 text-yellow-800' :
+                                     loan.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                     'bg-gray-100 text-gray-800'
+
+                  return (
+                    <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium text-lg">
+                              {loan.student_name || loan.studentName}
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              ({loan.class_name || loan.className})
+                            </span>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
+                              {status}
+                            </span>
+                          </div>
+                          <div className="mt-1 text-sm text-gray-600">
+                            <p>신청일: {date} {time}</p>
+                            {loan.purpose && (
+                              <p>사용 목적: {loan.purpose}</p>
+                            )}
+                            {(loan.due_date || loan.dueDate) && (
+                              <p>반납 예정: {new Date(loan.due_date || loan.dueDate).toLocaleDateString('ko-KR')}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
