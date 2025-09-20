@@ -155,7 +155,6 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             const normalizedHistory = studentHistory.map(normalizeLoanData)
             setCurrentLoans(normalizedCurrentLoans)
             setLoanHistoryData(normalizedHistory)
-            console.log('Using localStorage fallback')
           } catch (parseError) {
             console.error('Failed to parse fallback data:', parseError)
           }
@@ -207,7 +206,6 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
     setIsSubmitting(true)
     try {
-      console.log('Submitting loan request:', requestData)
 
       // 새로운 대여 신청 객체 생성 - API 형식에 맞춤
       const currentKoreaTime = getCurrentKoreaTime()
@@ -261,7 +259,6 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
         if (response.ok) {
           const { loan: apiLoanRequest } = await response.json()
-          console.log('API success:', apiLoanRequest)
           // API에서 받은 실제 데이터로 교체
           Object.assign(newLoanRequest, {
             id: apiLoanRequest.id,
@@ -283,7 +280,6 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         const loans = existingLoans ? JSON.parse(existingLoans) : []
         loans.push(newLoanRequest)
         localStorage.setItem('loanApplications', JSON.stringify(loans))
-        console.log('Saved to localStorage:', newLoanRequest)
 
         // BroadcastChannel로 다른 탭에 알림
         try {
@@ -294,7 +290,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             allLoans: loans
           })
         } catch (error) {
-          console.log('BroadcastChannel failed:', error)
+          // BroadcastChannel not supported in this environment
         }
       }
 
