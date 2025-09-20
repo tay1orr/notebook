@@ -119,16 +119,22 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
           // 데이터가 변경된 경우에만 상태 업데이트
           if (currentDataHash !== lastDataHashRef.current) {
             console.log('Data updated from API')
+            console.log('Raw API studentLoans:', studentLoans)
             // 임시 ID 항목들 제거 후 API 데이터로 교체 (데이터 정규화 적용)
             setCurrentLoans(prev => {
+              console.log('Previous currentLoans before API update:', prev)
               const nonTempLoans = prev.filter(loan => !loan.id.startsWith('temp-'))
               // API에서 온 데이터와 중복되지 않는 로컬 데이터만 유지
               const apiIds = studentLoans.map(l => l.id)
               const uniqueLocalLoans = nonTempLoans.filter(loan => !apiIds.includes(loan.id))
               // 데이터 정규화 적용
+              console.log('About to normalize API loans:', studentLoans)
               const normalizedApiLoans = studentLoans.map(normalizeLoanData)
+              console.log('Normalized API loans:', normalizedApiLoans)
               const normalizedLocalLoans = uniqueLocalLoans.map(normalizeLoanData)
-              return [...normalizedApiLoans, ...normalizedLocalLoans]
+              const finalState = [...normalizedApiLoans, ...normalizedLocalLoans]
+              console.log('Final currentLoans state after API update:', finalState)
+              return finalState
             })
             setLoanHistoryData(studentHistory)
             lastDataHashRef.current = currentDataHash
@@ -269,6 +275,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
           console.log('API success:', apiLoanRequest)
           // API에서 받은 실제 데이터로 교체
           console.log('API response loan data:', apiLoanRequest)
+          console.log('Before API merge - newLoanRequest:', newLoanRequest)
           Object.assign(newLoanRequest, {
             id: apiLoanRequest.id,
             created_at: apiLoanRequest.created_at,
@@ -276,6 +283,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             class_name: apiLoanRequest.class_name,
             student_no: apiLoanRequest.student_no
           })
+          console.log('After API merge - newLoanRequest:', newLoanRequest)
         } else {
           console.error('API failed, using localStorage:', response.statusText)
         }
@@ -305,12 +313,17 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
       }
 
       // 로컬 상태 즉시 업데이트 (임시 ID가 실제 ID로 교체된 경우 고려)
+      console.log('About to normalize newLoanRequest for local state:', newLoanRequest)
       setCurrentLoans(prev => {
         // 임시 ID가 실제 ID로 교체된 경우 중복 방지
         const filteredPrev = prev.filter(loan => !loan.id.startsWith('temp-'))
+        console.log('Filtered previous loans:', filteredPrev)
         // 새 데이터도 정규화 적용
         const normalizedNewLoan = normalizeLoanData(newLoanRequest)
-        return [normalizedNewLoan, ...filteredPrev]
+        console.log('Normalized new loan for state:', normalizedNewLoan)
+        const newState = [normalizedNewLoan, ...filteredPrev]
+        console.log('New currentLoans state:', newState)
+        return newState
       })
 
       // 해시 업데이트로 다음 폴링에서 중복 업데이트 방지
