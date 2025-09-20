@@ -51,8 +51,17 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             ['returned', 'rejected', 'cancelled'].includes(loan.status)
           )
 
-          // 데이터 변경 여부 확인 (시간 덮어쓰기 방지)
-          const currentDataHash = JSON.stringify(studentLoans.map((l: any) => ({ id: l.id, status: l.status, created_at: l.created_at })))
+          // 디버깅: 학생의 모든 대여 데이터 확인
+          const allStudentLoans = loans.filter((loan: any) => loan.email === student.email)
+          console.log(`All loans for ${student.email}:`, allStudentLoans)
+          console.log('Current loans:', studentLoans)
+          console.log('History loans:', studentHistory)
+
+          // 데이터 변경 여부 확인 (현재 대여 + 이력 모두 포함)
+          const currentDataHash = JSON.stringify({
+            current: studentLoans.map((l: any) => ({ id: l.id, status: l.status, created_at: l.created_at })),
+            history: studentHistory.map((l: any) => ({ id: l.id, status: l.status, created_at: l.created_at }))
+          })
 
           // sessionStorage에서 이전 시간 데이터 복원
           const savedTimeData = sessionStorage.getItem('student-time-data')
@@ -66,7 +75,8 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
           }
 
           if (currentDataHash !== lastDataHashRef.current) {
-            console.log('Loaded student loans from API:', studentLoans)
+            console.log('Student data changed - Current loans:', studentLoans)
+            console.log('Student data changed - History:', studentHistory)
 
             // 시간 데이터 보존 및 업데이트
             const updatedLoans = studentLoans.map((newLoan: any) => {
