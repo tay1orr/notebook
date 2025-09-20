@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,6 +48,32 @@ export function HomeLoanRequestForm({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [signatureEmpty, setSignatureEmpty] = useState(true)
   const signaturePadRef = useRef<SignaturePadRef>(null)
+
+  // 폼 초기화 함수
+  const resetForm = () => {
+    setFormData({
+      purpose: '',
+      purposeDetail: '',
+      returnDate: '',
+      rulesAgreed: false,
+      studentContact: '',
+      notes: '',
+      currentClass: '',
+      currentGrade: '',
+      currentClassNumber: '',
+      currentStudentNumber: ''
+    })
+    setErrors({})
+    setSignatureEmpty(true)
+    signaturePadRef.current?.clear()
+  }
+
+  // 폼이 열릴 때마다 초기화
+  useEffect(() => {
+    if (isOpen) {
+      resetForm()
+    }
+  }, [isOpen])
 
   // 전각 문자를 반각으로 변환하는 함수
   const convertToHalfWidth = (str: string) => {
@@ -174,21 +200,7 @@ export function HomeLoanRequestForm({
 
   const handleClose = () => {
     if (!isSubmitting) {
-      setFormData({
-        purpose: '',
-        purposeDetail: '',
-        returnDate: '',
-        rulesAgreed: false,
-        studentContact: '',
-        notes: '',
-        currentClass: '',
-        currentGrade: '',
-        currentClassNumber: '',
-        currentStudentNumber: ''
-      })
-      setErrors({})
-      setSignatureEmpty(true)
-      signaturePadRef.current?.clear()
+      resetForm()
       onClose()
     }
   }
