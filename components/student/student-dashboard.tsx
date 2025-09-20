@@ -29,11 +29,8 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   // 데이터 해시를 useRef로 관리하여 새로고침 시에도 유지
   const lastDataHashRef = useRef('')
 
-  // loadStudentLoans 함수를 컴포넌트 레벨로 이동
+  // 데이터 로딩 함수 - 단순화하여 일관성 문제 해결
   const loadStudentLoans = async () => {
-      // API 시도하되 실패하면 즉시 localStorage로 폴백
-      let useLocalStorage = false
-
       try {
         const response = await fetch('/api/loans')
         if (response.ok) {
@@ -50,43 +47,36 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             ['returned', 'rejected', 'cancelled'].includes(loan.status)
           )
 
-          // 디버깅: 학생의 모든 대여 데이터 확인
-          const allStudentLoans = loans.filter((loan: any) => loan.email === student.email)
-          console.log(`All loans for ${student.email}:`, allStudentLoans)
-          console.log('Current loans:', studentLoans)
-          console.log('History loans:', studentHistory)
-
-          // 데이터 변경 여부 확인 (현재 대여 + 이력 모두 포함)
+          // 데이터 변경 여부 확인 (간단한 해시 비교)
           const currentDataHash = JSON.stringify({
-            current: studentLoans.map((l: any) => ({ id: l.id, status: l.status, created_at: l.created_at })),
-            history: studentHistory.map((l: any) => ({ id: l.id, status: l.status, created_at: l.created_at }))
+            current: studentLoans.map((l: any) => ({
+              id: l.id,
+              status: l.status,
+              created_at: l.created_at,
+              device_tag: l.device_tag
+            })),
+            history: studentHistory.map((l: any) => ({
+              id: l.id,
+              status: l.status,
+              created_at: l.created_at
+            }))
           })
 
-
+          // 데이터가 변경된 경우에만 상태 업데이트
           if (currentDataHash !== lastDataHashRef.current) {
-            console.log('Student data changed - Current loans:', studentLoans)
-            console.log('Student data changed - History:', studentHistory)
-
-            // API 데이터를 그대로 사용 (덮어쓰기 문제 해결)
+            console.log('Data updated from API')
             setCurrentLoans(studentLoans)
             setLoanHistoryData(studentHistory)
             lastDataHashRef.current = currentDataHash
-
-            console.log('Updated currentLoans state:', studentLoans)
-            console.log('Updated historyData state:', studentHistory)
           }
-          return // API 성공 시 localStorage 실행 안함
-        } else {
-          console.error('API failed, using localStorage:', response.statusText)
-          useLocalStorage = true
+          return
         }
       } catch (error) {
-        console.error('API error, using localStorage:', error)
-        useLocalStorage = true
+        console.error('API error:', error)
       }
 
-      // localStorage 폴백
-      if (useLocalStorage && typeof window !== 'undefined') {
+      // API 실패 시 localStorage 폴백 (단순화)
+      if (typeof window !== 'undefined') {
         const storedLoans = localStorage.getItem('loanApplications')
         if (storedLoans) {
           try {
@@ -100,27 +90,9 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
               ['returned', 'rejected', 'cancelled'].includes(loan.status)
             )
 
-            // 데이터 변경 여부 확인
-            const currentDataHash = JSON.stringify(studentLoans.map(l => ({ id: l.id, status: l.status })))
-            if (currentDataHash !== lastDataHashRef.current) {
-              // 기존 데이터가 있고 같은 ID의 항목이면 시간 데이터 보존
-              const updatedLoans = studentLoans.map((newLoan: any) => {
-                const existingLoan = currentLoans.find(existing => existing.id === newLoan.id)
-                if (existingLoan) {
-                  // 기존 시간 데이터가 있으면 보존, 없으면 새 데이터 사용
-                  return {
-                    ...newLoan,
-                    created_at: existingLoan.created_at || newLoan.created_at,
-                    requestedAt: existingLoan.requestedAt || newLoan.requestedAt || newLoan.created_at
-                  }
-                }
-                return newLoan
-              })
-              setCurrentLoans(updatedLoans)
-              setLoanHistoryData(studentHistory)
-              lastDataHashRef.current = currentDataHash
-              console.log('Using localStorage fallback')
-            }
+            setCurrentLoans(studentLoans)
+            setLoanHistoryData(studentHistory)
+            console.log('Using localStorage fallback')
           } catch (parseError) {
             console.error('Failed to parse fallback data:', parseError)
           }
@@ -148,21 +120,20 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
     try {
       console.log('Submitting loan request:', requestData)
 
-      // 새로운 대여 신청 객체 생성 (API 형식에 맞춤)
-      // 정확한 한국 시간으로 신청 시간 기록
+      // 새로운 대여 신청 객체 생성 - API 형식에 맞춤
       const currentKoreaTime = getCurrentKoreaTime()
+      const tempId = `temp-${Date.now()}`
 
       const newLoanRequest = {
-        id: `temp-${Date.now()}`,
+        id: tempId,
         status: 'requested',
-        requestedAt: currentKoreaTime,
         created_at: currentKoreaTime,
-        purpose: requestData.purpose, // 원본 값 유지
+        purpose: requestData.purpose,
         purpose_detail: requestData.purposeDetail,
         due_date: `${requestData.returnDate} 09:00`,
         student_contact: requestData.studentContact,
         notes: requestData.notes || '',
-        device_tag: requestData.deviceTag || null,
+        device_tag: requestData.device_tag || null,
         student_name: requestData.studentName || student.name,
         student_no: requestData.studentNo || student.studentNo,
         class_name: requestData.className || student.className,
@@ -197,7 +168,12 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         if (response.ok) {
           const { loan: apiLoanRequest } = await response.json()
           console.log('API success:', apiLoanRequest)
-          newLoanRequest.id = apiLoanRequest.id // API에서 받은 실제 ID 사용
+          // API에서 받은 실제 데이터로 교체
+          Object.assign(newLoanRequest, {
+            id: apiLoanRequest.id,
+            created_at: apiLoanRequest.created_at,
+            device_tag: apiLoanRequest.device_tag
+          })
         } else {
           console.error('API failed, using localStorage:', response.statusText)
         }
@@ -228,6 +204,22 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
       // 로컬 상태 즉시 업데이트
       setCurrentLoans(prev => [newLoanRequest, ...prev])
+
+      // 해시 업데이트로 다음 폴링에서 중복 업데이트 방지
+      const updatedHash = JSON.stringify({
+        current: [newLoanRequest].map((l: any) => ({
+          id: l.id,
+          status: l.status,
+          created_at: l.created_at,
+          device_tag: l.device_tag
+        })),
+        history: loanHistoryData.map((l: any) => ({
+          id: l.id,
+          status: l.status,
+          created_at: l.created_at
+        }))
+      })
+      lastDataHashRef.current = updatedHash
 
       alert(`가정대여 신청이 완료되었습니다!
 

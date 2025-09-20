@@ -199,6 +199,19 @@ export function HomeLoanRequestForm({
     return tomorrow.toISOString().split('T')[0]
   }
 
+  // 다음 등교일 (주말 제외)
+  const getNextSchoolDay = () => {
+    const date = new Date()
+    date.setDate(date.getDate() + 1) // 내일부터 시작
+
+    // 주말이면 다음 월요일로 이동
+    while (date.getDay() === 0 || date.getDay() === 6) { // 0: 일요일, 6: 토요일
+      date.setDate(date.getDate() + 1)
+    }
+
+    return date.toISOString().split('T')[0]
+  }
+
   const getMaxDate = () => {
     const maxDate = new Date()
     maxDate.setDate(maxDate.getDate() + 7)
@@ -339,7 +352,7 @@ export function HomeLoanRequestForm({
               type="date"
               value={formData.returnDate}
               onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
-              min={getTomorrowDate()}
+              min={getNextSchoolDay()}
               max={getMaxDate()}
             />
             {errors.returnDate && <p className="text-sm text-red-500">{errors.returnDate}</p>}
@@ -430,7 +443,7 @@ export function HomeLoanRequestForm({
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-medium text-blue-900 mb-2">학생 서명</h4>
               <p className="text-sm text-blue-800 mb-4">
-                위 신청 내용이 정확하며, 안내사항을 준수할 것을 약속합니다.
+                위 신청 내용이 정확하며, 안내사항을 준수할 것을 약속합니다.<br />
                 아래에 본인의 이름을 자필로 서명해주세요.
               </p>
 
