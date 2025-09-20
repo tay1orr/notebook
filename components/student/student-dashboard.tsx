@@ -474,20 +474,14 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
                       {/* 학년 반 번호 정보를 항상 표시 */}
                       <div className="text-sm font-medium text-blue-800">
-                        {loan.device_tag ? (
+                        {(loan.device_tag || (loan.class_name && loan.student_no)) ? (
                           <>
                             <span className="text-green-700">📱 할당된 기기:</span>{' '}
                             {(() => {
-                              const parts = loan.device_tag.split('-');
+                              // device_tag가 있으면 그것을 사용, 없으면 class_name과 student_no 조합
+                              const tag = loan.device_tag || `${loan.class_name}-${loan.student_no}`;
+                              const parts = tag.split('-');
                               return `${parts[0]}학년 ${parts[1]}반 ${parts[2]}번 노트북`;
-                            })()}
-                          </>
-                        ) : loan.class_name && loan.student_no ? (
-                          <>
-                            <span className="text-green-700">📱 할당된 기기:</span>{' '}
-                            {(() => {
-                              const parts = loan.class_name.split('-');
-                              return `${parts[0]}학년 ${parts[1]}반 ${loan.student_no}번 노트북`;
                             })()}
                           </>
                         ) : (
