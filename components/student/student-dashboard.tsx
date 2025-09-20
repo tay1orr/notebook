@@ -29,9 +29,8 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   // 데이터 해시를 useRef로 관리하여 새로고침 시에도 유지
   const lastDataHashRef = useRef('')
 
-  // localStorage에서 현재 학생의 대여 데이터 로드 (API 문제로 인한 임시 폴백)
-  useEffect(() => {
-    const loadStudentLoans = async () => {
+  // loadStudentLoans 함수를 컴포넌트 레벨로 이동
+  const loadStudentLoans = async () => {
       // API 시도하되 실패하면 즉시 localStorage로 폴백
       let useLocalStorage = false
 
@@ -63,49 +62,18 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             history: studentHistory.map((l: any) => ({ id: l.id, status: l.status, created_at: l.created_at }))
           })
 
-          // sessionStorage에서 이전 시간 데이터 복원
-          const savedTimeData = sessionStorage.getItem('student-time-data')
-          let preservedTimeData: Record<string, any> = {}
-          if (savedTimeData) {
-            try {
-              preservedTimeData = JSON.parse(savedTimeData)
-            } catch (e) {
-              console.error('Failed to parse saved time data:', e)
-            }
-          }
 
           if (currentDataHash !== lastDataHashRef.current) {
             console.log('Student data changed - Current loans:', studentLoans)
             console.log('Student data changed - History:', studentHistory)
 
-            // 시간 데이터 보존 및 업데이트
-            const updatedLoans = studentLoans.map((newLoan: any) => {
-              const loanId = newLoan.id.toString()
-              const existingLoan = currentLoans.find(existing => existing.id === newLoan.id)
-              const savedTime = preservedTimeData[loanId]
-
-              // 우선순위: 기존 메모리 데이터 > sessionStorage 데이터 > 새 API 데이터
-              const preservedLoan = {
-                ...newLoan,
-                created_at: existingLoan?.created_at || savedTime?.created_at || newLoan.created_at,
-                requestedAt: existingLoan?.requestedAt || savedTime?.requestedAt || newLoan.requestedAt || newLoan.created_at
-              }
-
-              // sessionStorage에 시간 데이터 저장
-              preservedTimeData[loanId] = {
-                created_at: preservedLoan.created_at,
-                requestedAt: preservedLoan.requestedAt
-              }
-
-              return preservedLoan
-            })
-
-            // sessionStorage 업데이트
-            sessionStorage.setItem('student-time-data', JSON.stringify(preservedTimeData))
-
-            setCurrentLoans(updatedLoans)
+            // API 데이터를 그대로 사용 (덮어쓰기 문제 해결)
+            setCurrentLoans(studentLoans)
             setLoanHistoryData(studentHistory)
             lastDataHashRef.current = currentDataHash
+
+            console.log('Updated currentLoans state:', studentLoans)
+            console.log('Updated historyData state:', studentHistory)
           }
           return // API 성공 시 localStorage 실행 안함
         } else {
@@ -160,6 +128,8 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
       }
     }
 
+  // localStorage에서 현재 학생의 대여 데이터 로드 (API 문제로 인한 임시 폴백)
+  useEffect(() => {
     loadStudentLoans()
 
     // 5초마다 체크 (실시간 상태 변화 반영)
