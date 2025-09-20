@@ -578,25 +578,25 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                     )}
                   </div>
 
-                  {/* 신청한 기기 정보 표시 */}
-                  {(loan.deviceTag || (loan.className && loan.studentNo)) && (
+                  {/* 신청한 기기 정보 표시 - 정규화된 필드 사용 */}
+                  {loan.device_tag && (
                     <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
                       <div className="text-sm font-medium text-blue-900">
                         신청한 노트북: <span className="font-bold">
-                          {loan.deviceTag || `${loan.className}-${loan.studentNo.padStart(2, '0')}`}번
+                          {loan.device_tag}번
                         </span>
                       </div>
                       <div className="text-xs text-blue-700 mt-1">
-                        {loan.deviceTag ?
-                          `${loan.deviceTag.split('-')[0]}학년 ${loan.deviceTag.split('-')[1]}반 ${loan.deviceTag.split('-')[2]}번 노트북` :
-                          `${loan.className.split('-')[0]}학년 ${loan.className.split('-')[1]}반 ${loan.studentNo.padStart(2, '0')}번 노트북`
-                        }
+                        {(() => {
+                          const parts = loan.device_tag.split('-');
+                          return `${parts[0]}학년 ${parts[1]}반 ${parts[2]}번 노트북`;
+                        })()}
                       </div>
                       <div className="text-xs text-blue-600 mt-1">
-                        시리얼번호: {loan.deviceTag ?
-                          `${loan.deviceTag.split('-')[0]}${loan.deviceTag.split('-')[1].padStart(2, '0')}${loan.deviceTag.split('-')[2].padStart(2, '0')}` :
-                          `${loan.className.split('-')[0]}${loan.className.split('-')[1].padStart(2, '0')}${loan.studentNo.padStart(2, '0')}`
-                        }
+                        시리얼번호: {(() => {
+                          const parts = loan.device_tag.split('-');
+                          return `${parts[0]}${parts[1]}${parts[2]}`;
+                        })()}
                       </div>
                     </div>
                   )}
@@ -673,7 +673,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
                 <div key={loan.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium">{loan.device_tag || loan.deviceTag || '기기 정보 없음'}</span>
+                      <span className="font-medium">{loan.device_tag || '기기 정보 없음'}</span>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
                           ? 'bg-orange-100 text-orange-800 border border-orange-200'
