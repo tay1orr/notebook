@@ -1,28 +1,21 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
-import { Database } from '@/types/supabase'
+import { requireRole } from '@/lib/auth'
+import { createAdminClient } from '@/lib/supabase-server'
 import { ClassUsageStats } from '@/components/admin/class-usage-stats'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export default async function StatisticsPage() {
-  const supabase = createServerComponentClient<Database>({ cookies })
+  // 관리자 권한 확인
+  const user = await requireRole(['admin'])
 
-  const { data: { user } } = await supabase.auth.getUser()
+  console.log('🔍 STATISTICS PAGE - User accessing:', {
+    email: user.email,
+    role: user.role,
+    id: user.id
+  })
 
-  if (!user) {
-    redirect('/login')
-  }
-
-  // 사용자 권한 확인
-  const { data: userData } = await supabase
-    .from('users')
-    .select('role, is_approved')
-    .eq('id', user.id)
-    .single()
-
-  if (!userData || !userData.is_approved || userData.role !== 'admin') {
-    redirect('/dashboard')
-  }
+  const supabase = createAdminClient()
 
   // 대여 데이터 로드 (서버 사이드에서 직접 supabase 사용)
   let loans: any[] = []
