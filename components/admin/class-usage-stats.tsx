@@ -27,25 +27,34 @@ export function ClassUsageStats({ loans }: ClassUsageStatsProps) {
       }
     }
 
-    // 실제 대여 데이터로 통계 계산
+    // 실제 대여 데이터로 통계 계산 (실제로 이용한 것만 카운팅)
     loans.forEach(loan => {
       const className = loan.class_name || loan.className
       if (className && classMap.has(className)) {
         const stats = classMap.get(className)
-        stats.total++
 
-        if (loan.status === 'picked_up') {
-          stats.active++
-        } else if (loan.status === 'returned') {
-          stats.completed++
+        // 실제로 이용한 경우만 카운팅 (picked_up 또는 returned)
+        if (loan.status === 'picked_up' || loan.status === 'returned') {
+          stats.total++
+
+          if (loan.status === 'picked_up') {
+            stats.active++
+          } else if (loan.status === 'returned') {
+            stats.completed++
+          }
         }
       }
     })
 
-    // 이용률 계산 (전체 대여 건수 기준)
+    // 이용률 계산 (전체 실제 이용 건수 기준)
     const allStats = Array.from(classMap.values())
+    const totalActualLoans = loans.filter(loan =>
+      loan.status === 'picked_up' || loan.status === 'returned'
+    ).length
+
     allStats.forEach(stats => {
-      stats.utilization = stats.total > 0 ? Math.round((stats.total / loans.length) * 100) : 0
+      stats.utilization = stats.total > 0 && totalActualLoans > 0 ?
+        Math.round((stats.total / totalActualLoans) * 100) : 0
     })
 
     return allStats.filter(stats => stats.total > 0).sort((a, b) => b.total - a.total)
@@ -71,12 +80,16 @@ export function ClassUsageStats({ loans }: ClassUsageStatsProps) {
         const grade = parseInt(className.split('-')[0])
         if (gradeMap.has(grade)) {
           const stats = gradeMap.get(grade)
-          stats.total++
 
-          if (loan.status === 'picked_up') {
-            stats.active++
-          } else if (loan.status === 'returned') {
-            stats.completed++
+          // 실제로 이용한 경우만 카운팅 (picked_up 또는 returned)
+          if (loan.status === 'picked_up' || loan.status === 'returned') {
+            stats.total++
+
+            if (loan.status === 'picked_up') {
+              stats.active++
+            } else if (loan.status === 'returned') {
+              stats.completed++
+            }
           }
         }
       }
@@ -110,12 +123,16 @@ export function ClassUsageStats({ loans }: ClassUsageStatsProps) {
 
       if (monthMap.has(monthKey)) {
         const stats = monthMap.get(monthKey)
-        stats.total++
 
-        if (loan.status === 'picked_up') {
-          stats.active++
-        } else if (loan.status === 'returned') {
-          stats.completed++
+        // 실제로 이용한 경우만 카운팅 (picked_up 또는 returned)
+        if (loan.status === 'picked_up' || loan.status === 'returned') {
+          stats.total++
+
+          if (loan.status === 'picked_up') {
+            stats.active++
+          } else if (loan.status === 'returned') {
+            stats.completed++
+          }
         }
       }
     })
@@ -135,9 +152,9 @@ export function ClassUsageStats({ loans }: ClassUsageStatsProps) {
       {/* 학급별 이용률 차트 */}
       <Card>
         <CardHeader>
-          <CardTitle>학급별 이용률</CardTitle>
+          <CardTitle>학급별 실제 이용률</CardTitle>
           <CardDescription>
-            각 학급의 노트북 대여 이용률 (상위 10개 학급)
+            각 학급의 노트북 실제 대여 이용률 (실제 이용한 건수만 집계, 상위 10개 학급)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -170,9 +187,9 @@ export function ClassUsageStats({ loans }: ClassUsageStatsProps) {
         {/* 학년별 통계 */}
         <Card>
           <CardHeader>
-            <CardTitle>학년별 이용률</CardTitle>
+            <CardTitle>학년별 실제 이용률</CardTitle>
             <CardDescription>
-              학년별 노트북 대여 현황
+              학년별 노트북 실제 대여 현황 (실제 이용한 건수만 집계)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -203,9 +220,9 @@ export function ClassUsageStats({ loans }: ClassUsageStatsProps) {
         {/* 월별 이용률 */}
         <Card>
           <CardHeader>
-            <CardTitle>월별 이용률</CardTitle>
+            <CardTitle>월별 실제 이용률</CardTitle>
             <CardDescription>
-              최근 6개월간 노트북 대여 추이
+              최근 6개월간 노트북 실제 대여 추이 (실제 이용한 건수만 집계)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -236,7 +253,7 @@ export function ClassUsageStats({ loans }: ClassUsageStatsProps) {
         <CardHeader>
           <CardTitle>학급별 상세 통계</CardTitle>
           <CardDescription>
-            모든 학급의 노트북 대여 상세 현황
+            모든 학급의 노트북 실제 대여 상세 현황 (실제 이용한 건수만 집계)
           </CardDescription>
         </CardHeader>
         <CardContent>
