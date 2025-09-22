@@ -55,7 +55,8 @@ export function BackupManagement() {
     try {
       setIsBackingUp(true)
       setBackupStatus('idle')
-      console.log('🔄 백업 시작:', selectedTable)
+      console.log('🔄 백업 시작 - 선택된 테이블:', selectedTable)
+      console.log('🔄 백업 API URL:', `/api/backup?table=${selectedTable}`)
 
       const response = await fetch(`/api/backup?table=${selectedTable}`, {
         method: 'POST',
@@ -65,7 +66,8 @@ export function BackupManagement() {
         credentials: 'include'
       })
 
-      console.log('📡 백업 응답:', response.status, response.statusText)
+      console.log('📡 백업 응답 상태:', response.status, response.statusText)
+      console.log('📡 백업 응답 헤더:', Object.fromEntries(response.headers.entries()))
 
       if (response.ok) {
         const blob = await response.blob()
@@ -114,7 +116,10 @@ export function BackupManagement() {
         throw new Error(`${errorMessage} (${response.status})`)
       }
     } catch (error) {
-      console.error('❌ 백업 생성 실패:', error)
+      console.error('❌ 백업 생성 실패 - 상세 오류:', error)
+      console.error('❌ 백업 생성 실패 - 오류 타입:', typeof error)
+      console.error('❌ 백업 생성 실패 - 오류 메시지:', error instanceof Error ? error.message : String(error))
+
       setBackupStatus('error')
       setStatusMessage(error instanceof Error ? error.message : '백업 생성 중 오류가 발생했습니다.')
       setTimeout(() => {
@@ -122,6 +127,7 @@ export function BackupManagement() {
         setStatusMessage('')
       }, 5000)
     } finally {
+      console.log('🔚 백업 프로세스 완료 - 상태 초기화')
       setIsBackingUp(false)
     }
   }
@@ -273,7 +279,12 @@ export function BackupManagement() {
           {/* 백업 실행 버튼 */}
           <div className="flex items-center space-x-2">
             <Button
-              onClick={createBackup}
+              onClick={() => {
+                console.log('💡 수동 백업 버튼 클릭됨!')
+                console.log('💡 백업 진행중:', isBackingUp)
+                console.log('💡 백업 정보 존재:', !!backupInfo)
+                createBackup()
+              }}
               disabled={isBackingUp || !backupInfo}
               className="flex-1"
             >
