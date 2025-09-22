@@ -27,6 +27,25 @@ export async function POST(request: NextRequest) {
       backupLocation: 'server://backups/manual/' + new Date().toISOString().split('T')[0]
     }
 
+    // 백업 기록에 추가
+    try {
+      await fetch(new URL('/api/backup/history', request.url), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': request.headers.get('Cookie') || ''
+        },
+        body: JSON.stringify({
+          type: 'manual',
+          status: 'success',
+          table: 'all',
+          size: Math.floor(Math.random() * 1000000) // 임시로 랜덤 크기
+        })
+      })
+    } catch (error) {
+      console.error('백업 기록 추가 실패:', error)
+    }
+
     console.log('✅ 서버 백업 완료:', backupResult)
 
     return NextResponse.json({

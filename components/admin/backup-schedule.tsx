@@ -170,30 +170,34 @@ export function BackupSchedule() {
                     const nextDate = new Date(schedule.next_run)
                     const now = new Date()
 
-                    // 한국 시간 포맷터
-                    const koreaFormatter = new Intl.DateTimeFormat('ko-KR', {
+                    // 한국 시간 포맷터 (전체 날짜)
+                    const koreaFullFormatter = new Intl.DateTimeFormat('ko-KR', {
+                      timeZone: 'Asia/Seoul',
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      weekday: 'short'
+                    })
+
+                    // 간단한 날짜 포맷터
+                    const koreaDateFormatter = new Intl.DateTimeFormat('ko-KR', {
                       timeZone: 'Asia/Seoul',
                       year: 'numeric',
                       month: '2-digit',
                       day: '2-digit'
                     })
 
-                    const koreaFormatterToday = new Intl.DateTimeFormat('ko-KR', {
-                      timeZone: 'Asia/Seoul',
-                      weekday: 'long'
-                    })
-
                     // 오늘, 내일 체크를 위한 날짜 비교
-                    const todayKorea = koreaFormatter.format(now)
-                    const tomorrowKorea = koreaFormatter.format(new Date(now.getTime() + 24 * 60 * 60 * 1000))
-                    const nextDateKorea = koreaFormatter.format(nextDate)
+                    const todayKorea = koreaDateFormatter.format(now)
+                    const tomorrowKorea = koreaDateFormatter.format(new Date(now.getTime() + 24 * 60 * 60 * 1000))
+                    const nextDateKorea = koreaDateFormatter.format(nextDate)
 
                     if (nextDateKorea === todayKorea) {
                       return `오늘 ${schedule.time}`
                     } else if (nextDateKorea === tomorrowKorea) {
                       return `내일 ${schedule.time}`
                     } else {
-                      return `${nextDateKorea} ${schedule.time}`
+                      return koreaFullFormatter.format(nextDate) + ` ${schedule.time}`
                     }
                   } catch (error) {
                     console.error('날짜 계산 오류:', error)

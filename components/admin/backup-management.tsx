@@ -17,6 +17,16 @@ interface BackupInfo {
   last_backup: string | null
 }
 
+interface BackupHistory {
+  id: string
+  type: 'manual' | 'auto'
+  status: 'success' | 'failed' | 'pending'
+  timestamp: string
+  triggeredBy?: string
+  table: string
+  size?: number
+}
+
 export function BackupManagement() {
   const [backupInfo, setBackupInfo] = useState<BackupInfo | null>(null)
   const [selectedTable, setSelectedTable] = useState('all')
@@ -26,10 +36,24 @@ export function BackupManagement() {
   const [showBackupDetails, setShowBackupDetails] = useState(false)
   const [lastBackupTime, setLastBackupTime] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string>('')
+  const [backupHistory, setBackupHistory] = useState<BackupHistory[]>([])
 
   useEffect(() => {
     loadBackupInfo()
+    loadBackupHistory()
   }, [])
+
+  const loadBackupHistory = async () => {
+    try {
+      const response = await fetch('/api/backup/history')
+      if (response.ok) {
+        const data = await response.json()
+        setBackupHistory(data.history || [])
+      }
+    } catch (error) {
+      console.error('백업 기록 로드 실패:', error)
+    }
+  }
 
   useEffect(() => {
     console.log('백업 상세 모달 상태 변경됨:', showBackupDetails)
@@ -95,8 +119,9 @@ export function BackupManagement() {
         setLastBackupTime(new Date().toISOString())
         setStatusMessage(`백업이 완료되었습니다! (${getTableDisplayName(selectedTable)})`)
 
-        // 백업 정보 새로고침
+        // 백업 정보 및 기록 새로고침
         await loadBackupInfo()
+        await loadBackupHistory()
 
         setTimeout(() => {
           setBackupStatus('idle')
@@ -413,19 +438,37 @@ export function BackupManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {lastBackupTime && (
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <div className="text-sm font-medium">수동 백업 (사용자 실행)</div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatDateTime(lastBackupTime)} • {getTableDisplayName(selectedTable)}
+                {backupHistory.length > 0 ? (
+                  backupHistory.slice(0, 5).map((record) => (
+                    <div key={record.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <div className="text-sm font-medium">
+                          {record.type === 'manual' ? '수동 백업' : '자동 백업'}
+                          {record.type === 'manual' ? ' (사용자 실행)' : ' (매일 오전 2시)'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {formatDateTime(record.timestamp)} • {getTableDisplayName(record.table)}
+                          {record.triggeredBy && record.type === 'manual' && ` • ${record.triggeredBy}`}
+                        </div>
                       </div>
+                      <Badge className={
+                        record.status === 'success' ? 'bg-green-100 text-green-800' :
+                        record.status === 'failed' ? 'bg-red-100 text-red-800' :
+                        'bg-blue-100 text-blue-800'
+                      }>
+                        {record.status === 'success' ? '성공' :
+                         record.status === 'failed' ? '실패' : '예약됨'}
+                      </Badge>
                     </div>
-                    <Badge className="bg-green-100 text-green-800">성공</Badge>
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground text-sm">
+                    백업 기록이 없습니다.
                   </div>
                 )}
 
-                <div className="flex items-center justify-between p-3 border rounded-lg">
+                {/* 자동 백업 예약 정보 */}
+                <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
                   <div>
                     <div className="text-sm font-medium">자동 백업 (매일 오전 2시)</div>
                     <div className="text-xs text-muted-foreground">
