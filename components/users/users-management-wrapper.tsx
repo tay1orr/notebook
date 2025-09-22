@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { UsersManagement } from './users-management'
+import { PageLoadingSpinner } from '@/components/ui/loading-spinner'
 
 export function UsersManagementWrapper() {
   const [users, setUsers] = useState<any[]>([])
@@ -90,14 +91,7 @@ export function UsersManagementWrapper() {
   }, [isModalOpen])
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">사용자 목록을 불러오는 중...</p>
-        </div>
-      </div>
-    )
+    return <PageLoadingSpinner text="사용자 목록을 불러오는 중..." />
   }
 
   if (error) {

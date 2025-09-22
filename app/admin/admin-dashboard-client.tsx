@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { UsersManagementWrapper } from '@/components/users/users-management-wrapper'
 import { HomeRoomApprovalWrapper } from '@/components/admin/homeroom-approval-wrapper'
+import { BackupManagement } from '@/components/admin/backup-management'
 
 interface AdminDashboardClientProps {
   user: {
@@ -191,65 +192,7 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
         </TabsContent>
 
         <TabsContent value="backup" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>백업 상태</CardTitle>
-                <CardDescription>
-                  데이터베이스 백업 현황 및 설정
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">마지막 백업</span>
-                    <span className="text-sm text-muted-foreground">{systemStats.lastBackup}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">데이터베이스 크기</span>
-                    <span className="text-sm text-muted-foreground">{systemStats.dbSize}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">자동 백업</span>
-                    <Badge className="bg-green-100 text-green-800">활성화</Badge>
-                  </div>
-                  <div className="pt-4">
-                    <Button className="w-full">
-                      수동 백업 실행
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>백업 기록</CardTitle>
-                <CardDescription>
-                  최근 백업 실행 기록
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {backupHistory.map((backup) => (
-                    <div key={backup.id} className="flex items-center justify-between p-3 border rounded">
-                      <div>
-                        <div className="text-sm font-medium">
-                          {backup.date} {backup.time}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {backup.type === 'AUTO' ? '자동' : '수동'} • {backup.size}
-                        </div>
-                      </div>
-                      <Badge className="bg-green-100 text-green-800">
-                        성공
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <BackupManagement />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">

@@ -8,6 +8,7 @@ import { AuthUser } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getRoleText } from '@/lib/utils'
+import { ThemeToggleButton } from '@/components/ui/theme-toggle'
 
 interface HeaderProps {
   user: AuthUser
@@ -199,6 +200,7 @@ export function Header({ user }: HeaderProps) {
                   {getRoleText(user.role)}
                 </Badge>
               </div>
+              <ThemeToggleButton />
               <Link href="/profile">
                 <Button variant="ghost" size="sm">
                   프로필
