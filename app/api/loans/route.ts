@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { Database } from '@/types/supabase'
 import { getCurrentKoreaTime, getCurrentKoreaDateTimeString } from '@/lib/utils'
+import { handleSupabaseError, logError } from '@/lib/error-handler'
 
 // GET: 모든 대여 신청 조회
 export async function GET() {
@@ -15,14 +16,15 @@ export async function GET() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Database error:', error)
-      return NextResponse.json({ error: 'Failed to fetch loans' }, { status: 500 })
+      const appError = handleSupabaseError(error)
+      logError(error, 'GET /api/loans')
+      return NextResponse.json({ error: appError.message }, { status: appError.status || 500 })
     }
 
     return NextResponse.json({ loans })
   } catch (error) {
-    console.error('Unexpected error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    logError(error, 'GET /api/loans - Unexpected error')
+    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 })
   }
 }
 
@@ -118,7 +120,18 @@ export async function PATCH(request: NextRequest) {
 
     console.log('Updating loan with:', { id, status, device_tag, approved_by, approved_at, notes })
 
-    const updateData: any = {
+    interface LoanUpdateData {
+      status: string
+      updated_at: string
+      device_tag?: string
+      approved_by?: string
+      approved_at?: string
+      notes?: string
+      picked_up_at?: string
+      returned_at?: string
+    }
+
+    const updateData: LoanUpdateData = {
       status,
       updated_at: getCurrentKoreaTime()
     }
@@ -177,7 +190,8 @@ export async function PATCH(request: NextRequest) {
 
         // 기기 상태 업데이트 API 호출
         console.log(`Updating device status: ${device_tag} -> ${deviceStatus}`)
-        const deviceResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/devices`, {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+        const deviceResponse = await fetch(`${baseUrl}/api/devices`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

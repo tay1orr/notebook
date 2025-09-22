@@ -248,7 +248,13 @@ export function getOverdueDays(dueDate: string | Date): number {
   return diffDays
 }
 
-export function getLoanStatus(loan: any): string {
+interface LoanData {
+  status: string
+  due_date?: string | Date
+  dueDate?: string | Date
+}
+
+export function getLoanStatus(loan: LoanData): string {
   // 실시간 연체 판단
   if (loan.status === 'picked_up' && isLoanOverdue(loan.due_date || loan.dueDate)) {
     return 'overdue'

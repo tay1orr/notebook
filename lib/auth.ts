@@ -1,8 +1,7 @@
 import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-
-export type UserRole = 'admin' | 'homeroom' | 'helper' | 'teacher' | 'student' | ''
+import { UserRole } from '@/types/common'
 
 export interface AuthUser {
   id: string
@@ -51,7 +50,8 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       } else {
         console.log('🔍 AUTH DEBUG - No existing role found for:', user.email)
         // Default admin for specific email
-        if (user.email === 'taylorr@gclass.ice.go.kr') {
+        const adminEmail = process.env.ADMIN_EMAIL || 'taylorr@gclass.ice.go.kr'
+        if (user.email === adminEmail) {
           role = 'admin'
           console.log('🔍 AUTH DEBUG - Setting admin role for:', user.email)
           // 관리자 역할 생성
@@ -80,7 +80,8 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     } catch (roleError) {
       console.log('🔍 AUTH DEBUG - Role lookup failed:', roleError)
       // Fallback to admin check
-      if (user.email === 'taylorr@gclass.ice.go.kr') {
+      const adminEmail = process.env.ADMIN_EMAIL || 'taylorr@gclass.ice.go.kr'
+      if (user.email === adminEmail) {
         role = 'admin'
       }
     }
@@ -170,7 +171,7 @@ export async function requireAuthWithoutRole(): Promise<AuthUser> {
 }
 
 export function isAllowedDomain(email: string): boolean {
-  const allowedDomain = 'gclass.ice.go.kr' // 하드코딩으로 확실하게
+  const allowedDomain = process.env.NEXT_PUBLIC_ALLOWED_DOMAIN || 'gclass.ice.go.kr'
   const domain = email.split('@')[1]
   return domain === allowedDomain
 }
@@ -225,9 +226,9 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `https://notebook-two-pink.vercel.app/auth/callback`,
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://notebook-two-pink.vercel.app'}/auth/callback`,
       queryParams: {
-        hd: process.env.NEXT_PUBLIC_ALLOWED_DOMAIN || 'ichungjungsan.kr' // Google Workspace domain restriction
+        hd: process.env.NEXT_PUBLIC_ALLOWED_DOMAIN || 'gclass.ice.go.kr' // Google Workspace domain restriction
       }
     }
   })

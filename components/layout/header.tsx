@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-client'
@@ -74,12 +74,12 @@ export function Header({ user }: HeaderProps) {
     return () => clearInterval(interval)
   }, [user])
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     await supabase.auth.signOut()
     router.push('/auth')
-  }
+  }, [supabase.auth, router])
 
-  const navigationItems = [
+  const navigationItems = useMemo(() => [
     {
       href: '/dashboard',
       label: '대시보드',
@@ -116,10 +116,10 @@ export function Header({ user }: HeaderProps) {
       roles: ['admin'],
       badge: notifications.admin
     }
-  ]
+  ], [notifications.loans, notifications.admin])
 
   // 알림 배지 컴포넌트
-  const NotificationBadge = ({ count }: { count: number }) => {
+  const NotificationBadge = useCallback(({ count }: { count: number }) => {
     if (count === 0) return null
 
     return (
@@ -129,10 +129,11 @@ export function Header({ user }: HeaderProps) {
         </span>
       </span>
     )
-  }
+  }, [])
 
-  const filteredNavigation = navigationItems.filter(item =>
-    item.roles.includes(user.role)
+  const filteredNavigation = useMemo(() =>
+    navigationItems.filter(item => item.roles.includes(user.role)),
+    [navigationItems, user.role]
   )
 
   return (
