@@ -80,7 +80,50 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              console.log('🔄 수동 백업 버튼 클릭됨 (헤더)')
+              try {
+                const response = await fetch('/api/backup?table=all', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  credentials: 'include'
+                })
+
+                console.log('📡 헤더 백업 응답:', response.status, response.statusText)
+
+                if (response.ok) {
+                  const blob = await response.blob()
+                  console.log('📦 헤더 백업 블롭 크기:', blob.size)
+
+                  const url = window.URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+
+                  const timestamp = new Date().toISOString().split('T')[0]
+                  const filename = `notebook-backup-all-${timestamp}.json`
+                  a.download = filename
+
+                  document.body.appendChild(a)
+                  a.click()
+                  document.body.removeChild(a)
+                  window.URL.revokeObjectURL(url)
+
+                  console.log('✅ 헤더 백업 완료:', filename)
+                } else {
+                  const errorData = await response.json()
+                  console.error('❌ 헤더 백업 실패:', errorData)
+                  alert(`백업 실패: ${errorData.error}`)
+                }
+              } catch (error) {
+                console.error('❌ 헤더 백업 오류:', error)
+                alert('백업 중 오류가 발생했습니다.')
+              }
+            }}
+          >
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>

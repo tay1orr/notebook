@@ -28,7 +28,6 @@ export function BackupManagement() {
   const [statusMessage, setStatusMessage] = useState<string>('')
 
   useEffect(() => {
-    console.log('🚀 백업 관리 컴포넌트 마운트됨')
     loadBackupInfo()
   }, [])
 
@@ -280,14 +279,8 @@ export function BackupManagement() {
           {/* 백업 실행 버튼 */}
           <div className="flex items-center space-x-2">
             <Button
-              onClick={() => {
-                console.log('💡 수동 백업 버튼 클릭됨!')
-                console.log('💡 백업 진행중:', isBackingUp)
-                console.log('💡 백업 정보 존재:', !!backupInfo)
-                console.log('💡 버튼 disabled 상태:', isBackingUp || !backupInfo)
-                createBackup()
-              }}
-              disabled={false}
+              onClick={createBackup}
+              disabled={isBackingUp || !backupInfo}
               className="flex-1"
             >
               {isBackingUp ? (
@@ -307,16 +300,6 @@ export function BackupManagement() {
               <RefreshCwIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
 
-            <Button
-              variant="secondary"
-              onClick={() => {
-                console.log('테스트 버튼 클릭 - 강제 모달 열기')
-                setShowBackupDetails(true)
-              }}
-              size="sm"
-            >
-              모달 테스트
-            </Button>
           </div>
 
           {/* 상태 메시지 */}
