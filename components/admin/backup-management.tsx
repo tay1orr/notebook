@@ -27,7 +27,11 @@ interface BackupHistory {
   size?: number
 }
 
-export function BackupManagement() {
+interface BackupManagementProps {
+  refreshTrigger?: number
+}
+
+export function BackupManagement({ refreshTrigger }: BackupManagementProps) {
   const [backupInfo, setBackupInfo] = useState<BackupInfo | null>(null)
   const [selectedTable, setSelectedTable] = useState('all')
   const [isBackingUp, setIsBackingUp] = useState(false)
@@ -42,6 +46,14 @@ export function BackupManagement() {
     loadBackupInfo()
     loadBackupHistory()
   }, [])
+
+  // refreshTrigger 변경 시 백업 기록 새로고침
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      console.log('🔄 백업 탭 활성화로 인한 새로고침:', refreshTrigger)
+      loadBackupHistory()
+    }
+  }, [refreshTrigger])
 
   const loadBackupHistory = async () => {
     try {

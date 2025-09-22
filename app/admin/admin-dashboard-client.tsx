@@ -19,6 +19,8 @@ interface AdminDashboardClientProps {
 
 export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
   const [pendingHomeroomCount, setPendingHomeroomCount] = useState(0)
+  const [activeTab, setActiveTab] = useState('users')
+  const [backupRefreshTrigger, setBackupRefreshTrigger] = useState(0)
   const [lastBackupInfo, setLastBackupInfo] = useState<{
     type: string
     timestamp: string
@@ -73,6 +75,13 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
     const interval = setInterval(loadLastBackupInfo, 10000)
     return () => clearInterval(interval)
   }, [])
+
+  // 백업 탭 활성화 시 새로고침 트리거
+  useEffect(() => {
+    if (activeTab === 'backup') {
+      setBackupRefreshTrigger(prev => prev + 1)
+    }
+  }, [activeTab])
 
   // 실제 시스템 통계
   const totalDevices = 3 * 13 * 35 // 3학년 × 13반 × 35대 = 1,365대
@@ -148,6 +157,9 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
                           console.log('🔄 백업 정보 새로고침 완료:', latest)
                         }
                       }
+
+                      // 백업 관리 탭도 새로고침
+                      setBackupRefreshTrigger(prev => prev + 1)
                     } catch (refreshError) {
                       console.error('백업 정보 새로고침 실패:', refreshError)
                     }
@@ -229,7 +241,7 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
         </Card>
       </div>
 
-      <Tabs defaultValue="users" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="users">
             사용자 관리
@@ -296,7 +308,7 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
         </TabsContent>
 
         <TabsContent value="backup" className="space-y-4">
-          <BackupManagement />
+          <BackupManagement refreshTrigger={backupRefreshTrigger} />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
