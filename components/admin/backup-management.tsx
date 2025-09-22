@@ -358,21 +358,23 @@ export function BackupManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <div className="text-sm font-medium">수동 백업</div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatDateTime(new Date())} • 전체 데이터
+                {lastBackupTime && (
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium">수동 백업 (사용자 실행)</div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDateTime(lastBackupTime)} • {getTableDisplayName(selectedTable)}
+                      </div>
                     </div>
+                    <Badge className="bg-green-100 text-green-800">성공</Badge>
                   </div>
-                  <Badge className="bg-green-100 text-green-800">성공</Badge>
-                </div>
+                )}
 
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
-                    <div className="text-sm font-medium">자동 백업</div>
+                    <div className="text-sm font-medium">자동 백업 (매일 오전 2시)</div>
                     <div className="text-xs text-muted-foreground">
-                      매일 오전 2:00 • 전체 데이터
+                      시스템 자동 실행 • 전체 데이터
                     </div>
                   </div>
                   <Badge className="bg-blue-100 text-blue-800">예약됨</Badge>
