@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DownloadIcon, DatabaseIcon, RefreshCwIcon, CheckCircleIcon, AlertCircleIcon } from 'lucide-react'
+import { BackupSchedule } from './backup-schedule'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface BackupInfo {
   available_tables: string[]
@@ -107,7 +109,13 @@ export function BackupManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <Tabs defaultValue="manual" className="space-y-6">
+      <TabsList>
+        <TabsTrigger value="manual">수동 백업</TabsTrigger>
+        <TabsTrigger value="schedule">자동 백업 스케줄</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="manual" className="space-y-6">
       {/* 백업 상태 카드 */}
       <Card>
         <CardHeader>
@@ -244,6 +252,11 @@ export function BackupManagement() {
           <div>• 대용량 데이터의 경우 백업 시간이 다소 소요될 수 있습니다.</div>
         </CardContent>
       </Card>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="schedule">
+        <BackupSchedule />
+      </TabsContent>
+    </Tabs>
   )
 }
