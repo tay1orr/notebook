@@ -28,6 +28,7 @@ export function BackupManagement() {
   const [statusMessage, setStatusMessage] = useState<string>('')
 
   useEffect(() => {
+    console.log('🚀 백업 관리 컴포넌트 마운트됨')
     loadBackupInfo()
   }, [])
 
@@ -283,9 +284,10 @@ export function BackupManagement() {
                 console.log('💡 수동 백업 버튼 클릭됨!')
                 console.log('💡 백업 진행중:', isBackingUp)
                 console.log('💡 백업 정보 존재:', !!backupInfo)
+                console.log('💡 버튼 disabled 상태:', isBackingUp || !backupInfo)
                 createBackup()
               }}
-              disabled={isBackingUp || !backupInfo}
+              disabled={false}
               className="flex-1"
             >
               {isBackingUp ? (
