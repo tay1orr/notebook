@@ -70,14 +70,18 @@ export async function GET(request: NextRequest) {
 }
 
 function calculateNextRun(scheduleType: string, time: string): string {
+  // 한국 시간 기준으로 계산
   const now = new Date()
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)
+  const koreaTime = new Date(utcTime + (9 * 60 * 60 * 1000))
+
   const [hours, minutes] = time.split(':').map(Number)
 
-  let nextRun = new Date()
+  let nextRun = new Date(koreaTime)
   nextRun.setHours(hours, minutes, 0, 0)
 
   // 이미 지난 시간이면 다음 주기로
-  if (nextRun <= now) {
+  if (nextRun <= koreaTime) {
     switch (scheduleType) {
       case 'daily':
         nextRun.setDate(nextRun.getDate() + 1)

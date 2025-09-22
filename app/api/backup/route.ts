@@ -5,8 +5,16 @@ import { requireRole } from '@/lib/auth'
 export async function POST(request: NextRequest) {
   try {
     // 관리자 권한 확인
-    const user = await requireRole(['admin'])
-    console.log('🔐 BACKUP POST - Admin user:', user.email)
+    try {
+      const user = await requireRole(['admin'])
+      console.log('🔐 BACKUP POST - Admin user:', user.email)
+    } catch (authError) {
+      console.error('🔐 BACKUP POST - Auth failed:', authError)
+      return NextResponse.json(
+        { error: '관리자 권한이 필요합니다.' },
+        { status: 401 }
+      )
+    }
 
     const supabase = createAdminClient()
     const { searchParams } = new URL(request.url)
@@ -79,8 +87,16 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // 관리자 권한 확인
-    const user = await requireRole(['admin'])
-    console.log('🔐 BACKUP GET - Admin user:', user.email)
+    try {
+      const user = await requireRole(['admin'])
+      console.log('🔐 BACKUP GET - Admin user:', user.email)
+    } catch (authError) {
+      console.error('🔐 BACKUP GET - Auth failed:', authError)
+      return NextResponse.json(
+        { error: '관리자 권한이 필요합니다.' },
+        { status: 401 }
+      )
+    }
 
     const supabase = createAdminClient()
 

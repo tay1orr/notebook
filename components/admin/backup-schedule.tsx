@@ -89,13 +89,18 @@ export function BackupSchedule() {
 
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return '-'
-    return new Date(dateString).toLocaleString('ko-KR', {
+    const date = new Date(dateString)
+
+    // 한국 시간으로 표시
+    return new Intl.DateTimeFormat('ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
-    })
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Seoul'
+    }).format(date)
   }
 
   if (loading) {
