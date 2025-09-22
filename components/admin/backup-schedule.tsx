@@ -192,12 +192,15 @@ export function BackupSchedule() {
                     const tomorrowKorea = koreaDateFormatter.format(new Date(now.getTime() + 24 * 60 * 60 * 1000))
                     const nextDateKorea = koreaDateFormatter.format(nextDate)
 
+                    // 항상 전체 날짜 표시 (요일 포함)
+                    const fullDateString = koreaFullFormatter.format(nextDate)
+
                     if (nextDateKorea === todayKorea) {
-                      return `오늘 ${schedule.time}`
+                      return `${fullDateString} ${schedule.time} (오늘)`
                     } else if (nextDateKorea === tomorrowKorea) {
-                      return `내일 ${schedule.time}`
+                      return `${fullDateString} ${schedule.time} (내일)`
                     } else {
-                      return koreaFullFormatter.format(nextDate) + ` ${schedule.time}`
+                      return `${fullDateString} ${schedule.time}`
                     }
                   } catch (error) {
                     console.error('날짜 계산 오류:', error)

@@ -131,6 +131,27 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
                   const result = await response.json()
                   console.log('✅ 서버 백업 완료:', result)
                   alert('백업이 성공적으로 완료되었습니다.')
+
+                  // 백업 완료 후 최근 백업 정보 새로고침
+                  setTimeout(async () => {
+                    try {
+                      const historyResponse = await fetch('/api/backup/history')
+                      if (historyResponse.ok) {
+                        const data = await historyResponse.json()
+                        const history = data.history || []
+                        if (history.length > 0) {
+                          const latest = history[0]
+                          setLastBackupInfo({
+                            type: latest.type === 'manual' ? '수동' : '자동',
+                            timestamp: latest.timestamp
+                          })
+                          console.log('🔄 백업 정보 새로고침 완료:', latest)
+                        }
+                      }
+                    } catch (refreshError) {
+                      console.error('백업 정보 새로고침 실패:', refreshError)
+                    }
+                  }, 1000) // 1초 후 새로고침
                 } else {
                   const errorData = await response.json()
                   console.error('❌ 서버 백업 실패:', errorData)
