@@ -332,9 +332,13 @@ export function HomeLoanRequestForm({
                   studentInfo: studentInfo,
                   profileClass: profileClass,
                   currentClass: currentClass,
+                  profileStudentNo: studentInfo.studentNo,
+                  currentStudentNo: formData.currentStudentNumber,
                   hasGrade: hasGrade,
                   hasClass: hasClass,
-                  shouldShowWarning: profileClass && currentClass !== profileClass
+                  hasNumber: hasNumber,
+                  shouldShowClassWarning: profileClass && currentClass !== profileClass,
+                  shouldShowNumberWarning: studentInfo.studentNo && formData.currentStudentNumber && studentInfo.studentNo !== formData.currentStudentNumber
                 })
               }
 
@@ -361,6 +365,24 @@ export function HomeLoanRequestForm({
                       </div>
                       <div className="mt-1 text-xs">
                         본인의 학급 노트북이 맞는지 다시 한번 확인해주세요. 잘못된 기기를 신청하면 거절될 수 있습니다.
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 학생 번호 불일치 경고 (번호가 입력되면 즉시 검사) */}
+                  {hasNumber && studentInfo.studentNo && formData.currentStudentNumber && studentInfo.studentNo !== formData.currentStudentNumber && (
+                    <div className="text-sm text-orange-600 bg-orange-50 border border-orange-200 p-3 rounded">
+                      <div className="flex items-center">
+                        <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.530 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <strong>⚠️ 본인 번호와 다른 노트북을 선택했습니다!</strong>
+                      </div>
+                      <div className="mt-1">
+                        설정된 번호: <strong>{studentInfo.studentNo}번</strong> → 선택한 번호: <strong>{formData.currentStudentNumber}번</strong>
+                      </div>
+                      <div className="mt-1 text-xs">
+                        본인의 번호 노트북이 맞는지 다시 한번 확인해주세요. 다른 학생의 노트북을 신청하면 거절될 수 있습니다.
                       </div>
                     </div>
                   )}
