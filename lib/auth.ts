@@ -19,7 +19,7 @@ export interface AuthUser {
 // API 라우트에서만 사용할 getCurrentUser (리다이렉트 없음)
 export async function getCurrentUserForAPI(): Promise<AuthUser | null> {
   try {
-    console.log('🔍 API AUTH - Getting user for API')
+    console.log('🔍 API AUTH - Getting user for API - Environment:', process.env.NODE_ENV)
 
     const cookieStore = cookies()
     const supabase = createServerClient()

@@ -2,5 +2,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "regions": ["icn1"]
+  "regions": ["icn1"],
+  "functions": {
+    "app/api/**": {
+      "maxDuration": 30
+    }
+  }
 }

@@ -5,7 +5,8 @@ import { getCurrentUserForAPI } from '@/lib/auth'
 export async function POST(request: NextRequest) {
   try {
     // 관리자 권한 확인 - 더 자세한 로깅 추가
-    console.log('🔍 BACKUP POST - Request started')
+    console.log('🔍 BACKUP POST - Request started - ENV:', process.env.NODE_ENV)
+    console.log('🔍 BACKUP POST - URL:', request.url)
 
     const user = await getCurrentUserForAPI()
     console.log('🔍 BACKUP POST - User check result:', {
