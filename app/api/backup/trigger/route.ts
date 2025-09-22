@@ -29,7 +29,8 @@ export async function POST(request: NextRequest) {
 
     // 백업 기록에 추가
     try {
-      await fetch(new URL('/api/backup/history', request.url), {
+      console.log('🔍 백업 기록 추가 시도')
+      const historyResponse = await fetch(new URL('/api/backup/history', request.url), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,6 +43,15 @@ export async function POST(request: NextRequest) {
           size: Math.floor(Math.random() * 1000000) // 임시로 랜덤 크기
         })
       })
+      console.log('🔍 백업 기록 추가 응답:', historyResponse.status, historyResponse.statusText)
+
+      if (historyResponse.ok) {
+        const historyData = await historyResponse.json()
+        console.log('🔍 백업 기록 추가 성공:', historyData)
+      } else {
+        const errorText = await historyResponse.text()
+        console.error('🔍 백업 기록 추가 실패:', errorText)
+      }
     } catch (error) {
       console.error('백업 기록 추가 실패:', error)
     }

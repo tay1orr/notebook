@@ -45,10 +45,17 @@ export function BackupManagement() {
 
   const loadBackupHistory = async () => {
     try {
+      console.log('🔍 백업 기록 로드 시작')
       const response = await fetch('/api/backup/history')
+      console.log('🔍 백업 기록 응답:', response.status, response.statusText)
+
       if (response.ok) {
         const data = await response.json()
+        console.log('🔍 백업 기록 데이터:', data)
         setBackupHistory(data.history || [])
+        console.log('🔍 백업 기록 상태 업데이트됨:', data.history?.length || 0, '개')
+      } else {
+        console.error('🔍 백업 기록 로드 실패:', response.status)
       }
     } catch (error) {
       console.error('백업 기록 로드 실패:', error)
