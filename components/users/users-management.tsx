@@ -25,9 +25,10 @@ interface User {
 
 interface UsersManagementProps {
   users: User[]
+  onModalStateChange?: (isOpen: boolean) => void
 }
 
-export function UsersManagement({ users: initialUsers }: UsersManagementProps) {
+export function UsersManagement({ users: initialUsers, onModalStateChange }: UsersManagementProps) {
   const [users, setUsers] = useState<User[]>(initialUsers)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
@@ -293,6 +294,7 @@ export function UsersManagement({ users: initialUsers }: UsersManagementProps) {
                           onClick={() => {
                             setSelectedUser(user)
                             setShowActivityLog(true)
+                            onModalStateChange?.(true)
                           }}
                         >
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,7 +319,13 @@ export function UsersManagement({ users: initialUsers }: UsersManagementProps) {
       </Card>
 
       {/* 활동 로그 모달 */}
-      <Dialog open={showActivityLog} onOpenChange={setShowActivityLog}>
+      <Dialog
+        open={showActivityLog}
+        onOpenChange={(isOpen) => {
+          setShowActivityLog(isOpen)
+          onModalStateChange?.(isOpen)
+        }}
+      >
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>

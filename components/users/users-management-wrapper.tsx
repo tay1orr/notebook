@@ -7,6 +7,7 @@ export function UsersManagementWrapper() {
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -79,10 +80,14 @@ export function UsersManagementWrapper() {
 
     loadUsers()
 
-    // 30초마다 사용자 목록 새로고침
-    const interval = setInterval(loadUsers, 30000)
+    // 30초마다 사용자 목록 새로고침 (모달이 열려있지 않을 때만)
+    const interval = setInterval(() => {
+      if (!isModalOpen) {
+        loadUsers()
+      }
+    }, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [isModalOpen])
 
   if (loading) {
     return (
@@ -117,5 +122,5 @@ export function UsersManagementWrapper() {
     )
   }
 
-  return <UsersManagement users={users} />
+  return <UsersManagement users={users} onModalStateChange={setIsModalOpen} />
 }
