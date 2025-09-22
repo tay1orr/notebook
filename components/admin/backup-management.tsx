@@ -25,6 +25,7 @@ export function BackupManagement() {
   const [loading, setLoading] = useState(true)
   const [showBackupDetails, setShowBackupDetails] = useState(false)
   const [lastBackupTime, setLastBackupTime] = useState<string | null>(null)
+  const [statusMessage, setStatusMessage] = useState<string>('')
 
   useEffect(() => {
     loadBackupInfo()
@@ -57,7 +58,7 @@ export function BackupManagement() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include' // 쿠키 포함
+        credentials: 'include'
       })
 
       console.log('📡 백업 응답:', response.status, response.statusText)
@@ -65,6 +66,10 @@ export function BackupManagement() {
       if (response.ok) {
         const blob = await response.blob()
         console.log('📦 백업 블롭 크기:', blob.size)
+
+        if (blob.size === 0) {
+          throw new Error('백업 파일이 비어있습니다.')
+        }
 
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -82,16 +87,36 @@ export function BackupManagement() {
         console.log('✅ 백업 완료:', filename)
         setBackupStatus('success')
         setLastBackupTime(new Date().toISOString())
-        setTimeout(() => setBackupStatus('idle'), 5000)
+        setStatusMessage(`백업이 완료되었습니다! (${getTableDisplayName(selectedTable)})`)
+
+        // 백업 정보 새로고침
+        await loadBackupInfo()
+
+        setTimeout(() => {
+          setBackupStatus('idle')
+          setStatusMessage('')
+        }, 5000)
       } else {
-        const errorText = await response.text()
-        console.error('❌ 백업 API 오류:', response.status, errorText)
-        throw new Error(`백업 생성 실패: ${response.status} - ${errorText}`)
+        let errorMessage = '백업 생성 실패'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          const errorText = await response.text()
+          errorMessage = errorText || errorMessage
+        }
+
+        console.error('❌ 백업 API 오류:', response.status, errorMessage)
+        throw new Error(`${errorMessage} (${response.status})`)
       }
     } catch (error) {
       console.error('❌ 백업 생성 실패:', error)
       setBackupStatus('error')
-      setTimeout(() => setBackupStatus('idle'), 3000)
+      setStatusMessage(error instanceof Error ? error.message : '백업 생성 중 오류가 발생했습니다.')
+      setTimeout(() => {
+        setBackupStatus('idle')
+        setStatusMessage('')
+      }, 5000)
     } finally {
       setIsBackingUp(false)
     }
@@ -159,7 +184,20 @@ export function BackupManagement() {
             </div>
             <div
               className="text-center p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => setShowBackupDetails(true)}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('백업 정보 카드 클릭됨')
+                setShowBackupDetails(true)
+              }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setShowBackupDetails(true)
+                }
+              }}
             >
               <div className="text-2xl font-bold text-purple-600">
                 {lastBackupTime ? '완료' : '대기'}
@@ -257,7 +295,7 @@ export function BackupManagement() {
             <div className="flex items-center space-x-2 text-green-600 bg-green-50 p-3 rounded-lg">
               <CheckCircleIcon className="h-4 w-4" />
               <div>
-                <div className="text-sm font-medium">백업이 완료되었습니다!</div>
+                <div className="text-sm font-medium">{statusMessage || '백업이 완료되었습니다!'}</div>
                 <div className="text-xs text-green-700">
                   파일이 다운로드 폴더에 저장되었습니다. ({getTableDisplayName(selectedTable)} • {new Date().toLocaleString('ko-KR')})
                 </div>
@@ -268,7 +306,12 @@ export function BackupManagement() {
           {backupStatus === 'error' && (
             <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-lg">
               <AlertCircleIcon className="h-4 w-4" />
-              <span className="text-sm">백업 생성 중 오류가 발생했습니다. 관리자에게 문의하세요.</span>
+              <div>
+                <div className="text-sm font-medium">백업 생성 실패</div>
+                <div className="text-xs text-red-700">
+                  {statusMessage || '백업 생성 중 오류가 발생했습니다. 관리자에게 문의하세요.'}
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

@@ -1,19 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-server'
-import { requireRole, getCurrentUser } from '@/lib/auth'
+import { getCurrentUserForAPI } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    // 관리자 권한 확인 (쿠키에서 직접 확인)
-    const user = await getCurrentUser()
-    if (!user || user.role !== 'admin') {
-      console.error('🔐 BACKUP POST - Auth failed: No admin user')
+    // 관리자 권한 확인 - 더 자세한 로깅 추가
+    console.log('🔍 BACKUP POST - Request started')
+
+    const user = await getCurrentUserForAPI()
+    console.log('🔍 BACKUP POST - User check result:', {
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      userRole: user?.role
+    })
+
+    if (!user) {
+      console.error('🔐 BACKUP POST - Auth failed: No user found')
       return NextResponse.json(
-        { error: '관리자 권한이 필요합니다.' },
+        { error: '로그인이 필요합니다.' },
         { status: 401 }
       )
     }
-    console.log('🔐 BACKUP POST - Admin user:', user.email)
+
+    if (user.role !== 'admin') {
+      console.error('🔐 BACKUP POST - Auth failed: User role is not admin:', user.role)
+      return NextResponse.json(
+        { error: '관리자 권한이 필요합니다.' },
+        { status: 403 }
+      )
+    }
+
+    console.log('✅ BACKUP POST - Admin user authorized:', user.email)
 
     const supabase = createAdminClient()
     const { searchParams } = new URL(request.url)
@@ -85,16 +103,34 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // 관리자 권한 확인 (쿠키에서 직접 확인)
-    const user = await getCurrentUser()
-    if (!user || user.role !== 'admin') {
-      console.error('🔐 BACKUP GET - Auth failed: No admin user')
+    // 관리자 권한 확인 - 더 자세한 로깅 추가
+    console.log('🔍 BACKUP GET - Request started')
+
+    const user = await getCurrentUserForAPI()
+    console.log('🔍 BACKUP GET - User check result:', {
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      userRole: user?.role
+    })
+
+    if (!user) {
+      console.error('🔐 BACKUP GET - Auth failed: No user found')
       return NextResponse.json(
-        { error: '관리자 권한이 필요합니다.' },
+        { error: '로그인이 필요합니다.' },
         { status: 401 }
       )
     }
-    console.log('🔐 BACKUP GET - Admin user:', user.email)
+
+    if (user.role !== 'admin') {
+      console.error('🔐 BACKUP GET - Auth failed: User role is not admin:', user.role)
+      return NextResponse.json(
+        { error: '관리자 권한이 필요합니다.' },
+        { status: 403 }
+      )
+    }
+
+    console.log('✅ BACKUP GET - Admin user authorized:', user.email)
 
     const supabase = createAdminClient()
 

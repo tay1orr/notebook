@@ -165,33 +165,43 @@ export function BackupSchedule() {
             <div className="text-center p-4 border rounded-lg">
               <div className="text-lg font-semibold">
                 {schedule.next_run ? (() => {
-                  // 한국 시간으로 계산
-                  const now = new Date()
-                  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)
-                  const koreaTime = new Date(utcTime + (9 * 60 * 60 * 1000))
+                  try {
+                    // 한국 시간 기준으로 계산
+                    const nextDate = new Date(schedule.next_run)
+                    const now = new Date()
 
-                  const nextDate = new Date(schedule.next_run)
-                  const tomorrow = new Date(koreaTime)
-                  tomorrow.setDate(tomorrow.getDate() + 1)
-
-                  const isToday = nextDate.toDateString() === koreaTime.toDateString()
-                  const isTomorrow = nextDate.toDateString() === tomorrow.toDateString()
-
-                  if (isToday) {
-                    return `오늘 ${schedule.time}`
-                  } else if (isTomorrow) {
-                    return `내일 ${schedule.time}`
-                  } else {
-                    return nextDate.toLocaleDateString('ko-KR', {
+                    // 한국 시간 포맷터
+                    const koreaFormatter = new Intl.DateTimeFormat('ko-KR', {
+                      timeZone: 'Asia/Seoul',
                       year: 'numeric',
                       month: '2-digit',
-                      day: '2-digit',
-                      timeZone: 'Asia/Seoul'
-                    }) + ` ${schedule.time}`
+                      day: '2-digit'
+                    })
+
+                    const koreaFormatterToday = new Intl.DateTimeFormat('ko-KR', {
+                      timeZone: 'Asia/Seoul',
+                      weekday: 'long'
+                    })
+
+                    // 오늘, 내일 체크를 위한 날짜 비교
+                    const todayKorea = koreaFormatter.format(now)
+                    const tomorrowKorea = koreaFormatter.format(new Date(now.getTime() + 24 * 60 * 60 * 1000))
+                    const nextDateKorea = koreaFormatter.format(nextDate)
+
+                    if (nextDateKorea === todayKorea) {
+                      return `오늘 ${schedule.time}`
+                    } else if (nextDateKorea === tomorrowKorea) {
+                      return `내일 ${schedule.time}`
+                    } else {
+                      return `${nextDateKorea} ${schedule.time}`
+                    }
+                  } catch (error) {
+                    console.error('날짜 계산 오류:', error)
+                    return `${schedule.time}`
                   }
                 })() : '-'}
               </div>
-              <div className="text-sm text-muted-foreground">다음 백업 (매일 오전 2시)</div>
+              <div className="text-sm text-muted-foreground">다음 백업 예정 시간</div>
             </div>
           </div>
 

@@ -16,6 +16,92 @@ export interface AuthUser {
   isApprovedHomeroom?: boolean
 }
 
+// API 라우트에서만 사용할 getCurrentUser (리다이렉트 없음)
+export async function getCurrentUserForAPI(): Promise<AuthUser | null> {
+  try {
+    console.log('🔍 API AUTH - Getting user for API')
+
+    const cookieStore = cookies()
+    const supabase = createServerClient()
+    const adminSupabase = createAdminClient()
+
+    const { data: { user }, error } = await supabase.auth.getUser()
+    console.log('🔍 API AUTH - Supabase user check:', { hasUser: !!user, error })
+
+    if (!user || error) {
+      console.log('🔍 API AUTH - No user found or error:', error)
+      return null
+    }
+
+    // Get user role from user_roles table using admin client
+    let role: UserRole = ''
+    let grade: string | undefined
+    let className: string | undefined
+    let studentNo: string | undefined
+
+    console.log('🔍 API AUTH - Checking role for user:', user.email, 'ID:', user.id)
+
+    try {
+      const { data: roleData, error: roleSelectError } = await adminSupabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+
+      console.log('🔍 API AUTH - Role query result:', roleData, 'Error:', roleSelectError)
+
+      if (roleData?.role) {
+        role = roleData.role
+        console.log('🔍 API AUTH - Found role:', role)
+      } else {
+        // Check if admin email
+        const adminEmail = process.env.ADMIN_EMAIL || 'taylorr@gclass.ice.go.kr'
+        if (user.email === adminEmail) {
+          role = 'admin'
+          console.log('🔍 API AUTH - Setting admin role for:', user.email)
+        }
+      }
+
+      // Get class info from metadata
+      if (user.user_metadata?.class_info) {
+        const classInfo = user.user_metadata.class_info
+        if (classInfo.grade) grade = classInfo.grade.toString()
+        if (classInfo.class) className = classInfo.class.toString()
+        if (classInfo.student_no) studentNo = classInfo.student_no.toString()
+      }
+    } catch (roleError) {
+      console.error('🔍 API AUTH - Role lookup error:', roleError)
+      // Fallback to admin check
+      const adminEmail = process.env.ADMIN_EMAIL || 'taylorr@gclass.ice.go.kr'
+      if (user.email === adminEmail) {
+        role = 'admin'
+      }
+    }
+
+    console.log('🔍 API AUTH - Final user for API:', {
+      email: user.email,
+      role,
+      hasClassInfo: !!(grade || className || studentNo)
+    })
+
+    return {
+      id: user.id,
+      email: user.email!,
+      name: user.user_metadata?.name || user.email!.split('@')[0],
+      role,
+      class_id: null,
+      grade,
+      class: className,
+      studentNo,
+      pendingHomeroom: user.user_metadata?.pending_homeroom?.status === 'pending',
+      isApprovedHomeroom: user.user_metadata?.approved_homeroom === true
+    }
+  } catch (error) {
+    console.error('🔍 API AUTH - Error getting user for API:', error)
+    return null
+  }
+}
+
 export async function getCurrentUser(): Promise<AuthUser | null> {
   try {
     const supabase = createServerClient()

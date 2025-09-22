@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-server'
-import { requireRole, getCurrentUser } from '@/lib/auth'
+import { getCurrentUserForAPI } from '@/lib/auth'
 
 // 자동 백업 스케줄 설정 API
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireRole(['admin'])
+    const user = await getCurrentUserForAPI()
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json(
+        { error: '관리자 권한이 필요합니다.' },
+        { status: 403 }
+      )
+    }
     console.log('🔐 BACKUP SCHEDULE - Admin user:', user.email)
 
     const body = await request.json()
@@ -46,11 +52,11 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUserForAPI()
     if (!user || user.role !== 'admin') {
       return NextResponse.json(
         { error: '관리자 권한이 필요합니다.' },
-        { status: 401 }
+        { status: 403 }
       )
     }
 
