@@ -31,6 +31,10 @@ export function BackupManagement() {
     loadBackupInfo()
   }, [])
 
+  useEffect(() => {
+    console.log('백업 상세 모달 상태 변경됨:', showBackupDetails)
+  }, [showBackupDetails])
+
   const loadBackupInfo = async () => {
     try {
       setLoading(true)
@@ -187,8 +191,9 @@ export function BackupManagement() {
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                console.log('백업 정보 카드 클릭됨')
+                console.log('백업 정보 카드 클릭됨 - 현재 상태:', showBackupDetails)
                 setShowBackupDetails(true)
+                console.log('백업 정보 카드 - 상태 업데이트 호출됨: true')
               }}
               role="button"
               tabIndex={0}
@@ -288,6 +293,17 @@ export function BackupManagement() {
             >
               <RefreshCwIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
+
+            <Button
+              variant="secondary"
+              onClick={() => {
+                console.log('테스트 버튼 클릭 - 강제 모달 열기')
+                setShowBackupDetails(true)
+              }}
+              size="sm"
+            >
+              모달 테스트
+            </Button>
           </div>
 
           {/* 상태 메시지 */}
@@ -337,7 +353,7 @@ export function BackupManagement() {
     </Tabs>
 
     {/* 백업 상세 정보 모달 */}
-    <Dialog open={showBackupDetails} onOpenChange={setShowBackupDetails}>
+    <Dialog open={showBackupDetails || false} onOpenChange={setShowBackupDetails}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>백업 시스템 상세 정보</DialogTitle>
