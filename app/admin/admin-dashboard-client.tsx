@@ -83,9 +83,9 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
           <Button
             variant="outline"
             onClick={async () => {
-              console.log('🔄 수동 백업 버튼 클릭됨 (헤더)')
+              console.log('🔄 서버 백업 실행 명령')
               try {
-                const response = await fetch('/api/backup?table=all', {
+                const response = await fetch('/api/backup/trigger', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -93,33 +93,19 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
                   credentials: 'include'
                 })
 
-                console.log('📡 헤더 백업 응답:', response.status, response.statusText)
+                console.log('📡 서버 백업 응답:', response.status, response.statusText)
 
                 if (response.ok) {
-                  const blob = await response.blob()
-                  console.log('📦 헤더 백업 블롭 크기:', blob.size)
-
-                  const url = window.URL.createObjectURL(blob)
-                  const a = document.createElement('a')
-                  a.href = url
-
-                  const timestamp = new Date().toISOString().split('T')[0]
-                  const filename = `notebook-backup-all-${timestamp}.json`
-                  a.download = filename
-
-                  document.body.appendChild(a)
-                  a.click()
-                  document.body.removeChild(a)
-                  window.URL.revokeObjectURL(url)
-
-                  console.log('✅ 헤더 백업 완료:', filename)
+                  const result = await response.json()
+                  console.log('✅ 서버 백업 완료:', result)
+                  alert('백업이 성공적으로 완료되었습니다.')
                 } else {
                   const errorData = await response.json()
-                  console.error('❌ 헤더 백업 실패:', errorData)
+                  console.error('❌ 서버 백업 실패:', errorData)
                   alert(`백업 실패: ${errorData.error}`)
                 }
               } catch (error) {
-                console.error('❌ 헤더 백업 오류:', error)
+                console.error('❌ 서버 백업 오류:', error)
                 alert('백업 중 오류가 발생했습니다.')
               }
             }}
@@ -129,7 +115,15 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
             </svg>
             수동 백업
           </Button>
-          <Button>
+          <Button
+            onClick={() => {
+              // 시스템 설정 탭으로 이동
+              const settingsTab = document.querySelector('[value="settings"]') as HTMLElement
+              if (settingsTab) {
+                settingsTab.click()
+              }
+            }}
+          >
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -239,16 +233,143 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
+          {/* 시스템 정보 */}
           <Card>
             <CardHeader>
-              <CardTitle>시스템 설정</CardTitle>
+              <CardTitle>시스템 정보</CardTitle>
               <CardDescription>
-                노트북 관리 시스템의 전반적인 설정을 관리합니다.
+                현재 시스템의 상태와 정보를 확인할 수 있습니다.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                시스템 설정 기능은 준비 중입니다.
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">시스템 버전</span>
+                    <span className="text-sm font-medium">v1.0.0</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">데이터베이스</span>
+                    <span className="text-sm font-medium">Supabase PostgreSQL</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">환경</span>
+                    <span className="text-sm font-medium">Production</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">마지막 업데이트</span>
+                    <span className="text-sm font-medium">{new Date().toLocaleDateString('ko-KR')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">총 사용자 수</span>
+                    <span className="text-sm font-medium">-</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">활성 세션</span>
+                    <span className="text-sm font-medium">-</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 일반 설정 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>일반 설정</CardTitle>
+              <CardDescription>
+                시스템의 기본 동작을 설정합니다.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">자동 백업</div>
+                  <div className="text-xs text-muted-foreground">매일 자정에 자동으로 데이터를 백업합니다</div>
+                </div>
+                <Badge className="bg-green-100 text-green-800">활성화</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">이메일 알림</div>
+                  <div className="text-xs text-muted-foreground">중요한 시스템 이벤트 시 이메일로 알림을 받습니다</div>
+                </div>
+                <Badge variant="secondary">비활성화</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">로그 보관 기간</div>
+                  <div className="text-xs text-muted-foreground">시스템 로그를 보관하는 기간을 설정합니다</div>
+                </div>
+                <span className="text-sm font-medium">30일</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 보안 설정 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>보안 설정</CardTitle>
+              <CardDescription>
+                시스템 보안과 관련된 설정을 관리합니다.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">세션 타임아웃</div>
+                  <div className="text-xs text-muted-foreground">사용자 세션이 자동으로 만료되는 시간</div>
+                </div>
+                <span className="text-sm font-medium">8시간</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">도메인 제한</div>
+                  <div className="text-xs text-muted-foreground">허용된 이메일 도메인</div>
+                </div>
+                <span className="text-sm font-medium">ichungjungsan.kr</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">관리자 승인</div>
+                  <div className="text-xs text-muted-foreground">담임교사 계정 생성 시 관리자 승인 필요</div>
+                </div>
+                <Badge className="bg-green-100 text-green-800">활성화</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 시스템 작업 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>시스템 작업</CardTitle>
+              <CardDescription>
+                시스템 유지보수와 관련된 작업을 수행합니다.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <div className="text-sm font-medium">데이터베이스 최적화</div>
+                  <div className="text-xs text-muted-foreground">데이터베이스 성능을 최적화합니다</div>
+                </div>
+                <Button variant="outline" size="sm">실행</Button>
+              </div>
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <div className="text-sm font-medium">캐시 정리</div>
+                  <div className="text-xs text-muted-foreground">시스템 캐시를 정리합니다</div>
+                </div>
+                <Button variant="outline" size="sm">실행</Button>
+              </div>
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <div className="text-sm font-medium">로그 정리</div>
+                  <div className="text-xs text-muted-foreground">오래된 로그 파일을 정리합니다</div>
+                </div>
+                <Button variant="outline" size="sm">실행</Button>
               </div>
             </CardContent>
           </Card>
