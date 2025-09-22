@@ -455,6 +455,34 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                           <div className="text-sm text-muted-foreground">
                             반납 예정: {loan.return_date || loan.dueDate} • 연락처: {loan.student_contact || loan.studentContact}
                           </div>
+                          {/* 학급 정보 불일치 경고 */}
+                          {(() => {
+                            const requestedClass = loan.class_name || loan.className || ''
+                            const deviceTag = loan.device_tag || loan.deviceTag || ''
+
+                            if (deviceTag && requestedClass) {
+                              // 기기 태그에서 학급 정보 추출 (예: "1-1-35" -> "1-1")
+                              const deviceClassMatch = deviceTag.match(/^(\d-\d+)/)
+                              const deviceClass = deviceClassMatch ? deviceClassMatch[1] : ''
+
+                              if (deviceClass && deviceClass !== requestedClass) {
+                                return (
+                                  <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded">
+                                    <div className="flex items-center">
+                                      <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                      </svg>
+                                      <strong>학급 정보와 다른 노트북을 신청했습니다!</strong>
+                                    </div>
+                                    <div className="text-xs mt-1">
+                                      신청 학급: <strong>{requestedClass}</strong> → 기기 학급: <strong>{deviceClass}</strong>
+                                    </div>
+                                  </div>
+                                )
+                              }
+                            }
+                            return null
+                          })()}
                           {loan.purposeDetail && (
                             <div className="text-sm text-blue-600 mt-1">
                               상세 목적: {loan.purposeDetail}
@@ -517,6 +545,33 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       <div className="text-sm text-muted-foreground">
                         기기: {loan.device_tag || loan.deviceTag} • 반납 예정: {formatDateTime(loan.due_date || loan.dueDate)}
                       </div>
+                      {/* 학급 정보 불일치 경고 - 진행중 탭 */}
+                      {(() => {
+                        const requestedClass = loan.class_name || loan.className || ''
+                        const deviceTag = loan.device_tag || loan.deviceTag || ''
+
+                        if (deviceTag && requestedClass) {
+                          const deviceClassMatch = deviceTag.match(/^(\d-\d+)/)
+                          const deviceClass = deviceClassMatch ? deviceClassMatch[1] : ''
+
+                          if (deviceClass && deviceClass !== requestedClass) {
+                            return (
+                              <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded">
+                                <div className="flex items-center">
+                                  <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                  </svg>
+                                  <strong>학급 정보와 다른 노트북을 신청했습니다!</strong>
+                                </div>
+                                <div className="text-xs mt-1">
+                                  신청 학급: <strong>{requestedClass}</strong> → 기기 학급: <strong>{deviceClass}</strong>
+                                </div>
+                              </div>
+                            )
+                          }
+                        }
+                        return null
+                      })()}
                       <div className="text-xs text-muted-foreground mt-1">
                         승인: {formatDateTime(loan.approved_at || loan.approvedAt)}
                         {(loan.picked_up_at || loan.pickedUpAt) && ` • 수령: ${formatDateTime(loan.picked_up_at || loan.pickedUpAt)}`}
@@ -588,6 +643,33 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       <div className="text-sm text-red-600 font-medium">
                         {loan.overdueDays || getOverdueDays(loan.due_date || loan.dueDate)}일 연체 중
                       </div>
+                      {/* 학급 정보 불일치 경고 - 연체 탭 */}
+                      {(() => {
+                        const requestedClass = loan.class_name || loan.className || ''
+                        const deviceTag = loan.device_tag || loan.deviceTag || ''
+
+                        if (deviceTag && requestedClass) {
+                          const deviceClassMatch = deviceTag.match(/^(\d-\d+)/)
+                          const deviceClass = deviceClassMatch ? deviceClassMatch[1] : ''
+
+                          if (deviceClass && deviceClass !== requestedClass) {
+                            return (
+                              <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded">
+                                <div className="flex items-center">
+                                  <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                  </svg>
+                                  <strong>학급 정보와 다른 노트북을 신청했습니다!</strong>
+                                </div>
+                                <div className="text-xs mt-1">
+                                  신청 학급: <strong>{requestedClass}</strong> → 기기 학급: <strong>{deviceClass}</strong>
+                                </div>
+                              </div>
+                            )
+                          }
+                        }
+                        return null
+                      })()}
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(loan.realTimeStatus || loan.status, loan.notes)}`}>
@@ -639,6 +721,33 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       <div className="text-sm text-muted-foreground">
                         기기: {loan.device_tag || loan.deviceTag || '미배정'} • 반납 예정: {formatDateTime(loan.due_date || loan.dueDate)}
                       </div>
+                      {/* 학급 정보 불일치 경고 - 전체 기록 탭 */}
+                      {(() => {
+                        const requestedClass = loan.class_name || loan.className || ''
+                        const deviceTag = loan.device_tag || loan.deviceTag || ''
+
+                        if (deviceTag && requestedClass) {
+                          const deviceClassMatch = deviceTag.match(/^(\d-\d+)/)
+                          const deviceClass = deviceClassMatch ? deviceClassMatch[1] : ''
+
+                          if (deviceClass && deviceClass !== requestedClass) {
+                            return (
+                              <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded">
+                                <div className="flex items-center">
+                                  <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                  </svg>
+                                  <strong>학급 정보와 다른 노트북을 신청했습니다!</strong>
+                                </div>
+                                <div className="text-xs mt-1">
+                                  신청 학급: <strong>{requestedClass}</strong> → 기기 학급: <strong>{deviceClass}</strong>
+                                </div>
+                              </div>
+                            )
+                          }
+                        }
+                        return null
+                      })()}
                       {(loan.approved_at || loan.approvedAt) && (
                         <div className="text-xs text-muted-foreground mt-1">
                           승인: {formatDateTime(loan.approved_at || loan.approvedAt)}
