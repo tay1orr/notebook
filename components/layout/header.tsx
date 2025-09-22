@@ -34,19 +34,28 @@ export function Header({ user }: HeaderProps) {
 
           let pendingCount = 0
 
-          if (user.role === 'homeroom' && user.isApprovedHomeroom && user.grade && user.class) {
-            // 담임교사: 자신의 반 승인 대기 신청
-            const teacherClass = `${user.grade}-${user.class}`
-            pendingCount = loans.filter((loan: any) =>
-              loan.status === 'requested' &&
-              (loan.class_name === teacherClass || loan.className === teacherClass)
-            ).length
-          } else if (user.role === 'admin' || user.role === 'helper') {
-            // 관리자/도우미: 전체 승인 대기 신청
-            pendingCount = loans.filter((loan: any) => loan.status === 'requested').length
+          if (Array.isArray(loans)) {
+            if (user.role === 'homeroom' && user.isApprovedHomeroom && user.grade && user.class) {
+              // 담임교사: 자신의 반 승인 대기 신청
+              const teacherClass = `${user.grade}-${user.class}`
+              pendingCount = loans.filter((loan: any) => {
+                const loanStatus = loan.status?.toLowerCase()
+                const loanClass = loan.class_name || loan.className || ''
+                return loanStatus === 'requested' && loanClass === teacherClass
+              }).length
+            } else if (user.role === 'admin' || user.role === 'helper') {
+              // 관리자/도우미: 전체 승인 대기 신청
+              pendingCount = loans.filter((loan: any) => {
+                const loanStatus = loan.status?.toLowerCase()
+                return loanStatus === 'requested'
+              }).length
+            }
           }
 
+          console.log(`🔔 알림 배지 업데이트: ${user.role} 역할, ${pendingCount}건의 대여 신청`)
           setNotifications(prev => ({ ...prev, loans: pendingCount }))
+        } else {
+          console.error('대여 정보 로드 실패:', loansResponse.status, loansResponse.statusText)
         }
 
         // 관리자 알림 (담임교사 승인 대기)
@@ -120,12 +129,16 @@ export function Header({ user }: HeaderProps) {
 
   // 알림 배지 컴포넌트
   const NotificationBadge = useCallback(({ count }: { count: number }) => {
-    if (count === 0) return null
+    // 숫자가 아니거나 0이면 표시하지 않음
+    if (!count || count === 0 || isNaN(count)) return null
+
+    // 음수 처리
+    const displayCount = Math.max(0, count)
 
     return (
       <span className="ml-1 inline-flex items-center justify-center text-xs font-bold text-white bg-red-500 rounded-full min-w-[20px] h-[20px] leading-none">
         <span className="flex items-center justify-center w-full h-full">
-          {count > 99 ? '99+' : count}
+          {displayCount > 99 ? '99+' : displayCount}
         </span>
       </span>
     )

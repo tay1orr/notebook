@@ -27,7 +27,16 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
         if (canvas) {
           const ctx = canvas.getContext('2d')
           if (ctx) {
+            // Clear the entire canvas considering DPR scaling
+            ctx.save()
+            ctx.setTransform(1, 0, 0, 1, 0, 0)
             ctx.clearRect(0, 0, canvas.width, canvas.height)
+            ctx.restore()
+
+            // Re-apply scale for future drawings
+            const dpr = window.devicePixelRatio || 1
+            ctx.scale(dpr, dpr)
+
             hasDrawn.current = false
             onSignatureChange?.(true)
           }
@@ -47,6 +56,9 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
       const ctx = canvas.getContext('2d')
       if (!ctx) return
 
+      // Get DPR for high-DPI displays
+      const dpr = window.devicePixelRatio || 1
+
       // Get parent container size for responsive design
       const container = canvas.parentElement
       const containerWidth = container ? container.clientWidth : width
@@ -56,8 +68,16 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
       const finalWidth = Math.min(containerWidth, width)
       const finalHeight = height
 
-      canvas.width = finalWidth
-      canvas.height = finalHeight
+      // Set display size (CSS pixels)
+      canvas.style.width = finalWidth + 'px'
+      canvas.style.height = finalHeight + 'px'
+
+      // Set actual size (device pixels)
+      canvas.width = finalWidth * dpr
+      canvas.height = finalHeight * dpr
+
+      // Scale the drawing context to match device pixel ratio
+      ctx.scale(dpr, dpr)
 
       // Set drawing properties
       ctx.strokeStyle = '#000000'
@@ -65,27 +85,38 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
       ctx.lineCap = 'round'
       ctx.lineJoin = 'round'
 
+      const getCoordinates = (e: MouseEvent | TouchEvent) => {
+        const rect = canvas.getBoundingClientRect()
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+
+        // Calculate coordinates relative to canvas element with correct scaling
+        const scaleX = canvas.width / rect.width
+        const scaleY = canvas.height / rect.height
+
+        const x = (clientX - rect.left) * scaleX / (window.devicePixelRatio || 1)
+        const y = (clientY - rect.top) * scaleY / (window.devicePixelRatio || 1)
+
+        return { x, y }
+      }
+
       const startDrawing = (e: MouseEvent | TouchEvent) => {
+        e.preventDefault()
         isDrawing.current = true
         hasDrawn.current = true
         onSignatureChange?.(false)
 
-        const rect = canvas.getBoundingClientRect()
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
-        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-
+        const { x, y } = getCoordinates(e)
         ctx.beginPath()
-        ctx.moveTo(clientX - rect.left, clientY - rect.top)
+        ctx.moveTo(x, y)
       }
 
       const draw = (e: MouseEvent | TouchEvent) => {
         if (!isDrawing.current) return
+        e.preventDefault()
 
-        const rect = canvas.getBoundingClientRect()
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
-        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-
-        ctx.lineTo(clientX - rect.left, clientY - rect.top)
+        const { x, y } = getCoordinates(e)
+        ctx.lineTo(x, y)
         ctx.stroke()
       }
 

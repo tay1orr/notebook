@@ -22,9 +22,23 @@ export function SignaturePad({ onSignature, title, description }: SignaturePadPr
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // Get DPR for high-DPI displays
+    const dpr = window.devicePixelRatio || 1
+
     // Set canvas size
-    canvas.width = 400
-    canvas.height = 200
+    const displayWidth = 400
+    const displayHeight = 200
+
+    // Set display size (CSS pixels)
+    canvas.style.width = displayWidth + 'px'
+    canvas.style.height = displayHeight + 'px'
+
+    // Set actual size (device pixels)
+    canvas.width = displayWidth * dpr
+    canvas.height = displayHeight * dpr
+
+    // Scale the drawing context to match device pixel ratio
+    ctx.scale(dpr, dpr)
 
     // Set drawing styles
     ctx.strokeStyle = '#000000'
@@ -34,17 +48,27 @@ export function SignaturePad({ onSignature, title, description }: SignaturePadPr
 
     // Fill with white background
     ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillRect(0, 0, displayWidth, displayHeight)
   }, [])
+
+  const getMouseCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current!
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    const dpr = window.devicePixelRatio || 1
+
+    const x = (e.clientX - rect.left) * scaleX / dpr
+    const y = (e.clientY - rect.top) * scaleY / dpr
+
+    return { x, y }
+  }
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const rect = canvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-
+    const { x, y } = getMouseCoordinates(e)
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
@@ -60,10 +84,7 @@ export function SignaturePad({ onSignature, title, description }: SignaturePadPr
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const rect = canvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-
+    const { x, y } = getMouseCoordinates(e)
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
@@ -75,16 +96,26 @@ export function SignaturePad({ onSignature, title, description }: SignaturePadPr
     setIsDrawing(false)
   }
 
+  const getTouchCoordinates = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current!
+    const rect = canvas.getBoundingClientRect()
+    const touch = e.touches[0]
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    const dpr = window.devicePixelRatio || 1
+
+    const x = (touch.clientX - rect.left) * scaleX / dpr
+    const y = (touch.clientY - rect.top) * scaleY / dpr
+
+    return { x, y }
+  }
+
   const startDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault()
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const rect = canvas.getBoundingClientRect()
-    const touch = e.touches[0]
-    const x = touch.clientX - rect.left
-    const y = touch.clientY - rect.top
-
+    const { x, y } = getTouchCoordinates(e)
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
@@ -101,11 +132,7 @@ export function SignaturePad({ onSignature, title, description }: SignaturePadPr
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const rect = canvas.getBoundingClientRect()
-    const touch = e.touches[0]
-    const x = touch.clientX - rect.left
-    const y = touch.clientY - rect.top
-
+    const { x, y } = getTouchCoordinates(e)
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
@@ -125,8 +152,18 @@ export function SignaturePad({ onSignature, title, description }: SignaturePadPr
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // Clear considering DPR scaling
+    ctx.save()
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.restore()
+
+    // Re-apply scale and background
+    const dpr = window.devicePixelRatio || 1
+    ctx.scale(dpr, dpr)
+
     ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillRect(0, 0, 400, 200) // Display size
     setIsEmpty(true)
   }
 
