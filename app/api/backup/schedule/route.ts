@@ -82,19 +82,24 @@ export async function GET(request: NextRequest) {
 }
 
 function calculateNextRun(scheduleType: string, time: string): string {
-  // 현재 한국 시간 계산
+  // 현재 UTC 시간을 한국 시간으로 변환
   const now = new Date()
-  const koreaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
 
+  // 한국 시간 객체 생성 (UTC + 9시간)
+  const koreaOffset = 9 * 60 * 60 * 1000 // 9시간을 밀리초로
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)
+  const koreaTime = new Date(utcTime + koreaOffset)
+
+  console.log('🔍 스케줄 계산 - 현재 UTC:', now.toISOString())
   console.log('🔍 스케줄 계산 - 현재 한국 시간:', koreaTime.toISOString())
 
   const [hours, minutes] = time.split(':').map(Number)
 
-  // 오늘 해당 시간으로 설정
+  // 오늘 해당 시간으로 설정 (한국 시간 기준)
   let nextRun = new Date(koreaTime)
   nextRun.setHours(hours, minutes, 0, 0)
 
-  console.log('🔍 스케줄 계산 - 오늘 백업 시간:', nextRun.toISOString())
+  console.log('🔍 스케줄 계산 - 오늘 백업 시간 (한국):', nextRun.toISOString())
   console.log('🔍 스케줄 계산 - 현재 vs 백업시간:', koreaTime.getTime(), 'vs', nextRun.getTime())
 
   // 이미 지난 시간이면 다음 주기로
@@ -113,6 +118,11 @@ function calculateNextRun(scheduleType: string, time: string): string {
     }
   }
 
-  console.log('🔍 스케줄 계산 - 최종 다음 백업 시간:', nextRun.toISOString())
-  return nextRun.toISOString()
+  // UTC로 변환해서 반환
+  const finalUtc = new Date(nextRun.getTime() - koreaOffset)
+
+  console.log('🔍 스케줄 계산 - 최종 다음 백업 시간 (한국):', nextRun.toISOString())
+  console.log('🔍 스케줄 계산 - 최종 다음 백업 시간 (UTC):', finalUtc.toISOString())
+
+  return finalUtc.toISOString()
 }

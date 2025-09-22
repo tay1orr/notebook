@@ -27,33 +27,24 @@ export async function POST(request: NextRequest) {
       backupLocation: 'server://backups/manual/' + new Date().toISOString().split('T')[0]
     }
 
-    // 백업 기록에 추가
+    // 백업 기록에 직접 추가 (메모리 기반)
     try {
-      console.log('🔍 백업 기록 추가 시도')
-      const historyResponse = await fetch(new URL('/api/backup/history', request.url), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': request.headers.get('Cookie') || ''
-        },
-        body: JSON.stringify({
-          type: 'manual',
-          status: 'success',
-          table: 'all',
-          size: Math.floor(Math.random() * 1000000) // 임시로 랜덤 크기
-        })
-      })
-      console.log('🔍 백업 기록 추가 응답:', historyResponse.status, historyResponse.statusText)
+      console.log('🔍 백업 기록 직접 추가 시도')
 
-      if (historyResponse.ok) {
-        const historyData = await historyResponse.json()
-        console.log('🔍 백업 기록 추가 성공:', historyData)
-      } else {
-        const errorText = await historyResponse.text()
-        console.error('🔍 백업 기록 추가 실패:', errorText)
-      }
+      // 백업 기록 모듈 직접 import
+      const { addBackupRecord } = await import('./backup-history-utils')
+
+      const record = await addBackupRecord({
+        type: 'manual',
+        status: 'success',
+        table: 'all',
+        size: Math.floor(Math.random() * 1000000),
+        triggeredBy: user.email
+      })
+
+      console.log('🔍 백업 기록 직접 추가 성공:', record)
     } catch (error) {
-      console.error('백업 기록 추가 실패:', error)
+      console.error('백업 기록 직접 추가 실패:', error)
     }
 
     console.log('✅ 서버 백업 완료:', backupResult)

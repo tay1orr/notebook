@@ -1,16 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUserForAPI } from '@/lib/auth'
-
-// 메모리에 백업 기록 저장 (실제로는 데이터베이스 사용)
-let backupHistory: Array<{
-  id: string
-  type: 'manual' | 'auto'
-  status: 'success' | 'failed' | 'pending'
-  timestamp: string
-  triggeredBy?: string
-  table: string
-  size?: number
-}> = []
+import { getBackupHistory, addBackupRecord } from '../trigger/backup-history-utils'
 
 // 백업 기록 조회
 export async function GET(request: NextRequest) {
@@ -23,10 +13,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const history = getBackupHistory()
+    console.log('📊 백업 기록 조회:', history.length, '개 기록')
+
     return NextResponse.json({
-      history: backupHistory.sort((a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      )
+      history: history
     })
 
   } catch (error) {
@@ -52,19 +43,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { type, status, table, size } = body
 
-    const newRecord = {
-      id: Date.now().toString(),
+    const newRecord = addBackupRecord({
       type,
       status,
-      timestamp: new Date().toISOString(),
-      triggeredBy: type === 'manual' ? user.email : 'system',
       table,
-      size
-    }
-
-    backupHistory.push(newRecord)
-
-    console.log('백업 기록 추가됨:', newRecord)
+      size,
+      triggeredBy: type === 'manual' ? user.email : 'system'
+    })
 
     return NextResponse.json({
       success: true,
