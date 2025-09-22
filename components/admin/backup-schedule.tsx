@@ -164,7 +164,26 @@ export function BackupSchedule() {
 
             <div className="text-center p-4 border rounded-lg">
               <div className="text-lg font-semibold">
-                {formatDateTime(schedule.next_run)}
+                {schedule.next_run ? (() => {
+                  const nextDate = new Date(schedule.next_run)
+                  const tomorrow = new Date()
+                  tomorrow.setDate(tomorrow.getDate() + 1)
+
+                  const isToday = nextDate.toDateString() === new Date().toDateString()
+                  const isTomorrow = nextDate.toDateString() === tomorrow.toDateString()
+
+                  if (isToday) {
+                    return `오늘 ${schedule.time}`
+                  } else if (isTomorrow) {
+                    return `내일 ${schedule.time}`
+                  } else {
+                    return nextDate.toLocaleDateString('ko-KR', {
+                      month: '2-digit',
+                      day: '2-digit',
+                      timeZone: 'Asia/Seoul'
+                    }) + ` ${schedule.time}`
+                  }
+                })() : '-'}
               </div>
               <div className="text-sm text-muted-foreground">다음 백업</div>
             </div>

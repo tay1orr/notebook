@@ -24,6 +24,7 @@ export function BackupManagement() {
   const [backupStatus, setBackupStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [loading, setLoading] = useState(true)
   const [showBackupDetails, setShowBackupDetails] = useState(false)
+  const [lastBackupTime, setLastBackupTime] = useState<string | null>(null)
 
   useEffect(() => {
     loadBackupInfo()
@@ -80,7 +81,8 @@ export function BackupManagement() {
 
         console.log('✅ 백업 완료:', filename)
         setBackupStatus('success')
-        setTimeout(() => setBackupStatus('idle'), 3000)
+        setLastBackupTime(new Date().toISOString())
+        setTimeout(() => setBackupStatus('idle'), 5000)
       } else {
         const errorText = await response.text()
         console.error('❌ 백업 API 오류:', response.status, errorText)
@@ -159,8 +161,15 @@ export function BackupManagement() {
               className="text-center p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => setShowBackupDetails(true)}
             >
-              <div className="text-2xl font-bold text-purple-600">최근</div>
-              <div className="text-sm text-muted-foreground">백업 정보</div>
+              <div className="text-2xl font-bold text-purple-600">
+                {lastBackupTime ? '완료' : '대기'}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {lastBackupTime ?
+                  formatDateTime(lastBackupTime) :
+                  '백업 대기중'
+                }
+              </div>
               <InfoIcon className="h-4 w-4 mx-auto mt-1 text-muted-foreground" />
             </div>
           </div>
@@ -247,14 +256,19 @@ export function BackupManagement() {
           {backupStatus === 'success' && (
             <div className="flex items-center space-x-2 text-green-600 bg-green-50 p-3 rounded-lg">
               <CheckCircleIcon className="h-4 w-4" />
-              <span className="text-sm">백업이 성공적으로 다운로드되었습니다.</span>
+              <div>
+                <div className="text-sm font-medium">백업이 완료되었습니다!</div>
+                <div className="text-xs text-green-700">
+                  파일이 다운로드 폴더에 저장되었습니다. ({getTableDisplayName(selectedTable)} • {new Date().toLocaleString('ko-KR')})
+                </div>
+              </div>
             </div>
           )}
 
           {backupStatus === 'error' && (
             <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-lg">
               <AlertCircleIcon className="h-4 w-4" />
-              <span className="text-sm">백업 생성 중 오류가 발생했습니다.</span>
+              <span className="text-sm">백업 생성 중 오류가 발생했습니다. 관리자에게 문의하세요.</span>
             </div>
           )}
         </CardContent>

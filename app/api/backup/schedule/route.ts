@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     // 현재 백업 스케줄 조회
     const currentSchedule = {
       enabled: true,
-      schedule_type: 'daily',
+      schedule_type: 'daily' as const,
       time: '02:00',
       last_run: null,
       next_run: calculateNextRun('daily', '02:00'),
