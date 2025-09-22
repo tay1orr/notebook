@@ -30,8 +30,24 @@ export function UsersManagementWrapper() {
 
           // API에서 받은 사용자 데이터를 컴포넌트 형식으로 변환
           const formattedUsers = users.map((user: any) => {
-            // 해당 사용자의 대여 기록 필터링
+            // 해당 사용자의 대여 기록 필터링 (자신이 신청한 것)
             const userLoans = allLoans.filter((loan: any) => loan.email === user.email)
+
+            // 해당 사용자가 처리한 대여 기록 필터링 (관리자/도우미/담임교사가 승인/반납 처리한 것)
+            const processedLoans = allLoans.filter((loan: any) =>
+              loan.approved_by === user.email ||
+              loan.approved_by === user.name ||
+              (loan.notes && loan.notes.includes(user.name)) ||
+              (loan.notes && loan.notes.includes(user.email))
+            )
+
+            // 두 종류의 활동을 합쳐서 시간순으로 정렬
+            const allActivities = [
+              ...userLoans.map((loan: any) => ({ ...loan, activityType: 'own_loan' })),
+              ...processedLoans.map((loan: any) => ({ ...loan, activityType: 'processed' }))
+            ].sort((a: any, b: any) =>
+              new Date(b.created_at || b.requestedAt).getTime() - new Date(a.created_at || a.requestedAt).getTime()
+            )
 
             return {
               id: user.id,
@@ -41,7 +57,7 @@ export function UsersManagementWrapper() {
               lastLogin: user.lastLogin,
               status: 'active' as const,
               createdAt: user.createdAt,
-              allLoans: userLoans // 사용자별 대여 기록 포함
+              allLoans: allActivities // 자신의 대여 기록 + 처리한 기록 포함
             }
           })
 

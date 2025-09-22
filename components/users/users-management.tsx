@@ -335,49 +335,64 @@ export function UsersManagement({ users: initialUsers }: UsersManagementProps) {
               </div>
 
               <div className="space-y-3">
-                {selectedUser.allLoans
-                  .sort((a: any, b: any) => new Date(b.requestedAt || b.created_at).getTime() - new Date(a.requestedAt || a.created_at).getTime())
-                  .map((loan: any, index: number) => (
-                    <div key={index} className="border rounded-lg p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium">{loan.deviceTag || loan.device_tag}</span>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
-                              ? 'bg-orange-100 text-orange-800 border border-orange-200'
-                              : getStatusColor(loan.status, loan.notes)
-                          }`}>
-                            {getStatusText(loan.status, loan.notes)}
+                {selectedUser.allLoans.map((loan: any, index: number) => (
+                  <div key={index} className={`border rounded-lg p-4 space-y-2 ${
+                    loan.activityType === 'processed' ? 'bg-blue-50 border-blue-200' : ''
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        {loan.activityType === 'processed' && (
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            처리한 업무
                           </span>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {formatDateTime(loan.requestedAt || loan.created_at)}
+                        )}
+                        <span className="font-medium">{loan.deviceTag || loan.device_tag}</span>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
+                            ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                            : getStatusColor(loan.status, loan.notes)
+                        }`}>
+                          {getStatusText(loan.status, loan.notes)}
                         </span>
                       </div>
-
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        <div>신청일: {formatDateTime(loan.requestedAt || loan.created_at)}</div>
-                        {loan.approved_at && (
-                          <div>승인일: {formatDateTime(loan.approved_at)}</div>
-                        )}
-                        {loan.picked_up_at && (
-                          <div>수령일: {formatDateTime(loan.picked_up_at)}</div>
-                        )}
-                        {loan.returned_at && (
-                          <div>반납일: {formatDateTime(loan.returned_at)}</div>
-                        )}
-                        {loan.dueDate && (
-                          <div>반납예정: {formatDateTime(loan.dueDate || loan.due_date)}</div>
-                        )}
-                        {loan.purpose && (
-                          <div>사용목적: {loan.purpose}</div>
-                        )}
-                        {loan.notes && loan.notes !== 'STUDENT_CANCELLED' && (
-                          <div>비고: {loan.notes}</div>
-                        )}
-                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {formatDateTime(loan.requestedAt || loan.created_at)}
+                      </span>
                     </div>
-                  ))}
+
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      {loan.activityType === 'processed' && (
+                        <div className="font-medium text-blue-700">
+                          신청자: {loan.student_name} ({loan.class_name})
+                        </div>
+                      )}
+                      <div>신청일: {formatDateTime(loan.requestedAt || loan.created_at)}</div>
+                      {loan.approved_at && (
+                        <div className={loan.activityType === 'processed' ? 'font-medium text-blue-700' : ''}>
+                          승인일: {formatDateTime(loan.approved_at)}
+                          {loan.approved_by && ` (승인자: ${loan.approved_by})`}
+                        </div>
+                      )}
+                      {loan.picked_up_at && (
+                        <div>수령일: {formatDateTime(loan.picked_up_at)}</div>
+                      )}
+                      {loan.returned_at && (
+                        <div className={loan.activityType === 'processed' ? 'font-medium text-blue-700' : ''}>
+                          반납일: {formatDateTime(loan.returned_at)}
+                        </div>
+                      )}
+                      {loan.dueDate && (
+                        <div>반납예정: {formatDateTime(loan.dueDate || loan.due_date)}</div>
+                      )}
+                      {loan.purpose && (
+                        <div>사용목적: {loan.purpose}</div>
+                      )}
+                      {loan.notes && loan.notes !== 'STUDENT_CANCELLED' && (
+                        <div>비고: {loan.notes}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ) : (
