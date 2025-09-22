@@ -326,19 +326,29 @@ export function HomeLoanRequestForm({
               const currentClass = hasGrade && hasClass ? `${formData.currentGrade}-${formData.currentClassNumber}` : ''
               const profileClass = studentInfo.className || ''
 
+              // 통합된 경고 조건 계산
+              const profileStudentNo = studentInfo.studentNo || ''
+              const currentStudentNo = formData.currentStudentNumber
+              const profileFullDevice = profileClass && profileStudentNo ? `${profileClass}-${profileStudentNo}` : ''
+              const currentFullDevice = currentClass && currentStudentNo ? `${currentClass}-${currentStudentNo}` : ''
+
+              const hasClassMismatch = profileClass && currentClass && profileClass !== currentClass
+              const hasNumberMismatch = profileStudentNo && currentStudentNo && profileStudentNo !== currentStudentNo
+              const shouldShowWarning = (hasGrade && hasClass && hasClassMismatch) || (hasNumber && hasNumberMismatch)
+
               // 디버깅을 위한 콘솔 출력
               if (hasGrade && hasClass) {
-                console.log('🔍 학급 검증 디버그:', {
+                console.log('🔍 통합 검증 디버그:', {
                   studentInfo: studentInfo,
                   profileClass: profileClass,
                   currentClass: currentClass,
-                  profileStudentNo: studentInfo.studentNo,
-                  currentStudentNo: formData.currentStudentNumber,
-                  hasGrade: hasGrade,
-                  hasClass: hasClass,
-                  hasNumber: hasNumber,
-                  shouldShowClassWarning: profileClass && currentClass !== profileClass,
-                  shouldShowNumberWarning: studentInfo.studentNo && formData.currentStudentNumber && studentInfo.studentNo !== formData.currentStudentNumber
+                  profileStudentNo: profileStudentNo,
+                  currentStudentNo: currentStudentNo,
+                  profileFullDevice: profileFullDevice,
+                  currentFullDevice: currentFullDevice,
+                  hasClassMismatch: hasClassMismatch,
+                  hasNumberMismatch: hasNumberMismatch,
+                  shouldShowWarning: shouldShowWarning
                 })
               }
 
@@ -351,38 +361,26 @@ export function HomeLoanRequestForm({
                     </div>
                   )}
 
-                  {/* 학급 정보 불일치 경고 (학년, 반이 입력되면 즉시 검사) */}
-                  {hasGrade && hasClass && profileClass && currentClass !== profileClass && (
+                  {/* 통합된 기기 정보 불일치 경고 */}
+                  {shouldShowWarning && (
                     <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded">
                       <div className="flex items-center">
                         <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
-                        <strong>⚠️ 학급 정보와 다른 노트북을 선택했습니다!</strong>
+                        <strong>⚠️ 본인의 기기와 다른 노트북을 선택했습니다!</strong>
                       </div>
                       <div className="mt-1">
-                        설정된 학급: <strong>{profileClass}</strong> → 선택한 학급: <strong>{currentClass}</strong>
+                        {profileFullDevice && currentFullDevice ? (
+                          <>설정된 기기: <strong>{profileFullDevice}</strong> → 선택한 기기: <strong>{currentFullDevice}</strong></>
+                        ) : hasClassMismatch ? (
+                          <>설정된 학급: <strong>{profileClass}</strong> → 선택한 학급: <strong>{currentClass}</strong></>
+                        ) : hasNumberMismatch ? (
+                          <>설정된 번호: <strong>{profileStudentNo}번</strong> → 선택한 번호: <strong>{currentStudentNo}번</strong></>
+                        ) : null}
                       </div>
                       <div className="mt-1 text-xs">
-                        본인의 학급 노트북이 맞는지 다시 한번 확인해주세요. 잘못된 기기를 신청하면 거절될 수 있습니다.
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 학생 번호 불일치 경고 (번호가 입력되면 즉시 검사) */}
-                  {hasNumber && studentInfo.studentNo && formData.currentStudentNumber && studentInfo.studentNo !== formData.currentStudentNumber && (
-                    <div className="text-sm text-orange-600 bg-orange-50 border border-orange-200 p-3 rounded">
-                      <div className="flex items-center">
-                        <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.530 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                        <strong>⚠️ 본인 번호와 다른 노트북을 선택했습니다!</strong>
-                      </div>
-                      <div className="mt-1">
-                        설정된 번호: <strong>{studentInfo.studentNo}번</strong> → 선택한 번호: <strong>{formData.currentStudentNumber}번</strong>
-                      </div>
-                      <div className="mt-1 text-xs">
-                        본인의 번호 노트북이 맞는지 다시 한번 확인해주세요. 다른 학생의 노트북을 신청하면 거절될 수 있습니다.
+                        본인의 기기가 맞는지 다시 한번 확인해주세요. 잘못된 기기를 신청하면 거절될 수 있습니다.
                       </div>
                     </div>
                   )}
