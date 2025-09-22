@@ -444,9 +444,9 @@ export function BackupManagement() {
               <CardTitle className="text-base">최근 백업 기록</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-80 overflow-y-auto">
                 {backupHistory.length > 0 ? (
-                  backupHistory.slice(0, 5).map((record) => (
+                  backupHistory.map((record) => (
                     <div key={record.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <div className="text-sm font-medium">

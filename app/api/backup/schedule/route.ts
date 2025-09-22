@@ -82,18 +82,24 @@ export async function GET(request: NextRequest) {
 }
 
 function calculateNextRun(scheduleType: string, time: string): string {
-  // 한국 시간 기준으로 계산
+  // 현재 한국 시간 계산
   const now = new Date()
-  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)
-  const koreaTime = new Date(utcTime + (9 * 60 * 60 * 1000))
+  const koreaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+
+  console.log('🔍 스케줄 계산 - 현재 한국 시간:', koreaTime.toISOString())
 
   const [hours, minutes] = time.split(':').map(Number)
 
+  // 오늘 해당 시간으로 설정
   let nextRun = new Date(koreaTime)
   nextRun.setHours(hours, minutes, 0, 0)
 
+  console.log('🔍 스케줄 계산 - 오늘 백업 시간:', nextRun.toISOString())
+  console.log('🔍 스케줄 계산 - 현재 vs 백업시간:', koreaTime.getTime(), 'vs', nextRun.getTime())
+
   // 이미 지난 시간이면 다음 주기로
   if (nextRun <= koreaTime) {
+    console.log('🔍 스케줄 계산 - 이미 지난 시간, 다음 주기로 이동')
     switch (scheduleType) {
       case 'daily':
         nextRun.setDate(nextRun.getDate() + 1)
@@ -107,5 +113,6 @@ function calculateNextRun(scheduleType: string, time: string): string {
     }
   }
 
+  console.log('🔍 스케줄 계산 - 최종 다음 백업 시간:', nextRun.toISOString())
   return nextRun.toISOString()
 }

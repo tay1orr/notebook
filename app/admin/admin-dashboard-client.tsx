@@ -19,6 +19,10 @@ interface AdminDashboardClientProps {
 
 export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
   const [pendingHomeroomCount, setPendingHomeroomCount] = useState(0)
+  const [lastBackupInfo, setLastBackupInfo] = useState<{
+    type: string
+    timestamp: string
+  } | null>(null)
 
   // 담임교사 승인 대기 건수 실시간 로드
   useEffect(() => {
@@ -39,6 +43,34 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
 
     // 5초마다 업데이트
     const interval = setInterval(loadPendingHomeroomCount, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // 최근 백업 정보 로드
+  useEffect(() => {
+    const loadLastBackupInfo = async () => {
+      try {
+        const response = await fetch('/api/backup/history')
+        if (response.ok) {
+          const data = await response.json()
+          const history = data.history || []
+          if (history.length > 0) {
+            const latest = history[0]
+            setLastBackupInfo({
+              type: latest.type === 'manual' ? '수동' : '자동',
+              timestamp: latest.timestamp
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Latest backup info load error:', error)
+      }
+    }
+
+    loadLastBackupInfo()
+
+    // 10초마다 업데이트
+    const interval = setInterval(loadLastBackupInfo, 10000)
     return () => clearInterval(interval)
   }, [])
 
@@ -156,8 +188,22 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">자동</div>
-            <p className="text-xs text-muted-foreground">{systemStats.lastBackup}</p>
+            <div className="text-2xl font-bold text-green-600">
+              {lastBackupInfo?.type || '자동'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {lastBackupInfo ?
+                new Date(lastBackupInfo.timestamp).toLocaleString('ko-KR', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit'
+                }) :
+                systemStats.lastBackup
+              }
+            </p>
           </CardContent>
         </Card>
       </div>
