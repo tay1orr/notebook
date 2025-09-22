@@ -29,8 +29,8 @@ export default async function DashboardPage() {
     const studentInfo = {
       id: user.id,
       name: user.name,
-      studentNo: '', // 학생이 직접 입력하도록 변경
-      className: '', // 학생이 직접 입력하도록 변경
+      studentNo: user.studentNo || '', // 프로필에서 가져온 학번 사용
+      className: user.grade && user.class ? `${user.grade}-${user.class}` : '', // 프로필에서 가져온 학급 정보 사용
       email: user.email
     }
 

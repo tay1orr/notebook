@@ -318,39 +318,55 @@ export function HomeLoanRequestForm({
               </div>
             </div>
 
-            {formData.currentGrade && formData.currentClassNumber && formData.currentStudentNumber && (
-              <div>
-                <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
-                  대여 기기: <strong>{formData.currentGrade}-{formData.currentClassNumber}-{formData.currentStudentNumber.padStart(2, '0')}</strong>번 노트북
-                </div>
+            {/* 대여 기기 정보 및 학급 검증 */}
+            {(() => {
+              const hasGrade = formData.currentGrade
+              const hasClass = formData.currentClassNumber
+              const hasNumber = formData.currentStudentNumber
+              const currentClass = hasGrade && hasClass ? `${formData.currentGrade}-${formData.currentClassNumber}` : ''
+              const profileClass = studentInfo.className || ''
 
-                {/* 학급 정보 불일치 경고 */}
-                {(() => {
-                  const currentClass = `${formData.currentGrade}-${formData.currentClassNumber}`
-                  const profileClass = studentInfo.className
+              // 디버깅을 위한 콘솔 출력
+              if (hasGrade && hasClass) {
+                console.log('🔍 학급 검증 디버그:', {
+                  studentInfo: studentInfo,
+                  profileClass: profileClass,
+                  currentClass: currentClass,
+                  hasGrade: hasGrade,
+                  hasClass: hasClass,
+                  shouldShowWarning: profileClass && currentClass !== profileClass
+                })
+              }
 
-                  if (profileClass && currentClass !== profileClass) {
-                    return (
-                      <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded">
-                        <div className="flex items-center">
-                          <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                          <strong>학급 정보가 다릅니다!</strong>
-                        </div>
-                        <div className="mt-1">
-                          프로필 학급: <strong>{profileClass}</strong> → 입력 학급: <strong>{currentClass}</strong>
-                        </div>
-                        <div className="mt-1 text-xs">
-                          입력한 학급 정보와 다른 노트북을 신청하고 있습니다. 본인의 학급 노트북이 맞는지 확인해주세요.
-                        </div>
+              return (
+                <div className="space-y-2">
+                  {/* 대여 기기 표시 (모든 정보가 입력된 경우) */}
+                  {hasGrade && hasClass && hasNumber && (
+                    <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+                      대여 기기: <strong>{formData.currentGrade}-{formData.currentClassNumber}-{formData.currentStudentNumber.padStart(2, '0')}</strong>번 노트북
+                    </div>
+                  )}
+
+                  {/* 학급 정보 불일치 경고 (학년, 반이 입력되면 즉시 검사) */}
+                  {hasGrade && hasClass && profileClass && currentClass !== profileClass && (
+                    <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded">
+                      <div className="flex items-center">
+                        <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <strong>⚠️ 학급 정보와 다른 노트북을 선택했습니다!</strong>
                       </div>
-                    )
-                  }
-                  return null
-                })()}
-              </div>
-            )}
+                      <div className="mt-1">
+                        설정된 학급: <strong>{profileClass}</strong> → 선택한 학급: <strong>{currentClass}</strong>
+                      </div>
+                      <div className="mt-1 text-xs">
+                        본인의 학급 노트북이 맞는지 다시 한번 확인해주세요. 잘못된 기기를 신청하면 거절될 수 있습니다.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
           </div>
 
           {/* 사용 목적 */}
