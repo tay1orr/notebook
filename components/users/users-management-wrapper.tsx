@@ -20,19 +20,32 @@ export function UsersManagementWrapper() {
           const { users } = await response.json()
           console.log('UsersManagementWrapper - Loaded users from API:', users)
 
-          // API에서 받은 사용자 데이터를 컴포넌트 형식으로 변환
-          const formattedUsers = users.map((user: any) => ({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role || '',
-            lastLogin: user.lastLogin,
-            status: 'active' as const,
-            createdAt: user.createdAt,
-            allLoans: [] // 대여 기록은 별도로 처리 가능
-          }))
+          // 대여 기록도 함께 로드
+          const loansResponse = await fetch('/api/loans', { cache: 'no-store' })
+          let allLoans: any[] = []
+          if (loansResponse.ok) {
+            const { loans } = await loansResponse.json()
+            allLoans = loans || []
+          }
 
-          console.log('UsersManagementWrapper - Formatted users:', formattedUsers)
+          // API에서 받은 사용자 데이터를 컴포넌트 형식으로 변환
+          const formattedUsers = users.map((user: any) => {
+            // 해당 사용자의 대여 기록 필터링
+            const userLoans = allLoans.filter((loan: any) => loan.email === user.email)
+
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role || '',
+              lastLogin: user.lastLogin,
+              status: 'active' as const,
+              createdAt: user.createdAt,
+              allLoans: userLoans // 사용자별 대여 기록 포함
+            }
+          })
+
+          console.log('UsersManagementWrapper - Formatted users with loans:', formattedUsers)
           setUsers(formattedUsers)
           setError(null)
         } else {
