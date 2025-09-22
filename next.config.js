@@ -12,6 +12,8 @@ const nextConfig = {
   // Vercel 최적화
   compress: true,
   poweredByHeader: false,
+  // 빌드 로그 최소화
+  output: 'standalone',
   // 환경별 설정 (TZ는 Vercel에서 지원하지 않으므로 코드에서 직접 처리)
   // env: {
   //   TZ: process.env.TZ || 'Asia/Seoul'
