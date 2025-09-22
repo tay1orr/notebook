@@ -116,7 +116,7 @@ export function UsersManagement({ users: initialUsers }: UsersManagementProps) {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">전체 사용자</CardTitle>
@@ -154,6 +154,16 @@ export function UsersManagement({ users: initialUsers }: UsersManagementProps) {
           <CardContent>
             <div className="text-2xl font-bold">{stats.helper}</div>
             <p className="text-xs text-muted-foreground">대여 승인 업무</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">학생</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.student}</div>
+            <p className="text-xs text-muted-foreground">노트북 대여 신청</p>
           </CardContent>
         </Card>
 
