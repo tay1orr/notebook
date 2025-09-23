@@ -23,6 +23,11 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   const [showLoanRequest, setShowLoanRequest] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Props 안전성 검사
+  const safeCurrentLoans = initialCurrentLoans || []
+  const safeLoanHistory = loanHistory || []
+  const safeStudent = student || { id: '', name: '', studentNo: '', className: '', email: '' }
+
   // 대여 데이터 정규화 함수 - 더 강력한 처리
   const normalizeLoanData = (loan: any) => {
 
@@ -68,8 +73,8 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
   }
 
   // 초기 데이터를 정규화하여 상태에 설정
-  const normalizedInitialLoans = initialCurrentLoans.map(normalizeLoanData)
-  const normalizedInitialHistory = loanHistory.map(normalizeLoanData)
+  const normalizedInitialLoans = (safeCurrentLoans || []).map(normalizeLoanData)
+  const normalizedInitialHistory = (safeLoanHistory || []).map(normalizeLoanData)
 
   const [currentLoans, setCurrentLoans] = useState<any[]>(normalizedInitialLoans)
   const [loanHistoryData, setLoanHistoryData] = useState(normalizedInitialHistory)
@@ -88,24 +93,24 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
           // 현재 학생의 대여만 필터링
           const studentLoans = loans.filter((loan: any) =>
-            loan.email === student.email &&
+            loan.email === safeStudent.email &&
             ['requested', 'approved', 'picked_up'].includes(loan.status)
           )
 
           const studentHistory = loans.filter((loan: any) =>
-            loan.email === student.email &&
+            loan.email === safeStudent.email &&
             ['returned', 'rejected', 'cancelled'].includes(loan.status)
           )
 
           // 데이터 변경 여부 확인 (간단한 해시 비교)
           const currentDataHash = JSON.stringify({
-            current: studentLoans.map((l: any) => ({
+            current: (studentLoans || []).map((l: any) => ({
               id: l.id,
               status: l.status,
               created_at: l.created_at,
               device_tag: l.device_tag
             })),
-            history: studentHistory.map((l: any) => ({
+            history: (studentHistory || []).map((l: any) => ({
               id: l.id,
               status: l.status,
               created_at: l.created_at
@@ -118,14 +123,14 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             setCurrentLoans(prev => {
               const nonTempLoans = prev.filter(loan => !loan.id.startsWith('temp-'))
               // API에서 온 데이터와 중복되지 않는 로컬 데이터만 유지
-              const apiIds = studentLoans.map(l => l.id)
+              const apiIds = (studentLoans || []).map(l => l.id)
               const uniqueLocalLoans = nonTempLoans.filter(loan => !apiIds.includes(loan.id))
               // 데이터 정규화 적용
-              const normalizedApiLoans = studentLoans.map(normalizeLoanData)
+              const normalizedApiLoans = (studentLoans || []).map(normalizeLoanData)
               const normalizedLocalLoans = uniqueLocalLoans.map(normalizeLoanData)
               return [...normalizedApiLoans, ...normalizedLocalLoans]
             })
-            setLoanHistoryData(studentHistory)
+            setLoanHistoryData(studentHistory || [])
             lastDataHashRef.current = currentDataHash
             setIsDataLoaded(true)
           }
@@ -142,11 +147,11 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
           try {
             const loans = JSON.parse(storedLoans)
             const studentLoans = loans.filter((loan: any) =>
-              loan.email === student.email &&
+              loan.email === safeStudent.email &&
               ['requested', 'approved', 'picked_up'].includes(loan.status)
             )
             const studentHistory = loans.filter((loan: any) =>
-              loan.email === student.email &&
+              loan.email === safeStudent.email &&
               ['returned', 'rejected', 'cancelled'].includes(loan.status)
             )
 
@@ -195,7 +200,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
       clearTimeout(loadTimeout)
       clearInterval(interval)
     }
-  }, [student.email])
+  }, [safeStudent.email])
 
   const handleLoanRequest = async (requestData: any) => {
     // 중복 신청 방지 체크
@@ -213,8 +218,8 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
 
       // 데이터 정규화를 위한 기본 값 설정
       const deviceTag = requestData.device_tag || requestData.deviceTag || null
-      const className = requestData.className || requestData.currentClass || student.className
-      const studentNo = requestData.studentNo || student.studentNo
+      const className = requestData.className || requestData.currentClass || safeStudent.className
+      const studentNo = requestData.studentNo || safeStudent.studentNo
 
       const newLoanRequest = {
         id: tempId,
@@ -226,10 +231,10 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         student_contact: requestData.studentContact,
         notes: requestData.notes || '',
         device_tag: deviceTag,
-        student_name: requestData.studentName || student.name,
+        student_name: requestData.studentName || safeStudent.name,
         student_no: studentNo,
         class_name: className,
-        email: student.email,
+        email: safeStudent.email,
         signature: requestData.studentSignature || requestData.signature || null
       }
 
@@ -241,10 +246,10 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            student_name: requestData.studentName || student.name,
-            student_no: requestData.studentNo || student.studentNo,
-            class_name: requestData.className || student.className,
-            email: student.email,
+            student_name: requestData.studentName || safeStudent.name,
+            student_no: requestData.studentNo || safeStudent.studentNo,
+            class_name: requestData.className || safeStudent.className,
+            email: safeStudent.email,
             student_contact: requestData.studentContact,
             purpose: requestData.purpose,
             purpose_detail: requestData.purposeDetail,
@@ -398,7 +403,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
       {/* 환영 메시지 */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          안녕하세요, {student.name}님! 👋
+          안녕하세요, {safeStudent.name}님! 👋
         </h1>
         <p className="text-gray-600">
           노트북 관리 시스템에 오신 것을 환영합니다.
@@ -711,7 +716,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
         onClose={() => setShowLoanRequest(false)}
         onSubmit={handleLoanRequest}
         isSubmitting={isSubmitting}
-        studentInfo={student}
+        studentInfo={safeStudent}
       />
     </div>
   )
