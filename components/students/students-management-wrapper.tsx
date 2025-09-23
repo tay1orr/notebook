@@ -32,11 +32,12 @@ export function StudentsManagementWrapper() {
         setLoading(true)
         console.log('StudentsManagement - Loading students from API...')
 
-        // 사용자 정보, 대여 목록, 사용자 목록을 동시에 가져오기
-        const [userResponse, loansResponse, usersResponse] = await Promise.all([
+        // 사용자 정보, 대여 목록, 사용자 목록, 승인 대기 사용자를 동시에 가져오기
+        const [userResponse, loansResponse, usersResponse, pendingResponse] = await Promise.all([
           fetch('/api/debug/role-check', { cache: 'no-store' }),
           fetch('/api/loans', { cache: 'no-store' }),
-          fetch('/api/users', { cache: 'no-store' })
+          fetch('/api/users', { cache: 'no-store' }),
+          fetch('/api/admin/pending-homeroom', { cache: 'no-store' })
         ])
 
         // 사용자 정보 처리
@@ -112,6 +113,40 @@ export function StudentsManagementWrapper() {
               }
             }
           })
+
+          // 승인 대기 중인 학생들 추가
+          if (pendingResponse.ok) {
+            const { pendingUsers } = await pendingResponse.json()
+            console.log('StudentsManagement - Loaded pending users:', pendingUsers.length)
+
+            pendingUsers.forEach(pendingUser => {
+              if (!studentMap.has(pendingUser.email)) {
+                const userRole = userRoles.get(pendingUser.email) || 'student'
+                const classInfo = pendingUser.class_info || {}
+                const className = classInfo.grade && classInfo.class
+                  ? `${classInfo.grade}-${classInfo.class}`
+                  : ''
+
+                studentMap.set(pendingUser.email, {
+                  id: pendingUser.email,
+                  studentNo: '',
+                  name: pendingUser.name,
+                  className: className,
+                  email: pendingUser.email,
+                  phone: '',
+                  parentPhone: '',
+                  role: userRole,
+                  currentLoan: null,
+                  loanHistory: 0,
+                  overdueCount: 0,
+                  status: 'active',
+                  allLoans: [],
+                  pendingApproval: true, // 승인 대기 중임을 표시
+                  requestedRole: pendingUser.requested_role
+                })
+              }
+            })
+          }
 
           let studentsArray = Array.from(studentMap.values())
 

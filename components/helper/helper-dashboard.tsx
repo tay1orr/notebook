@@ -29,6 +29,7 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
   const [myLoans, setMyLoans] = useState<any[]>([])
   const [selectedLoan, setSelectedLoan] = useState<any>(null)
   const [showApprovalModal, setShowApprovalModal] = useState(false)
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([])
 
   useEffect(() => {
     const loadLoans = async () => {
@@ -74,10 +75,42 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
       }
     }
 
+    const loadPendingApprovals = async () => {
+      // 담임교사나 관리자만 승인 요청을 볼 수 있음
+      if (user.role === 'homeroom' || user.role === 'admin') {
+        try {
+          const response = await fetch('/api/admin/pending-homeroom')
+          if (response.ok) {
+            const { pendingUsers } = await response.json()
+
+            // 담임교사인 경우 자기 반 학생만 필터링
+            if (user.role === 'homeroom' && user.grade && user.class) {
+              const myClassPending = pendingUsers.filter((pendingUser: any) => {
+                const classInfo = pendingUser.class_info
+                return classInfo &&
+                       classInfo.grade === parseInt(user.grade) &&
+                       classInfo.class === parseInt(user.class)
+              })
+              setPendingApprovals(myClassPending)
+            } else {
+              // 관리자는 모든 승인 요청 표시
+              setPendingApprovals(pendingUsers)
+            }
+          }
+        } catch (error) {
+          console.error('승인 요청 로드 실패:', error)
+        }
+      }
+    }
+
     loadLoans()
-    const interval = setInterval(loadLoans, 2000)
+    loadPendingApprovals()
+    const interval = setInterval(() => {
+      loadLoans()
+      loadPendingApprovals()
+    }, 2000)
     return () => clearInterval(interval)
-  }, [user.email, user.className, user.studentNo])
+  }, [user.email, user.className, user.studentNo, user.role, user.grade, user.class])
 
   // 노트북 관리 도우미/담임교사가 담당하는 반의 대여 신청 필터링
   const getHelperClassLoans = () => {
@@ -266,6 +299,27 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
             <p className="text-xs text-muted-foreground">즉시 확인 필요</p>
           </CardContent>
         </Card>
+
+        {/* 권한 승인 요청 카드 - 담임교사와 관리자만 표시 */}
+        {(user.role === 'homeroom' || user.role === 'admin') && (
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push('/admin?tab=approval')}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">권한 승인 요청</CardTitle>
+              <svg className="h-4 w-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{pendingApprovals.length}</div>
+              <p className="text-xs text-muted-foreground">
+                {user.role === 'homeroom' ? '우리 반 승인 대기' : '전체 승인 대기'}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {user.role === 'helper' && (
           <Card>

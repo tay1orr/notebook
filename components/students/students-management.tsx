@@ -283,25 +283,34 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
                       </div>
                     </TableCell>
                     <TableCell>
-                      {student.role ? (
-                        <Select
-                          value={student.role}
-                          onValueChange={(value) => handleRoleChange(student.id, value)}
-                        >
-                          <SelectTrigger className="w-28">
-                            <SelectValue placeholder={getRoleText(student.role)} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="student">학생</SelectItem>
-                            <SelectItem value="helper">노트북 관리 도우미</SelectItem>
-                            <SelectItem value="homeroom">담임교사</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
-                          역할 선택 필요
-                        </span>
-                      )}
+                      <div className="space-y-1">
+                        {student.role ? (
+                          <Select
+                            value={student.role}
+                            onValueChange={(value) => handleRoleChange(student.id, value)}
+                          >
+                            <SelectTrigger className="w-28">
+                              <SelectValue placeholder={getRoleText(student.role)} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="student">학생</SelectItem>
+                              <SelectItem value="helper">노트북 관리 도우미</SelectItem>
+                              <SelectItem value="homeroom">담임교사</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+                            역할 선택 필요
+                          </span>
+                        )}
+                        {student.pendingApproval && student.requestedRole && (
+                          <div className="text-xs">
+                            <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50">
+                              {student.requestedRole === 'homeroom' ? '담임교사' : '노트북 관리 도우미'} 승인 대기
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {student.currentLoan ? (

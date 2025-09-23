@@ -63,7 +63,18 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
       }
 
       setIsEditing(false)
-      alert('프로필이 성공적으로 업데이트되었습니다.')
+
+      // 승인이 필요한 역할 변경인지 확인
+      const needsApprovalMessage = (formData.role === 'homeroom' && user.role !== 'homeroom') ||
+                                  (formData.role === 'helper' && user.role !== 'helper')
+
+      if (needsApprovalMessage) {
+        const roleName = formData.role === 'homeroom' ? '담임교사' : '노트북 관리 도우미'
+        alert(`${roleName} 권한 신청이 완료되었습니다.\n관리자 승인 후 권한이 활성화됩니다.\n승인 대기 중에는 학생 권한으로 시스템을 이용할 수 있습니다.`)
+      } else {
+        alert('프로필이 성공적으로 업데이트되었습니다.')
+      }
+
       // 페이지 새로고침으로 업데이트된 정보 반영
       window.location.reload()
     } catch (error) {
