@@ -537,7 +537,7 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-orange-600">
-                              담임교사
+                              {getRoleText(user.requested_role)}
                             </Badge>
                           </TableCell>
                           <TableCell>
