@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const debug = searchParams.get('debug') === 'true'
 
-    const history = getBackupHistory()
+    const history = await getBackupHistory()
     console.log('📊 백업 기록 API 조회:', history.length, '개 기록')
     console.log('📋 백업 기록 상세:', history.map(h => ({
       type: h.type,
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     // 디버그 모드일 때 상태 정보도 포함
     if (debug) {
-      response.status = getBackupHistoryStatus()
+      response.status = await getBackupHistoryStatus()
     }
 
     return NextResponse.json(response)
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { type, status, table, size } = body
 
-    const newRecord = addBackupRecord({
+    const newRecord = await addBackupRecord({
       type,
       status,
       table,
@@ -91,7 +91,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    clearBackupHistory()
+    await clearBackupHistory()
     console.log('🗑️ 관리자가 백업 기록을 초기화했습니다:', user.email)
 
     return NextResponse.json({
