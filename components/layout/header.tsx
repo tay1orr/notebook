@@ -59,13 +59,25 @@ export function Header({ user }: HeaderProps) {
           console.error('대여 정보 로드 실패:', loansResponse.status, loansResponse.statusText)
         }
 
-        // 관리자 알림 (담임교사 승인 대기)
-        if (user.role === 'admin') {
+        // 사용자 관리 알림 (담임교사 승인 대기)
+        if (user.role === 'admin' || user.role === 'homeroom') {
           try {
             const adminResponse = await fetch('/api/admin/pending-homeroom', { cache: 'no-store' })
             if (adminResponse.ok) {
               const data = await adminResponse.json()
-              const pendingCount = data.pendingUsers?.length || 0
+              let pendingCount = data.pendingUsers?.length || 0
+
+              // 담임교사인 경우 자신의 반 승인 요청만 카운트
+              if (user.role === 'homeroom' && user.grade && user.class) {
+                const teacherClass = `${user.grade}-${user.class}`
+                pendingCount = data.pendingUsers?.filter((pendingUser: any) => {
+                  const userClass = pendingUser.class_info?.grade && pendingUser.class_info?.class
+                    ? `${pendingUser.class_info.grade}-${pendingUser.class_info.class}`
+                    : ''
+                  return userClass === teacherClass
+                }).length || 0
+              }
+
               setNotifications(prev => ({ ...prev, admin: pendingCount }))
             }
           } catch (adminError) {
@@ -110,9 +122,9 @@ export function Header({ user }: HeaderProps) {
     },
     {
       href: '/students',
-      label: '학생 관리',
+      label: '사용자 관리',
       roles: ['admin', 'homeroom', 'helper'],
-      badge: 0
+      badge: notifications.admin
     },
     {
       href: '/statistics',
@@ -124,7 +136,7 @@ export function Header({ user }: HeaderProps) {
       href: '/admin',
       label: '관리자',
       roles: ['admin'],
-      badge: notifications.admin
+      badge: 0
     }
   ], [notifications.loans, notifications.admin])
 

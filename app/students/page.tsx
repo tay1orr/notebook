@@ -1,6 +1,6 @@
 import { MainLayout } from '@/components/layout/main-layout'
 import { requireApprovedHomeroom } from '@/lib/auth'
-import { StudentsManagementWrapper } from '@/components/students/students-management-wrapper'
+import { IntegratedUserManagementWrapper } from '@/components/users/integrated-user-management-wrapper'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -12,7 +12,7 @@ export default async function StudentsPage() {
     return (
       <MainLayout>
         <div className="container mx-auto py-6">
-          <StudentsManagementWrapper />
+          <IntegratedUserManagementWrapper />
         </div>
       </MainLayout>
     )

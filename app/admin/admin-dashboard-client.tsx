@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { IntegratedUserManagementWrapper } from '@/components/users/integrated-user-management-wrapper'
 import { BackupManagement } from '@/components/admin/backup-management'
 
 interface AdminDashboardClientProps {
@@ -17,36 +16,13 @@ interface AdminDashboardClientProps {
 }
 
 export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
-  const [pendingHomeroomCount, setPendingHomeroomCount] = useState(0)
-  const [activeTab, setActiveTab] = useState('users')
+  const [activeTab, setActiveTab] = useState('audit')
   const [backupRefreshTrigger, setBackupRefreshTrigger] = useState(0)
   const [lastBackupInfo, setLastBackupInfo] = useState<{
     type: string
     timestamp: string
   } | null>(null)
   const [isLoadingBackupInfo, setIsLoadingBackupInfo] = useState(true)
-
-  // 담임교사 승인 대기 건수 실시간 로드
-  useEffect(() => {
-    const loadPendingHomeroomCount = async () => {
-      try {
-        const response = await fetch('/api/admin/pending-homeroom', { cache: 'no-store' })
-        if (response.ok) {
-          const data = await response.json()
-          const count = data.pendingUsers?.length || 0
-          setPendingHomeroomCount(count)
-        }
-      } catch (error) {
-        console.error('Admin dashboard pending homeroom count error:', error)
-      }
-    }
-
-    loadPendingHomeroomCount()
-
-    // 5초마다 업데이트
-    const interval = setInterval(loadPendingHomeroomCount, 5000)
-    return () => clearInterval(interval)
-  }, [])
 
   // 최근 백업 정보 로드
   useEffect(() => {
@@ -276,14 +252,6 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="users">
-            사용자 관리
-            {pendingHomeroomCount > 0 && (
-              <Badge variant="destructive" className="ml-2">
-                {pendingHomeroomCount}
-              </Badge>
-            )}
-          </TabsTrigger>
           <TabsTrigger value="audit">
             감사 로그 ({auditLogs.length})
           </TabsTrigger>
@@ -294,11 +262,6 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
             시스템 설정
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="users" className="space-y-4">
-          <IntegratedUserManagementWrapper />
-        </TabsContent>
-
 
         <TabsContent value="audit" className="space-y-4">
           <Card>
