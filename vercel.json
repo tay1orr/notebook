@@ -6,6 +6,14 @@
   "functions": {
     "app/api/**": {
       "maxDuration": 30
+    },
+    "pages/404": {
+      "runtime": "nodejs18.x"
+    },
+    "pages/_error": {
+      "runtime": "nodejs18.x"
     }
-  }
+  },
+  "cleanUrls": true,
+  "trailingSlash": false
 }
