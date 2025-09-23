@@ -37,6 +37,7 @@ export async function GET(
     const deviceHistory: any[] = []
 
     console.log('🔍 DEVICE HISTORY - Fetching history for device:', deviceId)
+    console.log('🔍 DEVICE HISTORY - Current user:', user.email, 'Role:', currentRole)
 
     // 기기 번호에서 학년과 반 추출 (예: ICH-20111 -> 2학년 1반)
     let deviceGrade: number | null = null
@@ -45,6 +46,7 @@ export async function GET(
     if (deviceMatch) {
       deviceGrade = parseInt(deviceMatch[1])
       deviceClass = parseInt(deviceMatch[2])
+      console.log('🔍 DEVICE HISTORY - Device parsed:', { deviceGrade, deviceClass, match: deviceMatch })
     }
 
     // 담임교사나 도우미인 경우 자신의 반 기기만 접근 가능 (관리자는 제외)
@@ -55,20 +57,28 @@ export async function GET(
         .eq('user_id', user.id)
         .single()
 
+      console.log('🔍 DEVICE HISTORY - User profile:', userProfile)
+
       if (userProfile?.grade && userProfile?.class) {
         const userGrade = parseInt(userProfile.grade)
         const userClass = parseInt(userProfile.class)
 
+        console.log('🔍 DEVICE HISTORY - User class info:', { userGrade, userClass })
+        console.log('🔍 DEVICE HISTORY - Comparing:', { deviceGrade, deviceClass, userGrade, userClass })
+
         // 담임교사는 승인된 경우만 접근 가능
         if (currentRole === 'homeroom' && !userProfile.approved_homeroom) {
+          console.log('🔍 DEVICE HISTORY - Homeroom not approved')
           return NextResponse.json({ error: 'Unauthorized - Homeroom approval required' }, { status: 401 })
         }
 
         // 해당 기기가 자신의 반 기기인지 확인
         if (deviceGrade !== userGrade || deviceClass !== userClass) {
+          console.log('🔍 DEVICE HISTORY - Class mismatch:', { deviceGrade, deviceClass, userGrade, userClass })
           return NextResponse.json({ error: 'Unauthorized - Class mismatch' }, { status: 401 })
         }
       } else {
+        console.log('🔍 DEVICE HISTORY - No class information:', userProfile)
         return NextResponse.json({ error: 'Unauthorized - No class information' }, { status: 401 })
       }
     }
