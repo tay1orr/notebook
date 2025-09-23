@@ -17,19 +17,23 @@ let globalBackupHistory: Array<{
 // 초기화 함수 - 서버 시작시 기본 데이터 설정
 function initializeBackupHistory() {
   if (globalBackupHistory.length === 0) {
-    // 기본 더미 데이터 (자동 백업 스케줄 표시용)
+    // 고정된 더미 데이터 (실제 자동 백업 시간: 새벽 2시)
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    yesterday.setHours(2, 0, 0, 0) // 어제 새벽 2시로 설정
+
     globalBackupHistory = [
       {
-        id: 'init-auto-' + Date.now(),
+        id: 'init-auto-fixed', // 고정 ID로 중복 방지
         type: 'auto',
         status: 'success',
-        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        timestamp: yesterday.toISOString(),
         triggeredBy: 'system',
         table: 'all',
         size: 850000
       }
     ]
-    console.log('🔧 백업 기록 저장소 초기화 완료')
+    console.log('🔧 백업 기록 저장소 초기화 완료 - 고정 더미 데이터')
   }
 }
 
@@ -55,11 +59,14 @@ export function addBackupRecord(record: {
   }
 
   // 더 강력한 중복 방지:
-  // 1. 동일한 ID가 이미 존재하는지 확인
+  // 1. 동일한 ID가 이미 존재하는지 확인 (고정 더미 데이터 제외)
   // 2. 최근 30초 내에 동일한 타입과 트리거의 백업이 있는지 확인
   const recentThreshold = Date.now() - 30000 // 30초
-  const isDuplicateId = globalBackupHistory.some(existing => existing.id === newRecord.id)
+  const isDuplicateId = globalBackupHistory.some(existing =>
+    existing.id === newRecord.id && existing.id !== 'init-auto-fixed'
+  )
   const isDuplicateRecent = globalBackupHistory.some(existing =>
+    existing.id !== 'init-auto-fixed' && // 고정 더미 데이터 제외
     existing.type === record.type &&
     existing.triggeredBy === newRecord.triggeredBy &&
     Math.abs(new Date(existing.timestamp).getTime() - new Date(newRecord.timestamp).getTime()) < 30000
@@ -68,7 +75,7 @@ export function addBackupRecord(record: {
   if (isDuplicateId || isDuplicateRecent) {
     console.log('⚠️ 중복 백업 기록 방지:', newRecord)
     const latest = globalBackupHistory.find(h =>
-      h.type === record.type && h.triggeredBy === newRecord.triggeredBy
+      h.id !== 'init-auto-fixed' && h.type === record.type && h.triggeredBy === newRecord.triggeredBy
     ) || globalBackupHistory[0]
     return latest
   }
