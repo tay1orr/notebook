@@ -52,16 +52,23 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
   useEffect(() => {
     const loadLastBackupInfo = async () => {
       try {
+        console.log('🔄 대시보드 백업 정보 폴링 시작')
         const response = await fetch('/api/backup/history')
         if (response.ok) {
           const data = await response.json()
           const history = data.history || []
+          console.log('📊 대시보드 백업 기록 폴링 결과:', history.length, '개 기록')
           if (history.length > 0) {
             const latest = history[0]
-            setLastBackupInfo({
+            console.log('📍 최신 백업 기록:', latest)
+            const newBackupInfo = {
               type: latest.type === 'manual' ? '수동' : '자동',
               timestamp: latest.timestamp
-            })
+            }
+            console.log('🔄 대시보드 백업 정보 업데이트:', newBackupInfo)
+            setLastBackupInfo(newBackupInfo)
+          } else {
+            console.log('⚠️ 백업 기록이 없음 - 현재 정보 유지')
           }
         }
       } catch (error) {

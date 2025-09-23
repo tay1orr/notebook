@@ -14,7 +14,12 @@ export async function GET(request: NextRequest) {
     }
 
     const history = getBackupHistory()
-    console.log('📊 백업 기록 조회:', history.length, '개 기록')
+    console.log('📊 백업 기록 API 조회:', history.length, '개 기록')
+    console.log('📋 백업 기록 상세:', history.map(h => ({
+      type: h.type,
+      timestamp: h.timestamp,
+      triggeredBy: h.triggeredBy
+    })))
 
     return NextResponse.json({
       history: history

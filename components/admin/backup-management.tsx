@@ -453,7 +453,7 @@ export function BackupManagement({ refreshTrigger }: BackupManagementProps) {
           {/* 백업 기록 */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">최근 백업 기록</CardTitle>
+              <CardTitle className="text-base">백업 기록</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3 max-h-80 overflow-y-auto">
