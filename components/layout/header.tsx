@@ -44,8 +44,16 @@ export function Header({ user }: HeaderProps) {
                 const loanClass = loan.class_name || loan.className || ''
                 return loanStatus === 'requested' && loanClass === teacherClass
               }).length
-            } else if (user.role === 'admin' || user.role === 'helper') {
-              // 관리자/노트북 관리 도우미: 전체 승인 대기 신청
+            } else if (user.role === 'helper' && user.grade && user.class) {
+              // 노트북 관리 도우미: 자신의 반 승인 대기 신청만
+              const helperClass = `${user.grade}-${user.class}`
+              pendingCount = loans.filter((loan: any) => {
+                const loanStatus = loan.status?.toLowerCase()
+                const loanClass = loan.class_name || loan.className || ''
+                return loanStatus === 'requested' && loanClass === helperClass
+              }).length
+            } else if (user.role === 'admin') {
+              // 관리자: 전체 승인 대기 신청
               pendingCount = loans.filter((loan: any) => {
                 const loanStatus = loan.status?.toLowerCase()
                 return loanStatus === 'requested'
