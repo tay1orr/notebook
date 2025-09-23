@@ -245,10 +245,10 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
             <Separator />
 
             {/* 학급 정보 */}
-            {(user.role === 'student' || user.role === 'homeroom' || isEditing) && (
+            {(user.role === 'student' || user.role === 'homeroom' || user.role === 'helper' || isEditing) && (
               <div className="space-y-4">
                 <h4 className="font-medium">
-                  {user.role === 'homeroom' || formData.role === 'homeroom' ? '담당 학급 정보' : '학급 정보'}
+                  {user.role === 'homeroom' || formData.role === 'homeroom' || user.role === 'helper' || formData.role === 'helper' ? '담당 학급 정보' : '학급 정보'}
                 </h4>
 
                 {isEditing ? (
