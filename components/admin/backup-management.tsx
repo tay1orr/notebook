@@ -456,7 +456,7 @@ export function BackupManagement({ refreshTrigger }: BackupManagementProps) {
               <CardTitle className="text-base">백업 기록</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 max-h-80 overflow-y-auto">
+              <div className="space-y-3 max-h-60 overflow-y-auto">
                 {backupHistory.length > 0 ? (
                   backupHistory.map((record) => (
                     <div key={record.id} className="flex items-center justify-between p-3 border rounded-lg">

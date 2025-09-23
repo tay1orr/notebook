@@ -25,6 +25,7 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
     type: string
     timestamp: string
   } | null>(null)
+  const [isLoadingBackupInfo, setIsLoadingBackupInfo] = useState(true)
 
   // 담임교사 승인 대기 건수 실시간 로드
   useEffect(() => {
@@ -53,6 +54,7 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
     const loadLastBackupInfo = async () => {
       try {
         console.log('🔄 대시보드 백업 정보 폴링 시작')
+        setIsLoadingBackupInfo(true)
         const response = await fetch('/api/backup/history')
         if (response.ok) {
           const data = await response.json()
@@ -74,6 +76,9 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
         }
       } catch (error) {
         console.error('Latest backup info load error:', error)
+        setLastBackupInfo(null)
+      } finally {
+        setIsLoadingBackupInfo(false)
       }
     }
 
@@ -151,6 +156,7 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
                   // 백업 완료 후 최근 백업 정보 새로고침
                   setTimeout(async () => {
                     try {
+                      setIsLoadingBackupInfo(true)
                       const historyResponse = await fetch('/api/backup/history')
                       if (historyResponse.ok) {
                         const data = await historyResponse.json()
@@ -169,6 +175,8 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
                       setBackupRefreshTrigger(prev => prev + 1)
                     } catch (refreshError) {
                       console.error('백업 정보 새로고침 실패:', refreshError)
+                    } finally {
+                      setIsLoadingBackupInfo(false)
                     }
                   }, 1000) // 1초 후 새로고침
                 } else {
@@ -228,7 +236,16 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
             </svg>
           </CardHeader>
           <CardContent>
-            {lastBackupInfo ? (
+            {isLoadingBackupInfo ? (
+              <>
+                <div className="text-2xl font-bold text-blue-600">
+                  로딩 중
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  백업 정보를 가져오는 중...
+                </p>
+              </>
+            ) : lastBackupInfo ? (
               <>
                 <div className="text-2xl font-bold text-green-600">
                   {lastBackupInfo.type}
