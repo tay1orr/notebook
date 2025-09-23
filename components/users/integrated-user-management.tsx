@@ -49,6 +49,9 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
   const [loading, setLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null)
   const [showRoleModal, setShowRoleModal] = useState(false)
+  const [showUserLogsModal, setShowUserLogsModal] = useState(false)
+  const [userLogs, setUserLogs] = useState<any[]>([])
+  const [logsLoading, setLogsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const [activeTab, setActiveTab] = useState('all-users')
@@ -270,6 +273,25 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
     }
   }
 
+  const loadUserLogs = async (userId: string) => {
+    setLogsLoading(true)
+    try {
+      const response = await fetch(`/api/users/${userId}/logs`)
+      if (response.ok) {
+        const logs = await response.json()
+        setUserLogs(logs)
+      } else {
+        setUserLogs([])
+        console.error('Failed to load user logs')
+      }
+    } catch (error) {
+      console.error('Error loading user logs:', error)
+      setUserLogs([])
+    } finally {
+      setLogsLoading(false)
+    }
+  }
+
   const handleApprovalAction = async (userId: string, action: 'approve' | 'reject') => {
     try {
       const response = await fetch('/api/admin/pending-approvals', {
@@ -431,9 +453,27 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
-                              <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                                {getRoleText(user.role)}
-                              </Badge>
+                              {currentUser.role === 'admin' ? (
+                                <Select
+                                  value={user.role}
+                                  onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
+                                >
+                                  <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="student">학생</SelectItem>
+                                    <SelectItem value="teacher">교사</SelectItem>
+                                    <SelectItem value="helper">노트북 관리 도우미</SelectItem>
+                                    <SelectItem value="homeroom">담임교사</SelectItem>
+                                    <SelectItem value="admin">관리자</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                                  {getRoleText(user.role)}
+                                </Badge>
+                              )}
                               {user.pendingApproval && user.requestedRole && (
                                 <Badge variant="outline" className="text-orange-600">
                                   {getRoleText(user.requestedRole)} 승인 대기
@@ -464,17 +504,20 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                           <TableCell>{user.createdAt || '-'}</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
-                              {currentUser.role === 'admin' && (
+                              {(currentUser.role === 'admin' || currentUser.role === 'homeroom') && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
                                     setSelectedUser(user)
-                                    setShowRoleModal(true)
+                                    setShowUserLogsModal(true)
+                                    loadUserLogs(user.id)
                                   }}
+                                  title="사용자 로그 보기"
                                 >
                                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                   </svg>
                                 </Button>
                               )}
@@ -620,6 +663,53 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                 ))}
               </div>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 사용자 로그 모달 */}
+      <Dialog open={showUserLogsModal} onOpenChange={setShowUserLogsModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>사용자 활동 로그</DialogTitle>
+            <DialogDescription>
+              {selectedUser?.name}님의 활동 기록입니다.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {logsLoading ? (
+              <div className="text-center py-8">
+                <div className="text-muted-foreground">로그를 불러오는 중...</div>
+              </div>
+            ) : userLogs.length > 0 ? (
+              <div className="space-y-2">
+                {userLogs.map((log, index) => (
+                  <div key={index} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <div className="font-medium">{log.action}</div>
+                        <div className="text-sm text-muted-foreground">{log.details}</div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(log.timestamp).toLocaleString('ko-KR')}
+                      </div>
+                    </div>
+                    {log.metadata && (
+                      <div className="text-xs bg-muted p-2 rounded">
+                        <pre className="whitespace-pre-wrap">
+                          {JSON.stringify(log.metadata, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                활동 기록이 없습니다.
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

@@ -97,6 +97,34 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
     setIsEditing(false)
   }
 
+  const handleCancelApplication = async () => {
+    if (!confirm('정말로 신청을 취소하시겠습니까?')) {
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch('/api/profile/cancel-application', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('신청 취소 실패')
+      }
+
+      alert('신청이 취소되었습니다.')
+      window.location.reload()
+    } catch (error) {
+      console.error('신청 취소 실패:', error)
+      alert('신청 취소 중 오류가 발생했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
 
   const getRoleText = (role: string) => {
     const roleMap = {
@@ -169,9 +197,19 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
                     {getRoleText(user.role)}
                   </Badge>
                   {user.pendingApproval && (
-                    <Badge variant="outline" className="text-orange-600 border-orange-300">
-                      {user.pendingRole === 'homeroom' ? '담임교사' : '노트북 관리 도우미'} 승인 대기 중
-                    </Badge>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline" className="text-orange-600 border-orange-300">
+                        {user.pendingRole === 'homeroom' ? '담임교사' : '노트북 관리 도우미'} 승인 대기 중
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCancelApplication()}
+                        className="text-red-600 hover:text-red-700 border-red-300"
+                      >
+                        신청 취소
+                      </Button>
+                    </div>
                   )}
                   {isAdmin && (
                     <Badge variant="outline" className="text-blue-600 border-blue-300">
