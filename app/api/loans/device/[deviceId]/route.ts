@@ -47,11 +47,11 @@ export async function GET(
       deviceClass = parseInt(deviceMatch[2])
     }
 
-    // 담임교사나 도우미인 경우 자신의 반 기기만 접근 가능
-    if ((currentRole === 'homeroom' || currentRole === 'helper') && userRole) {
+    // 담임교사나 도우미인 경우 자신의 반 기기만 접근 가능 (관리자는 제외)
+    if (!isAdmin && (currentRole === 'homeroom' || currentRole === 'helper')) {
       const { data: userProfile } = await supabase
         .from('user_profiles')
-        .select('grade, class')
+        .select('grade, class, approved_homeroom')
         .eq('user_id', user.id)
         .single()
 
@@ -60,16 +60,8 @@ export async function GET(
         const userClass = parseInt(userProfile.class)
 
         // 담임교사는 승인된 경우만 접근 가능
-        if (currentRole === 'homeroom') {
-          const { data: homeroomApproval } = await supabase
-            .from('user_profiles')
-            .select('approved_homeroom')
-            .eq('user_id', user.id)
-            .single()
-
-          if (!homeroomApproval?.approved_homeroom) {
-            return NextResponse.json({ error: 'Unauthorized - Homeroom approval required' }, { status: 401 })
-          }
+        if (currentRole === 'homeroom' && !userProfile.approved_homeroom) {
+          return NextResponse.json({ error: 'Unauthorized - Homeroom approval required' }, { status: 401 })
         }
 
         // 해당 기기가 자신의 반 기기인지 확인
