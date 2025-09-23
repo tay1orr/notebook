@@ -306,25 +306,15 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
         throw new Error('Failed to process approval')
       }
 
-      // 승인 대기 목록에서 제거
-      setPendingApprovals(prev => prev.filter(p => p.id !== userId))
-
-      // 사용자 목록 업데이트
+      // 승인 처리 완료 후 데이터 새로고침
       if (action === 'approve') {
-        setUsers(prev => prev.map(user =>
-          user.id === userId
-            ? { ...user, role: user.requestedRole || 'homeroom', pendingApproval: false }
-            : user
-        ))
         alert('승인이 완료되었습니다.')
       } else {
-        setUsers(prev => prev.map(user =>
-          user.id === userId
-            ? { ...user, pendingApproval: false }
-            : user
-        ))
         alert('승인 요청이 거절되었습니다.')
       }
+
+      // 페이지 새로고침으로 최신 데이터 반영
+      window.location.reload()
     } catch (error) {
       console.error('Failed to process approval:', error)
       alert('승인 처리 중 오류가 발생했습니다.')
@@ -466,7 +456,6 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                                     <SelectItem value="teacher">교사</SelectItem>
                                     <SelectItem value="helper">노트북 관리 도우미</SelectItem>
                                     <SelectItem value="homeroom">담임교사</SelectItem>
-                                    <SelectItem value="admin">관리자</SelectItem>
                                   </SelectContent>
                                 </Select>
                               ) : (
