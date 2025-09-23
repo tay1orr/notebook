@@ -9,10 +9,25 @@ export async function GET() {
     const supabase = createServerClient()
     const adminSupabase = createAdminClient()
 
-    // 현재 사용자가 관리자인지 확인
+    // 현재 사용자가 관리자 또는 담임교사인지 확인
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (authError || !user || user.email !== 'taylorr@gclass.ice.go.kr') {
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // 사용자 역할 확인
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+
+    const currentRole = userRole?.role || 'student'
+    const isAdmin = user.email === 'taylorr@gclass.ice.go.kr'
+    const isHomeroom = currentRole === 'homeroom'
+
+    if (!isAdmin && !isHomeroom) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -57,10 +72,25 @@ export async function POST(request: Request) {
     const supabase = createServerClient()
     const adminSupabase = createAdminClient()
 
-    // 현재 사용자가 관리자인지 확인
+    // 현재 사용자가 관리자 또는 담임교사인지 확인
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (authError || !user || user.email !== 'taylorr@gclass.ice.go.kr') {
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // 사용자 역할 확인
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+
+    const currentRole = userRole?.role || 'student'
+    const isAdmin = user.email === 'taylorr@gclass.ice.go.kr'
+    const isHomeroom = currentRole === 'homeroom'
+
+    if (!isAdmin && !isHomeroom) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
