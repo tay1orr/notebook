@@ -117,7 +117,6 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
     // 담임교사인 경우
     if (user.role === 'homeroom' && user.isApprovedHomeroom && user.grade && user.class) {
       const teacherClass = `${user.grade}-${user.class}`
-      console.log(`Dashboard - Filtering for homeroom teacher class: ${teacherClass}`)
       return loans.filter((loan: any) => {
         const loanClass = loan.class_name || loan.className
         return loanClass === teacherClass
@@ -126,7 +125,6 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
     // 노트북 관리 도우미인 경우 - user.grade와 user.class 사용
     if (user.role === 'helper' && user.grade && user.class) {
       const helperClass = `${user.grade}-${user.class}`
-      console.log(`Dashboard - Filtering for helper class: ${helperClass}`)
       return loans.filter((loan: any) => {
         const loanClass = loan.class_name || loan.className
         return loanClass === helperClass

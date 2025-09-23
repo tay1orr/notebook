@@ -336,21 +336,6 @@ export function HomeLoanRequestForm({
               const hasNumberMismatch = profileStudentNo && currentStudentNo && profileStudentNo !== currentStudentNo
               const shouldShowWarning = (hasGrade && hasClass && hasClassMismatch) || (hasNumber && hasNumberMismatch)
 
-              // 디버깅을 위한 콘솔 출력 - 더 자세한 정보
-              console.log('🔍 HOME LOAN 경고 검증 디버그:', {
-                '1. 전달받은 studentInfo': studentInfo,
-                '2. profileClass (프로필 학급)': profileClass,
-                '3. currentClass (현재 입력 학급)': currentClass,
-                '4. profileStudentNo (프로필 번호)': profileStudentNo,
-                '5. currentStudentNo (현재 입력 번호)': currentStudentNo,
-                '6. hasGrade': hasGrade,
-                '7. hasClass': hasClass,
-                '8. hasNumber': hasNumber,
-                '9. hasClassMismatch': hasClassMismatch,
-                '10. hasNumberMismatch': hasNumberMismatch,
-                '11. shouldShowWarning': shouldShowWarning,
-                '12. 경고 조건식': `(${hasGrade} && ${hasClass} && ${hasClassMismatch}) || (${hasNumber} && ${hasNumberMismatch})`
-              })
 
               return (
                 <div className="space-y-2">

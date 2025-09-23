@@ -94,30 +94,24 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
         // 담임교사인 경우 승인된 사용자만 필터링 권한 부여
         if (userRole === 'homeroom' && user.isApprovedHomeroom && user.grade && user.class) {
           const teacherClass = `${user.grade}-${user.class}`
-          console.log(`LoansManagement - Filtering for homeroom teacher class: ${teacherClass}`)
           filteredLoans = loans.filter((loan: any) => {
             const loanClass = loan.class_name || loan.className
             return loanClass === teacherClass
           })
-          console.log(`LoansManagement - Filtered loans for ${teacherClass}:`, filteredLoans.length)
         } else if (userRole === 'helper') {
           if (user.grade && user.class) {
             // 노트북 관리 도우미: 자신의 반 신청만
             const helperClass = `${user.grade}-${user.class}`
-            console.log(`LoansManagement - Filtering for helper class: ${helperClass}`)
             filteredLoans = loans.filter((loan: any) => {
               const loanClass = loan.class_name || loan.className
               return loanClass === helperClass
             })
-            console.log(`LoansManagement - Filtered loans for helper ${helperClass}:`, filteredLoans.length)
           } else {
             // 학급 정보가 없는 노트북 관리 도우미는 아무 신청도 볼 수 없음
-            console.log('LoansManagement - Helper without class info, no access')
             filteredLoans = []
           }
         } else {
           // 승인되지 않은 담임교사는 모든 대여 목록을 볼 수 없음
-          console.log('LoansManagement - User not approved for homeroom access')
           filteredLoans = []
         }
       }

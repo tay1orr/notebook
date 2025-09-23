@@ -61,7 +61,6 @@ export function Header({ user }: HeaderProps) {
             }
           }
 
-          console.log(`🔔 알림 배지 업데이트: ${user.role} 역할, ${pendingCount}건의 대여 신청`)
           setNotifications(prev => ({ ...prev, loans: pendingCount }))
         } else {
           console.error('대여 정보 로드 실패:', loansResponse.status, loansResponse.statusText)
