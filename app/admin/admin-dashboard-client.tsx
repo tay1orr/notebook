@@ -68,7 +68,8 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
             console.log('🔄 대시보드 백업 정보 업데이트:', newBackupInfo)
             setLastBackupInfo(newBackupInfo)
           } else {
-            console.log('⚠️ 백업 기록이 없음 - 현재 정보 유지')
+            console.log('⚠️ 백업 기록이 없음 - 상태 초기화')
+            setLastBackupInfo(null)
           }
         }
       } catch (error) {
@@ -95,7 +96,6 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
 
   const systemStats = {
     totalDevices: totalDevices,
-    lastBackup: new Date().toISOString().slice(0, 19).replace('T', ' '),
     dbSize: '0KB'
   }
 
@@ -228,22 +228,32 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {lastBackupInfo?.type || '자동'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {lastBackupInfo ?
-                new Date(lastBackupInfo.timestamp).toLocaleString('ko-KR', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit'
-                }) :
-                systemStats.lastBackup
-              }
-            </p>
+            {lastBackupInfo ? (
+              <>
+                <div className="text-2xl font-bold text-green-600">
+                  {lastBackupInfo.type}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(lastBackupInfo.timestamp).toLocaleString('ko-KR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                  })}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-muted-foreground">
+                  백업 없음
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  백업 기록이 없습니다
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
