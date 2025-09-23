@@ -59,10 +59,10 @@ export function Header({ user }: HeaderProps) {
           console.error('대여 정보 로드 실패:', loansResponse.status, loansResponse.statusText)
         }
 
-        // 사용자 관리 알림 (담임교사 승인 대기)
+        // 사용자 관리 알림 (담임교사 + 노트북 관리 도우미 승인 대기)
         if (user.role === 'admin' || user.role === 'homeroom') {
           try {
-            const adminResponse = await fetch('/api/admin/pending-homeroom', { cache: 'no-store' })
+            const adminResponse = await fetch('/api/admin/pending-approvals', { cache: 'no-store' })
             if (adminResponse.ok) {
               const data = await adminResponse.json()
               let pendingCount = data.pendingUsers?.length || 0
@@ -158,7 +158,7 @@ export function Header({ user }: HeaderProps) {
   }, [])
 
   const filteredNavigation = useMemo(() =>
-    navigationItems.filter(item => item.roles.includes(user.role)),
+    navigationItems.filter(item => user.role && item.roles.includes(user.role as any)),
     [navigationItems, user.role]
   )
 

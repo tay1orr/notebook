@@ -18,6 +18,7 @@ interface ProfileManagementProps {
     class?: string
     studentNo?: string
     pendingApproval?: boolean
+    pendingRole?: string
   }
 }
 
@@ -169,7 +170,7 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
                   </Badge>
                   {user.pendingApproval && (
                     <Badge variant="outline" className="text-orange-600 border-orange-300">
-                      승인 대기 중
+                      {user.pendingRole === 'homeroom' ? '담임교사' : '노트북 관리 도우미'} 승인 대기 중
                     </Badge>
                   )}
                   {isAdmin && (

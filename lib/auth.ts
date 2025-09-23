@@ -7,12 +7,14 @@ export interface AuthUser {
   id: string
   email: string
   name: string
-  role: UserRole
+  role: UserRole | ''
   class_id: string | null
   grade?: string
   class?: string
   studentNo?: string
   pendingHomeroom?: boolean
+  pendingApproval?: boolean
+  pendingRole?: string
   isApprovedHomeroom?: boolean
 }
 
@@ -34,7 +36,7 @@ export async function getCurrentUserForAPI(): Promise<AuthUser | null> {
     }
 
     // Get user role from user_roles table using admin client
-    let role: UserRole = ''
+    let role: UserRole | '' = ''
     let grade: string | undefined
     let className: string | undefined
     let studentNo: string | undefined
@@ -84,6 +86,23 @@ export async function getCurrentUserForAPI(): Promise<AuthUser | null> {
       hasClassInfo: !!(grade || className || studentNo)
     })
 
+    // 승인 상태 확인 (API용)
+    const pendingHomeroom = user.user_metadata?.pending_homeroom?.status === 'pending'
+    const pendingHelper = user.user_metadata?.pending_helper?.status === 'pending'
+    const approvedHomeroom = user.user_metadata?.approved_homeroom === true
+
+    // 승인 대기 중인 역할 확인
+    let pendingApproval = false
+    let pendingRole = undefined
+
+    if (pendingHomeroom) {
+      pendingApproval = true
+      pendingRole = 'homeroom'
+    } else if (pendingHelper) {
+      pendingApproval = true
+      pendingRole = 'helper'
+    }
+
     return {
       id: user.id,
       email: user.email!,
@@ -93,8 +112,10 @@ export async function getCurrentUserForAPI(): Promise<AuthUser | null> {
       grade,
       class: className,
       studentNo,
-      pendingHomeroom: user.user_metadata?.pending_homeroom?.status === 'pending',
-      isApprovedHomeroom: user.user_metadata?.approved_homeroom === true
+      pendingHomeroom,
+      pendingApproval,
+      pendingRole,
+      isApprovedHomeroom: approvedHomeroom
     }
   } catch (error) {
     console.error('🔍 API AUTH - Error getting user for API:', error)
@@ -114,7 +135,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     }
 
     // Get user role and class info from user_roles table using admin client
-    let role: UserRole = ''
+    let role: UserRole | '' = ''
     let grade: string | undefined
     let className: string | undefined
     let studentNo: string | undefined
@@ -178,12 +199,28 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       studentNo
     })
 
-    // 담임교사 승인 상태 확인
+    // 승인 상태 확인
     const pendingHomeroom = user.user_metadata?.pending_homeroom?.status === 'pending'
+    const pendingHelper = user.user_metadata?.pending_helper?.status === 'pending'
     const approvedHomeroom = user.user_metadata?.approved_homeroom === true
 
-    console.log('🔍 AUTH DEBUG - Homeroom status:', {
+    // 승인 대기 중인 역할 확인
+    let pendingApproval = false
+    let pendingRole = undefined
+
+    if (pendingHomeroom) {
+      pendingApproval = true
+      pendingRole = 'homeroom'
+    } else if (pendingHelper) {
+      pendingApproval = true
+      pendingRole = 'helper'
+    }
+
+    console.log('🔍 AUTH DEBUG - Approval status:', {
       pendingHomeroom,
+      pendingHelper,
+      pendingApproval,
+      pendingRole,
       approvedHomeroom,
       metadata: user.user_metadata
     })
@@ -198,6 +235,8 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       class: className,
       studentNo,
       pendingHomeroom,
+      pendingApproval,
+      pendingRole,
       isApprovedHomeroom: approvedHomeroom
     }
   } catch (error) {
@@ -224,7 +263,7 @@ export async function requireAuth(): Promise<AuthUser> {
 export async function requireRole(allowedRoles: UserRole[]): Promise<AuthUser> {
   const user = await requireAuth()
 
-  if (!allowedRoles.includes(user.role)) {
+  if (!user.role || !allowedRoles.includes(user.role as UserRole)) {
     redirect('/unauthorized')
   }
 
@@ -239,7 +278,7 @@ export async function requireApprovedHomeroom(allowedRoles: UserRole[]): Promise
     redirect('/unauthorized')
   }
 
-  if (!allowedRoles.includes(user.role)) {
+  if (!user.role || !allowedRoles.includes(user.role as UserRole)) {
     redirect('/unauthorized')
   }
 
@@ -262,8 +301,9 @@ export function isAllowedDomain(email: string): boolean {
   return domain === allowedDomain
 }
 
-export function hasPermission(userRole: UserRole, action: string, resource?: string): boolean {
-  const permissions: Record<UserRole, string[]> = {
+export function hasPermission(userRole: UserRole | '', action: string, resource?: string): boolean {
+  const permissions: Record<UserRole | '', string[]> = {
+    '': [],
     admin: ['*'],
     homeroom: [
       'loans:read',
@@ -297,7 +337,7 @@ export function hasPermission(userRole: UserRole, action: string, resource?: str
     ]
   }
 
-  const userPermissions = permissions[userRole] || []
+  const userPermissions = permissions[userRole as UserRole | ''] || []
 
   if (userPermissions.includes('*')) {
     return true

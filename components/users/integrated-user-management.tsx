@@ -63,7 +63,7 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
         const [usersResponse, loansResponse, pendingResponse] = await Promise.all([
           fetch('/api/users', { cache: 'no-store' }),
           fetch('/api/loans', { cache: 'no-store' }),
-          fetch('/api/admin/pending-homeroom', { cache: 'no-store' })
+          fetch('/api/admin/pending-approvals', { cache: 'no-store' })
         ])
 
         let allUsers: UserData[] = []
@@ -176,7 +176,7 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
               allUsers[existingUserIndex] = {
                 ...allUsers[existingUserIndex],
                 pendingApproval: true,
-                requestedRole: pendingUser.class_info?.requested_role || 'homeroom'
+                requestedRole: pendingUser.requested_role || 'homeroom'
               }
             } else {
               // 새로운 승인 대기 사용자 추가
@@ -195,7 +195,7 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                 status: 'active',
                 allLoans: [],
                 pendingApproval: true,
-                requestedRole: 'homeroom'
+                requestedRole: pendingUser.requested_role || 'homeroom'
               })
             }
           })
@@ -272,7 +272,7 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
 
   const handleApprovalAction = async (userId: string, action: 'approve' | 'reject') => {
     try {
-      const response = await fetch('/api/admin/pending-homeroom', {
+      const response = await fetch('/api/admin/pending-approvals', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

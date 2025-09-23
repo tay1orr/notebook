@@ -1,5 +1,5 @@
 // 공통 타입 정의
-export type UserRole = 'admin' | 'homeroom' | 'helper' | 'teacher' | 'student' | ''
+export type UserRole = 'admin' | 'homeroom' | 'helper' | 'teacher' | 'student'
 
 export type LoanStatus = 'requested' | 'approved' | 'picked_up' | 'returned' | 'rejected' | 'cancelled' | 'overdue'
 
