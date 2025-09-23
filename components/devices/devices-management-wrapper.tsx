@@ -125,6 +125,8 @@ export function DevicesManagementWrapper({ user: propUser }: DevicesManagementWr
               })
 
             }
+          }
+
           setDevices(updatedDeviceList)
 
           // 통계 계산
