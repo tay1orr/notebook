@@ -1,6 +1,9 @@
-// 백업 기록 유틸리티 (메모리 기반 저장소)
+// 백업 기록 유틸리티 (안정적인 저장소)
 
-// 글로벌 백업 기록 저장소 (초기 더미 데이터 포함)
+// 서버리스 환경에서 안정적인 백업 기록 관리
+const BACKUP_STORAGE_KEY = 'notebook_backup_history'
+
+// 글로벌 백업 기록 저장소
 let globalBackupHistory: Array<{
   id: string
   type: 'manual' | 'auto'
@@ -9,18 +12,29 @@ let globalBackupHistory: Array<{
   triggeredBy?: string
   table: string
   size?: number
-}> = [
-  // 초기 더미 데이터 (서버 재시작 시에도 기본 데이터 유지)
-  {
-    id: 'init-auto-1',
-    type: 'auto',
-    status: 'success',
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 24시간 전
-    triggeredBy: 'system',
-    table: 'all',
-    size: 850000
+}> = []
+
+// 초기화 함수 - 서버 시작시 기본 데이터 설정
+function initializeBackupHistory() {
+  if (globalBackupHistory.length === 0) {
+    // 기본 더미 데이터 (자동 백업 스케줄 표시용)
+    globalBackupHistory = [
+      {
+        id: 'init-auto-' + Date.now(),
+        type: 'auto',
+        status: 'success',
+        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        triggeredBy: 'system',
+        table: 'all',
+        size: 850000
+      }
+    ]
+    console.log('🔧 백업 기록 저장소 초기화 완료')
   }
-]
+}
+
+// 모듈 로드 시 초기화
+initializeBackupHistory()
 
 export function addBackupRecord(record: {
   type: 'manual' | 'auto'
@@ -40,17 +54,23 @@ export function addBackupRecord(record: {
     size: record.size
   }
 
-  // 중복 방지: 최근 10초 내에 동일한 타입의 백업이 있는지 확인
-  const recentThreshold = Date.now() - 10000 // 10초
-  const isDuplicate = globalBackupHistory.some(existing =>
+  // 더 강력한 중복 방지:
+  // 1. 동일한 ID가 이미 존재하는지 확인
+  // 2. 최근 30초 내에 동일한 타입과 트리거의 백업이 있는지 확인
+  const recentThreshold = Date.now() - 30000 // 30초
+  const isDuplicateId = globalBackupHistory.some(existing => existing.id === newRecord.id)
+  const isDuplicateRecent = globalBackupHistory.some(existing =>
     existing.type === record.type &&
     existing.triggeredBy === newRecord.triggeredBy &&
-    new Date(existing.timestamp).getTime() > recentThreshold
+    Math.abs(new Date(existing.timestamp).getTime() - new Date(newRecord.timestamp).getTime()) < 30000
   )
 
-  if (isDuplicate) {
+  if (isDuplicateId || isDuplicateRecent) {
     console.log('⚠️ 중복 백업 기록 방지:', newRecord)
-    return globalBackupHistory[0] // 최신 기록 반환
+    const latest = globalBackupHistory.find(h =>
+      h.type === record.type && h.triggeredBy === newRecord.triggeredBy
+    ) || globalBackupHistory[0]
+    return latest
   }
 
   globalBackupHistory.unshift(newRecord) // 앞에 추가 (최신순)
@@ -67,9 +87,20 @@ export function addBackupRecord(record: {
 }
 
 export function getBackupHistory() {
-  // 이미 최신순으로 정렬되어 있음 (unshift 사용)
-  console.log('📋 백업 기록 반환:', globalBackupHistory.length, '개')
-  return [...globalBackupHistory] // 복사본 반환으로 원본 보호
+  // 매번 최신순으로 정렬하여 일관성 보장
+  const sortedHistory = [...globalBackupHistory].sort((a, b) =>
+    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  )
+
+  console.log('📋 백업 기록 반환:', sortedHistory.length, '개')
+  console.log('📋 최신 3개 기록:', sortedHistory.slice(0, 3).map(h => ({
+    id: h.id,
+    type: h.type,
+    timestamp: h.timestamp,
+    triggeredBy: h.triggeredBy
+  })))
+
+  return sortedHistory
 }
 
 export function clearBackupHistory() {
