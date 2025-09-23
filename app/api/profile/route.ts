@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export async function PATCH(request: Request) {
   try {
     const supabase = createServerClient()
-    const { role, grade, class: studentClass, studentNo } = await request.json()
+    const { name, role, grade, class: studentClass, studentNo } = await request.json()
 
     // 현재 사용자 확인
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -17,8 +17,23 @@ export async function PATCH(request: Request) {
     }
 
     console.log('🔍 PROFILE API - Updating profile for:', user.email, {
-      role, grade, class: studentClass, studentNo
+      name, role, grade, class: studentClass, studentNo
     })
+
+    // 이름 업데이트 (user metadata)
+    if (name && name !== user.user_metadata?.name) {
+      const { error: nameError } = await supabase.auth.updateUser({
+        data: {
+          ...user.user_metadata,
+          name: name
+        }
+      })
+
+      if (nameError) {
+        console.error('🔍 PROFILE API - Failed to update name:', nameError)
+        return NextResponse.json({ error: 'Failed to update name' }, { status: 500 })
+      }
+    }
 
     // 사용자 역할 업데이트
     const { error: roleError } = await supabase
@@ -38,7 +53,7 @@ export async function PATCH(request: Request) {
       // students 테이블에 정보 저장/업데이트
       const studentData: any = {
         user_id: user.id,
-        name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
+        name: name || user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
         email: user.email,
         grade: parseInt(grade),
         class: parseInt(studentClass),

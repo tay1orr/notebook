@@ -24,13 +24,13 @@ interface ProfileManagementProps {
 export function ProfileManagement({ user }: ProfileManagementProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
+    name: user.name,
     role: user.role,
     grade: user.grade || '',
     class: user.class || '',
     studentNo: user.studentNo || ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isResetting, setIsResetting] = useState(false)
 
   const handleSave = async () => {
     if (formData.role === 'student' && (!formData.grade || !formData.class || !formData.studentNo)) {
@@ -53,7 +53,8 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
         },
         body: JSON.stringify({
           ...formData,
-          pendingApproval: formData.role === 'homeroom' && user.role !== 'homeroom'
+          pendingApproval: (formData.role === 'homeroom' && user.role !== 'homeroom') ||
+                          (formData.role === 'helper' && user.role !== 'helper')
         }),
       })
 
@@ -75,6 +76,7 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
 
   const handleCancel = () => {
     setFormData({
+      name: user.name,
       role: user.role,
       grade: user.grade || '',
       class: user.class || '',
@@ -83,37 +85,6 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
     setIsEditing(false)
   }
 
-  const handleResetRole = async () => {
-    if (!confirm('정말로 역할을 초기화하시겠습니까? 역할과 학급 정보가 모두 삭제되며, 다시 설정해야 합니다.')) {
-      return
-    }
-
-    setIsResetting(true)
-
-    try {
-      const response = await fetch('/api/profile/reset-role', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('역할 초기화 실패')
-      }
-
-      alert('역할이 초기화되었습니다. 잠시 후 역할 설정 페이지로 이동합니다.')
-      // 잠시 기다린 후 페이지 새로고침
-      setTimeout(() => {
-        window.location.reload()
-      }, 2000)
-    } catch (error) {
-      console.error('역할 초기화 실패:', error)
-      alert('역할 초기화 중 오류가 발생했습니다.')
-    } finally {
-      setIsResetting(false)
-    }
-  }
 
   const getRoleText = (role: string) => {
     const roleMap = {
@@ -159,7 +130,15 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>이름</Label>
-                <div className="text-lg font-medium">{user.name}</div>
+                {isEditing ? (
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="이름을 입력하세요"
+                  />
+                ) : (
+                  <div className="text-lg font-medium">{user.name}</div>
+                )}
               </div>
               <div>
                 <Label>이메일</Label>
@@ -199,12 +178,14 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="student">학생</SelectItem>
+                      <SelectItem value="helper">노트북 도우미</SelectItem>
                       <SelectItem value="homeroom">담임교사</SelectItem>
                     </SelectContent>
                   </Select>
-                  {formData.role === 'homeroom' && user.role !== 'homeroom' && (
+                  {((formData.role === 'homeroom' && user.role !== 'homeroom') ||
+                    (formData.role === 'helper' && user.role !== 'helper')) && (
                     <div className="text-sm text-orange-600 mt-1">
-                      담임교사로 변경 시 관리자 승인이 필요합니다.
+                      {formData.role === 'homeroom' ? '담임교사' : '노트북 도우미'}로 변경 시 관리자 승인이 필요합니다.
                     </div>
                   )}
                 </div>
@@ -299,39 +280,13 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <div>• 학년이 올라가거나 반이 바뀌면 직접 정보를 수정해주세요.</div>
-          <div>• 담임교사 권한은 관리자 승인 후 활성화됩니다.</div>
+          <div>• 담임교사 및 노트북 도우미 권한은 관리자 승인 후 활성화됩니다.</div>
           <div>• 승인 대기 중에는 학생 권한으로 시스템을 이용할 수 있습니다.</div>
+          <div>• 이름이나 기본 정보가 잘못된 경우 직접 수정할 수 있습니다.</div>
           <div>• 문제가 있을 경우 관리자에게 문의해주세요.</div>
         </CardContent>
       </Card>
 
-      {/* 역할 초기화 */}
-      {!isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-red-600">역할 초기화</CardTitle>
-            <CardDescription>
-              학급 정보가 잘못되었거나 역할을 다시 설정하고 싶을 때 사용하세요.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                <div className="text-sm text-yellow-800">
-                  <strong>주의:</strong> 역할을 초기화하면 현재 설정된 역할과 학급 정보가 모두 삭제됩니다. 초기화 후에는 다시 역할 설정 페이지에서 정보를 입력해야 합니다.
-                </div>
-              </div>
-              <Button
-                variant="destructive"
-                onClick={handleResetRole}
-                disabled={isResetting || isEditing}
-              >
-                {isResetting ? '초기화 중...' : '역할 다시 설정하기'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
