@@ -95,4 +95,18 @@ export function getBackupHistory() {
 
 export function clearBackupHistory() {
   globalBackupHistory = []
+  console.log('🗑️ 백업 기록 저장소 완전 초기화됨')
+}
+
+// 디버깅용: 백업 기록 상태 확인
+export function getBackupHistoryStatus() {
+  return {
+    count: globalBackupHistory.length,
+    records: globalBackupHistory.map(r => ({
+      id: r.id,
+      type: r.type,
+      timestamp: r.timestamp,
+      triggeredBy: r.triggeredBy
+    }))
+  }
 }
