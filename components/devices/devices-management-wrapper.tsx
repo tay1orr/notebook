@@ -13,7 +13,11 @@ interface UserInfo {
   isApprovedHomeroom?: boolean
 }
 
-export function DevicesManagementWrapper() {
+interface DevicesManagementWrapperProps {
+  user?: UserInfo
+}
+
+export function DevicesManagementWrapper({ user: propUser }: DevicesManagementWrapperProps) {
   const [devices, setDevices] = useState<any[]>([])
   const [stats, setStats] = useState({
     total: 0,
@@ -30,7 +34,6 @@ export function DevicesManagementWrapper() {
     const loadDevices = async () => {
       try {
         setLoading(true)
-        console.log('DevicesManagement - Loading user info and devices from API...')
 
         // 사용자 정보, 기기 목록, 대여 현황을 동시에 가져오기
         const [userResponse, devicesResponse, loansResponse] = await Promise.all([
@@ -39,9 +42,9 @@ export function DevicesManagementWrapper() {
           fetch('/api/loans', { cache: 'no-store' })
         ])
 
-        // 사용자 정보 처리
-        let currentUserInfo: UserInfo | null = null
-        if (userResponse.ok) {
+        // 사용자 정보 처리 - props로 받은 user가 있으면 우선 사용
+        let currentUserInfo: UserInfo | null = propUser || null
+        if (!currentUserInfo && userResponse.ok) {
           const userData = await userResponse.json()
           const user = userData.user  // getCurrentUser()의 결과
           currentUserInfo = {
@@ -53,9 +56,8 @@ export function DevicesManagementWrapper() {
             class: user.class,
             isApprovedHomeroom: user.isApprovedHomeroom
           }
-          setUser(currentUserInfo)
-          console.log('DevicesManagement - User info loaded:', currentUserInfo)
         }
+        setUser(currentUserInfo)
 
         if (devicesResponse.ok && loansResponse.ok) {
           const devicesData = await devicesResponse.json()
@@ -102,30 +104,27 @@ export function DevicesManagementWrapper() {
             return device
           })
 
-          // 담임교사인 경우 자신의 반 기기만 필터링
-          if (currentUserInfo && currentUserInfo.role === 'homeroom' && currentUserInfo.isApprovedHomeroom && currentUserInfo.grade && currentUserInfo.class) {
-            const userGrade = parseInt(currentUserInfo.grade)
-            const userClass = parseInt(currentUserInfo.class)
+          // 담임교사 또는 노트북 관리 도우미인 경우 자신의 반 기기만 필터링
+          if (currentUserInfo && (currentUserInfo.role === 'homeroom' || currentUserInfo.role === 'helper') && currentUserInfo.grade && currentUserInfo.class) {
+            // 담임교사는 승인된 경우만, 노트북 관리 도우미는 항상 필터링
+            const shouldFilter = (currentUserInfo.role === 'homeroom' && currentUserInfo.isApprovedHomeroom) || currentUserInfo.role === 'helper'
 
-            updatedDeviceList = updatedDeviceList.filter(device => {
-              // 기기 번호에서 학년과 반 추출 (예: ICH-20111 -> 2학년 1반)
-              const match = device.assetNumber.match(/ICH-(\d)(\d{2})(\d{2})/)
-              if (match) {
-                const deviceGrade = parseInt(match[1])
-                const deviceClass = parseInt(match[2])
-                return deviceGrade === userGrade && deviceClass === userClass
-              }
-              return false
-            })
+            if (shouldFilter) {
+              const userGrade = parseInt(currentUserInfo.grade)
+              const userClass = parseInt(currentUserInfo.class)
 
-            console.log(`DevicesManagement - Filtered for homeroom teacher ${userGrade}-${userClass}:`, updatedDeviceList.length, 'devices')
-          } else {
-            console.log('DevicesManagement - No filtering applied (admin or non-homeroom user)')
-          }
+              updatedDeviceList = updatedDeviceList.filter(device => {
+                // 기기 번호에서 학년과 반 추출 (예: ICH-20111 -> 2학년 1반)
+                const match = device.assetNumber.match(/ICH-(\d)(\d{2})(\d{2})/)
+                if (match) {
+                  const deviceGrade = parseInt(match[1])
+                  const deviceClass = parseInt(match[2])
+                  return deviceGrade === userGrade && deviceClass === userClass
+                }
+                return false
+              })
 
-          console.log('DevicesManagement - Loaded devices:', updatedDeviceList.length)
-          console.log('DevicesManagement - Active loans found:', activeLoanDevices.size)
-          console.log('DevicesManagement - Loaned devices:', updatedDeviceList.filter(d => d.status === 'loaned'))
+            }
           setDevices(updatedDeviceList)
 
           // 통계 계산
@@ -136,7 +135,6 @@ export function DevicesManagementWrapper() {
             maintenance: updatedDeviceList.filter(d => d.status === 'maintenance').length,
             retired: updatedDeviceList.filter(d => d.status === 'retired').length
           }
-          console.log('DevicesManagement - Stats:', newStats)
           setStats(newStats)
           setError(null)
         } else {
