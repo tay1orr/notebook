@@ -5,8 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { UsersManagementWrapper } from '@/components/users/users-management-wrapper'
-import { HomeRoomApprovalWrapper } from '@/components/admin/homeroom-approval-wrapper'
+import { IntegratedUserManagementWrapper } from '@/components/users/integrated-user-management-wrapper'
 import { BackupManagement } from '@/components/admin/backup-management'
 
 interface AdminDashboardClientProps {
@@ -279,9 +278,11 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
         <TabsList>
           <TabsTrigger value="users">
             사용자 관리
-          </TabsTrigger>
-          <TabsTrigger value="homeroom">
-            담임교사 승인 ({pendingHomeroomCount})
+            {pendingHomeroomCount > 0 && (
+              <Badge variant="destructive" className="ml-2">
+                {pendingHomeroomCount}
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="audit">
             감사 로그 ({auditLogs.length})
@@ -295,12 +296,9 @@ export function AdminDashboardClient({ user }: AdminDashboardClientProps) {
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
-          <UsersManagementWrapper />
+          <IntegratedUserManagementWrapper />
         </TabsContent>
 
-        <TabsContent value="homeroom" className="space-y-4">
-          <HomeRoomApprovalWrapper />
-        </TabsContent>
 
         <TabsContent value="audit" className="space-y-4">
           <Card>

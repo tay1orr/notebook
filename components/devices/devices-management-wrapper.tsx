@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { DevicesManagement } from './devices-management'
+import { EnhancedDevicesManagement } from './enhanced-devices-management'
 
 interface UserInfo {
   id: string
@@ -188,5 +188,5 @@ export function DevicesManagementWrapper() {
     )
   }
 
-  return <DevicesManagement devices={devices} stats={stats} />
+  return <EnhancedDevicesManagement devices={devices} stats={stats} />
 }

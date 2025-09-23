@@ -123,7 +123,7 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
         <div>
           <h1 className="text-3xl font-bold tracking-tight">학생 관리</h1>
           <p className="text-muted-foreground">
-            학생 정보 및 대여 현황 관리
+            학생 정보 및 역할 관리 (대여 현황은 기기 관리에서 확인)
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -143,7 +143,7 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">전체 학생</CardTitle>
@@ -180,37 +180,13 @@ export function StudentsManagement({ students: initialStudents, stats: initialSt
             <p className="text-xs text-muted-foreground">연체 중인 학생</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">이용 경험</CardTitle>
-            <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-            <p className="text-xs text-muted-foreground">대여 이력 있음</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">미이용</CardTitle>
-            <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L5.636 5.636" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-600">{stats.inactive}</div>
-            <p className="text-xs text-muted-foreground">대여 이력 없음</p>
-          </CardContent>
-        </Card>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>학생 목록</CardTitle>
           <CardDescription>
-            등록된 모든 학생의 정보와 대여 현황을 확인할 수 있습니다.
+            등록된 모든 학생의 정보와 역할을 확인할 수 있습니다.
           </CardDescription>
         </CardHeader>
         <CardContent>
