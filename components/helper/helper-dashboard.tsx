@@ -123,11 +123,17 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
         return loanClass === teacherClass
       })
     }
-    // 노트북 관리 도우미인 경우 (기존 로직)
-    if (!user.className) return []
-    return loans.filter((loan: any) =>
-      loan.class_name === user.className || loan.className === user.className
-    )
+    // 노트북 관리 도우미인 경우 - user.grade와 user.class 사용
+    if (user.role === 'helper' && user.grade && user.class) {
+      const helperClass = `${user.grade}-${user.class}`
+      console.log(`Dashboard - Filtering for helper class: ${helperClass}`)
+      return loans.filter((loan: any) => {
+        const loanClass = loan.class_name || loan.className
+        return loanClass === helperClass
+      })
+    }
+    // 담당반이 설정되지 않은 경우
+    return []
   }
 
   const helperClassLoans = getHelperClassLoans()
@@ -422,13 +428,14 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
           <CardContent>
             <StudentDashboard
               student={{
+                id: user.email,
                 name: user.name,
                 email: user.email,
-                className: user.className || '',
-                studentNo: user.studentNo || '',
-                phone: ''
+                className: user.grade && user.class ? `${user.grade}-${user.class}` : '',
+                studentNo: user.studentNo || ''
               }}
-              userRole="helper"
+              currentLoans={myLoans}
+              loanHistory={[]}
             />
           </CardContent>
         </Card>
