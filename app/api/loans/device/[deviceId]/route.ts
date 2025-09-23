@@ -1,4 +1,5 @@
-import { createServerClient, createAdminClient } from '@/lib/supabase-server'
+import { createAdminClient } from '@/lib/supabase-server'
+import { getCurrentUser } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -8,28 +9,17 @@ export async function GET(
   { params }: { params: { deviceId: string } }
 ) {
   try {
-    const supabase = createServerClient()
     const adminSupabase = createAdminClient()
 
-    // 현재 사용자 확인
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // getCurrentUser 함수를 사용해서 제대로 처리된 사용자 정보 가져오기
+    const user = await getCurrentUser()
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 사용자 역할 확인
-    const { data: userRole } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-
-    const currentRole = userRole?.role || 'student'
-    const isAdmin = user.email === 'taylorr@gclass.ice.go.kr'
-
     // 관리자, 담임교사, 노트북 관리 도우미만 접근 가능
-    if (!isAdmin && !['admin', 'homeroom', 'helper'].includes(currentRole)) {
+    if (!['admin', 'homeroom', 'helper'].includes(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -37,7 +27,7 @@ export async function GET(
     const deviceHistory: any[] = []
 
     console.log('🔍 DEVICE HISTORY - Fetching history for device:', deviceId)
-    console.log('🔍 DEVICE HISTORY - Current user:', user.email, 'Role:', currentRole)
+    console.log('🔍 DEVICE HISTORY - Current user:', user.email, 'Role:', user.role)
 
     // 기기 번호에서 학년과 반 추출 (예: ICH-20111 -> 2학년 1반)
     let deviceGrade: number | null = null
@@ -50,24 +40,18 @@ export async function GET(
     }
 
     // 담임교사나 도우미인 경우 자신의 반 기기만 접근 가능 (관리자는 제외)
-    if (!isAdmin && (currentRole === 'homeroom' || currentRole === 'helper')) {
-      const { data: userProfile } = await supabase
-        .from('user_profiles')
-        .select('grade, class, approved_homeroom')
-        .eq('user_id', user.id)
-        .single()
+    if (user.role !== 'admin' && (user.role === 'homeroom' || user.role === 'helper')) {
+      console.log('🔍 DEVICE HISTORY - User info:', { grade: user.grade, class: user.class, isApprovedHomeroom: user.isApprovedHomeroom })
 
-      console.log('🔍 DEVICE HISTORY - User profile:', userProfile)
-
-      if (userProfile?.grade && userProfile?.class) {
-        const userGrade = parseInt(userProfile.grade)
-        const userClass = parseInt(userProfile.class)
+      if (user.grade && user.class) {
+        const userGrade = parseInt(user.grade)
+        const userClass = parseInt(user.class)
 
         console.log('🔍 DEVICE HISTORY - User class info:', { userGrade, userClass })
         console.log('🔍 DEVICE HISTORY - Comparing:', { deviceGrade, deviceClass, userGrade, userClass })
 
         // 담임교사는 승인된 경우만 접근 가능
-        if (currentRole === 'homeroom' && !userProfile.approved_homeroom) {
+        if (user.role === 'homeroom' && !user.isApprovedHomeroom) {
           console.log('🔍 DEVICE HISTORY - Homeroom not approved')
           return NextResponse.json({ error: 'Unauthorized - Homeroom approval required' }, { status: 401 })
         }
@@ -78,7 +62,7 @@ export async function GET(
           return NextResponse.json({ error: 'Unauthorized - Class mismatch' }, { status: 401 })
         }
       } else {
-        console.log('🔍 DEVICE HISTORY - No class information:', userProfile)
+        console.log('🔍 DEVICE HISTORY - No class information:', { grade: user.grade, class: user.class })
         return NextResponse.json({ error: 'Unauthorized - No class information' }, { status: 401 })
       }
     }
