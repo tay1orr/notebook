@@ -90,7 +90,7 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
     const roleMap = {
       'admin': '관리자',
       'homeroom': '담임교사',
-      'helper': '노트북 도우미',
+      'helper': '노트북 관리 도우미',
       'student': '학생'
     }
     return roleMap[role as keyof typeof roleMap] || role
@@ -178,14 +178,14 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="student">학생</SelectItem>
-                      <SelectItem value="helper">노트북 도우미</SelectItem>
+                      <SelectItem value="helper">노트북 관리 도우미</SelectItem>
                       <SelectItem value="homeroom">담임교사</SelectItem>
                     </SelectContent>
                   </Select>
                   {((formData.role === 'homeroom' && user.role !== 'homeroom') ||
                     (formData.role === 'helper' && user.role !== 'helper')) && (
                     <div className="text-sm text-orange-600 mt-1">
-                      {formData.role === 'homeroom' ? '담임교사' : '노트북 도우미'}로 변경 시 관리자 승인이 필요합니다.
+                      {formData.role === 'homeroom' ? '담임교사' : '노트북 관리 도우미'}로 변경 시 관리자 승인이 필요합니다.
                     </div>
                   )}
                 </div>
@@ -280,7 +280,7 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <div>• 학년이 올라가거나 반이 바뀌면 직접 정보를 수정해주세요.</div>
-          <div>• 담임교사 및 노트북 도우미 권한은 관리자 승인 후 활성화됩니다.</div>
+          <div>• 담임교사 및 노트북 관리 도우미 권한은 관리자 승인 후 활성화됩니다.</div>
           <div>• 승인 대기 중에는 학생 권한으로 시스템을 이용할 수 있습니다.</div>
           <div>• 이름이나 기본 정보가 잘못된 경우 직접 수정할 수 있습니다.</div>
           <div>• 문제가 있을 경우 관리자에게 문의해주세요.</div>

@@ -47,7 +47,7 @@ export default async function DashboardPage() {
     )
   }
 
-  // 도우미/담임교사인 경우 통합 대시보드 표시
+  // 노트북 관리 도우미/담임교사인 경우 통합 대시보드 표시
   if (user.role === 'helper' || user.role === 'homeroom') {
     return (
       <MainLayout>

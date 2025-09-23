@@ -45,7 +45,7 @@ export function Header({ user }: HeaderProps) {
                 return loanStatus === 'requested' && loanClass === teacherClass
               }).length
             } else if (user.role === 'admin' || user.role === 'helper') {
-              // 관리자/도우미: 전체 승인 대기 신청
+              // 관리자/노트북 관리 도우미: 전체 승인 대기 신청
               pendingCount = loans.filter((loan: any) => {
                 const loanStatus = loan.status?.toLowerCase()
                 return loanStatus === 'requested'

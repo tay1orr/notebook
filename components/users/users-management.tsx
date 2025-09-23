@@ -150,7 +150,7 @@ export function UsersManagement({ users: initialUsers, onModalStateChange }: Use
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">도우미</CardTitle>
+            <CardTitle className="text-sm font-medium">노트북 관리 도우미</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.helper}</div>
@@ -203,7 +203,7 @@ export function UsersManagement({ users: initialUsers, onModalStateChange }: Use
                 <SelectItem value="all">전체 역할</SelectItem>
                 <SelectItem value="admin">관리자</SelectItem>
                 <SelectItem value="homeroom">담임교사</SelectItem>
-                <SelectItem value="helper">도우미</SelectItem>
+                <SelectItem value="helper">노트북 관리 도우미</SelectItem>
                 <SelectItem value="student">학생</SelectItem>
               </SelectContent>
             </Select>
@@ -258,7 +258,7 @@ export function UsersManagement({ users: initialUsers, onModalStateChange }: Use
                           <SelectContent>
                             <SelectItem value="admin">관리자</SelectItem>
                             <SelectItem value="homeroom">담임교사</SelectItem>
-                            <SelectItem value="helper">도우미</SelectItem>
+                            <SelectItem value="helper">노트북 관리 도우미</SelectItem>
                             <SelectItem value="student">학생</SelectItem>
                           </SelectContent>
                         </Select>

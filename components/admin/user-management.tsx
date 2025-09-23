@@ -24,7 +24,7 @@ export function UserManagement({ initialUsers }: UserManagementProps) {
     const roleMap = {
       'admin': '관리자',
       'homeroom': '담임교사',
-      'helper': '노트북 도우미',
+      'helper': '노트북 관리 도우미',
       'teacher': '교사',
       'student': '학생'
     }
@@ -94,7 +94,7 @@ export function UserManagement({ initialUsers }: UserManagementProps) {
                 <SelectItem value="all">전체</SelectItem>
                 <SelectItem value="admin">관리자</SelectItem>
                 <SelectItem value="homeroom">담임교사</SelectItem>
-                <SelectItem value="helper">노트북 도우미</SelectItem>
+                <SelectItem value="helper">노트북 관리 도우미</SelectItem>
                 <SelectItem value="teacher">교사</SelectItem>
                 <SelectItem value="student">학생</SelectItem>
               </SelectContent>

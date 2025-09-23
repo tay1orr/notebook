@@ -88,7 +88,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
         }
       }
 
-      // 역할별 필터링 - 도우미/담임교사는 자기 반만, 관리자는 전체
+      // 역할별 필터링 - 노트북 관리 도우미/담임교사는 자기 반만, 관리자는 전체
       let filteredLoans = loans
       if ((userRole === 'helper' || userRole === 'homeroom') && user) {
         // 담임교사인 경우 승인된 사용자만 필터링 권한 부여
@@ -101,7 +101,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
           })
           console.log(`LoansManagement - Filtered loans for ${teacherClass}:`, filteredLoans.length)
         } else if (userRole === 'helper') {
-          // 도우미는 기존 방식 유지
+          // 노트북 관리 도우미는 기존 방식 유지
           const helperClass = userName.includes('1-1') ? '1-1' :
                             userName.includes('1-2') ? '1-2' :
                             userName.includes('1-3') ? '1-3' :

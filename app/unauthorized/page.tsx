@@ -40,7 +40,7 @@ export default async function UnauthorizedPage() {
                   <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                     <p className="text-sm text-blue-700">
                       학생 계정으로는 제한된 기능만 이용할 수 있습니다.<br />
-                      담임교사 또는 노트북 도우미에게 문의하세요.
+                      담임교사 또는 노트북 관리 도우미에게 문의하세요.
                     </p>
                   </div>
                 ) : (

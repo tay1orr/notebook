@@ -50,7 +50,7 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
           throw new Error('API failed')
         }
       } catch (error) {
-        console.error('도우미 대시보드 - API 오류, localStorage 사용:', error)
+        console.error('노트북 관리 도우미 대시보드 - API 오류, localStorage 사용:', error)
 
         if (typeof window !== 'undefined') {
           const storedLoans = localStorage.getItem('loanApplications')
@@ -79,7 +79,7 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
     return () => clearInterval(interval)
   }, [user.email, user.className, user.studentNo])
 
-  // 도우미/담임교사가 담당하는 반의 대여 신청 필터링
+  // 노트북 관리 도우미/담임교사가 담당하는 반의 대여 신청 필터링
   const getHelperClassLoans = () => {
     // 담임교사인 경우
     if (user.role === 'homeroom' && user.isApprovedHomeroom && user.grade && user.class) {
@@ -90,7 +90,7 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
         return loanClass === teacherClass
       })
     }
-    // 도우미인 경우 (기존 로직)
+    // 노트북 관리 도우미인 경우 (기존 로직)
     if (!user.className) return []
     return loans.filter((loan: any) =>
       loan.class_name === user.className || loan.className === user.className
@@ -203,7 +203,7 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {user.role === 'homeroom' ? '담임교사 대시보드' : '도우미 대시보드'}
+            {user.role === 'homeroom' ? '담임교사 대시보드' : '노트북 관리 도우미 대시보드'}
           </h1>
           <p className="text-muted-foreground">
             안녕하세요, <strong>{user.name}</strong>님 ({getRoleText(user.role)})
@@ -356,13 +356,13 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
         </CardContent>
       </Card>
 
-      {/* 도우미 전용 개인 대여 신청 */}
+      {/* 노트북 관리 도우미 전용 개인 대여 신청 */}
       {user.role === 'helper' && (
         <Card>
           <CardHeader>
             <CardTitle>개인 대여 신청</CardTitle>
             <CardDescription>
-              도우미도 필요 시 노트북을 대여할 수 있습니다.
+              노트북 관리 도우미도 필요 시 노트북을 대여할 수 있습니다.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -35,7 +35,7 @@ export function UsersManagementWrapper() {
             // 해당 사용자의 대여 기록 필터링 (자신이 신청한 것)
             const userLoans = allLoans.filter((loan: any) => loan.email === user.email)
 
-            // 해당 사용자가 처리한 대여 기록 필터링 (관리자/도우미/담임교사가 승인/반납 처리한 것)
+            // 해당 사용자가 처리한 대여 기록 필터링 (관리자/노트북 관리 도우미/담임교사가 승인/반납 처리한 것)
             const processedLoans = allLoans.filter((loan: any) =>
               loan.approved_by === user.email ||
               loan.approved_by === user.name ||

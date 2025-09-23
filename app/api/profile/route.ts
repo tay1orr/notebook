@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 
 // Force dynamic rendering
@@ -7,7 +7,8 @@ export const dynamic = 'force-dynamic'
 export async function PATCH(request: Request) {
   try {
     const supabase = createServerClient()
-    const { name, role, grade, class: studentClass, studentNo } = await request.json()
+    const adminSupabase = createAdminClient()
+    const { name, role, grade, class: studentClass, studentNo, pendingApproval } = await request.json()
 
     // 현재 사용자 확인
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -17,7 +18,7 @@ export async function PATCH(request: Request) {
     }
 
     console.log('🔍 PROFILE API - Updating profile for:', user.email, {
-      name, role, grade, class: studentClass, studentNo
+      name, role, grade, class: studentClass, studentNo, pendingApproval
     })
 
     // 이름 업데이트 (user metadata)
@@ -35,17 +36,70 @@ export async function PATCH(request: Request) {
       }
     }
 
-    // 사용자 역할 업데이트
-    const { error: roleError } = await supabase
-      .from('user_roles')
-      .upsert({
-        user_id: user.id,
-        role: role
-      }, { onConflict: 'user_id' })
+    // 승인이 필요한 역할인지 확인
+    const needsApproval = pendingApproval && (role === 'homeroom' || role === 'helper')
 
-    if (roleError) {
-      console.error('🔍 PROFILE API - Failed to update role:', roleError)
-      return NextResponse.json({ error: 'Failed to update role' }, { status: 500 })
+    if (needsApproval) {
+      // 승인이 필요한 경우: 실제 역할은 student로 유지하고 승인 대기 정보만 저장
+      console.log('🔍 PROFILE API - Role change requires approval, keeping student role')
+
+      // 1. 역할은 student로 유지
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .upsert({
+          user_id: user.id,
+          role: 'student'
+        }, { onConflict: 'user_id' })
+
+      if (roleError) {
+        console.error('🔍 PROFILE API - Failed to update role:', roleError)
+        return NextResponse.json({ error: 'Failed to update role' }, { status: 500 })
+      }
+
+      // 2. 승인 대기 정보를 user metadata에 저장
+      const pendingInfo = {
+        pending_homeroom: role === 'homeroom' ? {
+          status: 'pending',
+          requested_role: role,
+          requested_at: new Date().toISOString(),
+          class_info: grade && studentClass ? { grade: parseInt(grade), class: parseInt(studentClass) } : {}
+        } : undefined,
+        pending_helper: role === 'helper' ? {
+          status: 'pending',
+          requested_role: role,
+          requested_at: new Date().toISOString()
+        } : undefined
+      }
+
+      const updatedMetadata = {
+        ...user.user_metadata,
+        name: name || user.user_metadata?.name,
+        ...pendingInfo
+      }
+
+      const { error: metadataError } = await adminSupabase.auth.admin.updateUserById(
+        user.id,
+        { user_metadata: updatedMetadata }
+      )
+
+      if (metadataError) {
+        console.error('🔍 PROFILE API - Failed to update metadata:', metadataError)
+        return NextResponse.json({ error: 'Failed to save approval request' }, { status: 500 })
+      }
+
+    } else {
+      // 승인이 필요 없는 경우: 바로 역할 업데이트
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .upsert({
+          user_id: user.id,
+          role: role
+        }, { onConflict: 'user_id' })
+
+      if (roleError) {
+        console.error('🔍 PROFILE API - Failed to update role:', roleError)
+        return NextResponse.json({ error: 'Failed to update role' }, { status: 500 })
+      }
     }
 
     // 학생 정보 업데이트 (학생 또는 담임교사인 경우)

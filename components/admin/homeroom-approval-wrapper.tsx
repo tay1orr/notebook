@@ -73,7 +73,7 @@ export function HomeRoomApprovalWrapper() {
       setPendingUsers(prev => prev.filter(user => user.id !== userId))
 
       // 성공 메시지
-      alert(`담임교사 권한이 ${action === 'approve' ? '승인' : '거절'}되었습니다.`)
+      alert(`${user.requested_role === 'homeroom' ? '담임교사' : '노트북 관리 도우미'} 권한이 ${action === 'approve' ? '승인' : '거절'}되었습니다.`)
 
     } catch (err) {
       console.error(`Failed to ${action} homeroom user:`, err)
@@ -116,7 +116,7 @@ export function HomeRoomApprovalWrapper() {
               담임교사 권한 승인
             </CardTitle>
             <CardDescription>
-              담임교사 권한을 신청한 사용자들을 승인하거나 거절할 수 있습니다.
+              담임교사 및 노트북 관리 도우미 권한을 신청한 사용자들을 승인하거나 거절할 수 있습니다.
             </CardDescription>
           </div>
           <Button variant="outline" onClick={fetchPendingUsers} disabled={loading}>
