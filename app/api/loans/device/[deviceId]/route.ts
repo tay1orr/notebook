@@ -93,7 +93,7 @@ export async function GET(
           console.error('🔍 DEVICE HISTORY - Database error:', error)
         } else {
           console.log('🔍 DEVICE HISTORY - Found loan records:', loans?.length || 0)
-          console.log('🔍 DEVICE HISTORY - Loan records:', loans)
+          console.log('🔍 DEVICE HISTORY - Raw loan records:', JSON.stringify(loans, null, 2))
 
           // 대여 기록을 기기 이력 형식으로 변환
           if (loans && loans.length > 0) {
