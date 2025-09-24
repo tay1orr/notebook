@@ -189,9 +189,9 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
     try {
       const response = await fetch(`/api/loans/device/${assetNumber}`)
       if (response.ok) {
-        const { loans: deviceLoans } = await response.json()
-        const sortedLoans = deviceLoans.sort((a: any, b: any) =>
-          new Date(b.created_at || b.requestedAt).getTime() - new Date(a.created_at || a.requestedAt).getTime()
+        const { history: deviceLoans } = await response.json()
+        const sortedLoans = (deviceLoans || []).sort((a: any, b: any) =>
+          new Date(b.timestamp || b.created_at || b.requestedAt).getTime() - new Date(a.timestamp || a.created_at || a.requestedAt).getTime()
         )
 
         setSelectedDeviceAsset(assetNumber)
