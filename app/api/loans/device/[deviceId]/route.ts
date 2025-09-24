@@ -67,58 +67,58 @@ export async function GET(
       }
     }
 
-    // 변수들을 먼저 선언
-    let allLoans: any[] = []
-    let allLoansData: any[] = []
-    let sampleTags: any[] = []
-    let deviceNumber = ''
-    let shortTag = ''
-
     try {
-      // 간단한 모의 데이터로 기기 이력 기능 테스트
-      console.log('🔍 DEVICE HISTORY - Creating mock data for testing')
+      console.log('🔍 DEVICE HISTORY - Fetching real loan data from database')
 
-      // ICH-30135 기기를 위한 모의 데이터 (기기 이력 모달 형식에 맞춤)
-      if (deviceId === 'ICH-30135') {
-        // 현재 대여 중인 상태
-        deviceHistory.push({
-          student_name: '김중산2',
-          class_name: '3-1반',
-          created_at: '2024-01-15T09:00:00Z',
-          returned_at: null,
-          status: 'picked_up',
-          purpose: '수업용'
-        })
-
-        // 이전 대여 기록 1
-        deviceHistory.push({
-          student_name: '박학생',
-          class_name: '3-1반',
-          created_at: '2024-01-10T09:00:00Z',
-          returned_at: '2024-01-14T16:00:00Z',
-          status: 'returned',
-          purpose: '과제용'
-        })
-
-        // 이전 대여 기록 2
-        deviceHistory.push({
-          student_name: '이학생',
-          class_name: '3-1반',
-          created_at: '2024-01-05T09:00:00Z',
-          returned_at: '2024-01-09T15:30:00Z',
-          status: 'returned',
-          purpose: '프로젝트용'
-        })
+      // device_tag 형식으로 변환 (ICH-30135 -> 3-01-35)
+      const deviceMatch = deviceId.match(/ICH-(\d)(\d{2})(\d{2})/)
+      let deviceTag = ''
+      if (deviceMatch) {
+        const grade = deviceMatch[1]
+        const classNum = parseInt(deviceMatch[2]).toString()
+        const deviceNum = parseInt(deviceMatch[3]).toString()
+        deviceTag = `${grade}-${classNum}-${deviceNum}`
+        console.log('🔍 DEVICE HISTORY - Device tag converted:', deviceId, '->', deviceTag)
       }
 
-      console.log('🔍 DEVICE HISTORY - Mock data created:', deviceHistory.length)
+      if (deviceTag) {
+        // 해당 기기에 대한 모든 대여 신청 기록 조회
+        const { data: loans, error } = await adminSupabase
+          .from('loan_applications')
+          .select('*')
+          .eq('device_tag', deviceTag)
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          console.error('🔍 DEVICE HISTORY - Database error:', error)
+        } else {
+          console.log('🔍 DEVICE HISTORY - Found loan records:', loans?.length || 0)
+          console.log('🔍 DEVICE HISTORY - Loan records:', loans)
+
+          // 대여 기록을 기기 이력 형식으로 변환
+          if (loans && loans.length > 0) {
+            loans.forEach(loan => {
+              deviceHistory.push({
+                student_name: loan.student_name,
+                class_name: loan.class_name,
+                created_at: loan.created_at,
+                returned_at: loan.returned_at,
+                status: loan.status,
+                purpose: loan.purpose
+              })
+            })
+          }
+        }
+      }
+
+      console.log('🔍 DEVICE HISTORY - Total history entries:', deviceHistory.length)
 
     } catch (error) {
-      console.error('Error fetching device history:', error)
+      console.error('🔍 DEVICE HISTORY - Error fetching device history:', error)
     }
 
     // 시간순으로 정렬 (최신순)
-    deviceHistory.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    deviceHistory.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
     console.log('🔍 DEVICE HISTORY - Total history entries:', deviceHistory.length)
 
@@ -126,9 +126,10 @@ export async function GET(
       deviceId,
       history: deviceHistory,
       debug: {
-        message: 'Using mock data for testing - loans table access issue',
+        message: 'Using real loan data from loan_applications table',
         deviceId,
-        mockDataCreated: deviceHistory.length > 0
+        historyFound: deviceHistory.length > 0,
+        totalRecords: deviceHistory.length
       }
     })
 
