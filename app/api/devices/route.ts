@@ -326,10 +326,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
     }
 
-    if (!['admin', 'homeroom', 'helper'].includes(userProfile.role)) {
+    if (!['admin', 'manager', 'homeroom', 'helper'].includes(userProfile.role)) {
       console.error('Insufficient permissions:', userProfile.role)
       return NextResponse.json({
-        error: 'Unauthorized - Only admin, homeroom teachers, and helpers can change device status'
+        error: 'Unauthorized - Only admin, managers, homeroom teachers, and helpers can change device status'
       }, { status: 403 })
     }
 
