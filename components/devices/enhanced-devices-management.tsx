@@ -366,7 +366,7 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">전체</SelectItem>
-                    {[...Array(20)].map((_, i) => (
+                    {[...Array(13)].map((_, i) => (
                       <SelectItem key={i + 1} value={(i + 1).toString()}>
                         {i + 1}반
                       </SelectItem>
