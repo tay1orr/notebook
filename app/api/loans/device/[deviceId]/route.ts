@@ -69,16 +69,19 @@ export async function GET(
 
     // 변수들을 먼저 선언
     let allLoans: any[] = []
+    let allLoansData: any[] = []
     let sampleTags: any[] = []
     let deviceNumber = ''
     let shortTag = ''
 
     try {
       // 먼저 전체 대여 기록 확인 (device_tag가 null인 것도 포함)
-      const { data: allLoansData } = await adminSupabase
+      const { data: allLoansResponse } = await adminSupabase
         .from('loans')
         .select('device_tag, student_name, created_at, status, class_name')
         .limit(50)
+
+      allLoansData = allLoansResponse || []
 
       // device_tag가 있는 것들만 별도로 조회
       const { data: loansData } = await adminSupabase
@@ -87,7 +90,7 @@ export async function GET(
         .not('device_tag', 'is', null)
         .limit(50)
 
-      console.log('🔍 DEVICE HISTORY - All loans (including null device_tag):', allLoansData?.length)
+      console.log('🔍 DEVICE HISTORY - All loans (including null device_tag):', allLoansData.length)
       console.log('🔍 DEVICE HISTORY - Loans with device_tag:', loansData?.length)
 
       allLoans = loansData || []
