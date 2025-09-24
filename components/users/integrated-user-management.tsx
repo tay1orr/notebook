@@ -276,13 +276,17 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
   const loadUserLogs = async (userId: string) => {
     setLogsLoading(true)
     try {
-      const response = await fetch(`/api/users/${userId}/logs`)
+      console.log('🔍 Loading user logs for userId:', userId)
+      const response = await fetch(`/api/user-logs?userId=${userId}`)
+      console.log('🔍 User logs response status:', response.status)
       if (response.ok) {
         const logs = await response.json()
+        console.log('🔍 User logs loaded:', logs)
         setUserLogs(logs)
       } else {
+        const errorText = await response.text()
+        console.error('Failed to load user logs:', response.status, errorText)
         setUserLogs([])
-        console.error('Failed to load user logs')
       }
     } catch (error) {
       console.error('Error loading user logs:', error)

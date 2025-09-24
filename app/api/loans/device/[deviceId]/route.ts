@@ -103,13 +103,37 @@ export async function GET(
           // 대여 기록을 기기 이력 형식으로 변환 (모든 기록 포함)
           if (loans && loans.length > 0) {
             loans.forEach(loan => {
+              // 상태를 한국어로 변환
+              let koreanStatus = loan.status
+              switch (loan.status) {
+                case 'requested':
+                  koreanStatus = '대여신청'
+                  break
+                case 'approved':
+                  koreanStatus = '승인됨'
+                  break
+                case 'picked_up':
+                  koreanStatus = '대여중'
+                  break
+                case 'returned':
+                  koreanStatus = '반납완료'
+                  break
+                case 'rejected':
+                case 'cancelled':
+                  koreanStatus = '취소됨'
+                  break
+                default:
+                  koreanStatus = loan.status
+              }
+
               deviceHistory.push({
                 student_name: loan.student_name,
                 class_name: loan.class_name,
                 created_at: loan.created_at,
                 returned_at: loan.returned_at,
-                status: loan.status,
-                purpose: loan.purpose
+                status: koreanStatus,
+                purpose: loan.purpose,
+                original_status: loan.status // 디버깅용
               })
             })
 
