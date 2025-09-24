@@ -127,10 +127,13 @@ export function ApprovalSignatureModal({
                     const dueDate = loanData.due_date || loanData.dueDate || loanData.return_date;
                     if (!dueDate) return '미정';
                     const date = new Date(dueDate);
-                    return date.toLocaleDateString('ko-KR', {
+                    return date.toLocaleString('ko-KR', {
                       year: 'numeric',
                       month: 'long',
-                      day: 'numeric'
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true
                     });
                   })()}
                 </span>

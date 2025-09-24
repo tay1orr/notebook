@@ -16,11 +16,10 @@ const nextConfig = {
   // env: {
   //   TZ: process.env.TZ || 'Asia/Seoul'
   // },
-  // TypeScript 빌드 에러 무시 (개발 중)
+  // 시험 배포용 - 운영 전 타입 에러 수정 필요
   typescript: {
     ignoreBuildErrors: true
   },
-  // ESLint 빌드 에러 무시 (개발 중)
   eslint: {
     ignoreDuringBuilds: true
   }

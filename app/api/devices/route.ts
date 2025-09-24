@@ -25,11 +25,16 @@ export async function GET() {
       console.error('Database error:', error)
 
       // 데이터베이스에 기기가 없으면 기본 기기들을 생성
-      if (error.code === 'PGRST116' || !devices || devices.length === 0) {
+      if (error.code === 'PGRST116') {
         return await initializeDevices(supabase)
       }
 
       return NextResponse.json({ error: 'Failed to fetch devices' }, { status: 500 })
+    }
+
+    // 기기 데이터가 없으면 기본 기기들을 생성
+    if (!devices || devices.length === 0) {
+      return await initializeDevices(supabase)
     }
 
     // 현재 대여중인 대여 정보 조회
@@ -42,16 +47,8 @@ export async function GET() {
       console.error('Error fetching loan data:', loanError)
     }
 
-    console.log('Current loans from DB:', currentLoans?.length || 0, 'loans found')
-    console.log('Current loans data:', currentLoans)
-
-    // 특정 기기에 대한 자세한 정보 확인
-    const targetDeviceLoans = currentLoans?.filter(loan =>
-      loan.device_tag === '2-1-11' ||
-      loan.device_tag === 'ICH-20111' ||
-      loan.device_tag?.includes('2-1-11')
-    )
-    console.log('Target device (2-1-11) loans found:', targetDeviceLoans)
+    // 현재 대여중인 기기 정보 로깅
+    console.log('📊 Current loans:', currentLoans?.length || 0, 'loans found')
 
     // 대여 정보를 deviceTag 기준으로 매핑
     const loanMap = new Map()
