@@ -307,24 +307,87 @@ export async function PATCH(request: NextRequest) {
     const { data: { user: authUser } } = await supabase.auth.getUser()
     let changerInfo = '시스템'
 
-    if (authUser) {
-      const { data: userProfile } = await supabase
-        .from('user_profiles')
-        .select('name, role')
-        .eq('user_id', authUser.id)
-        .single()
+    // userProfile은 아래에서 더 자세히 조회할 예정
+    changerInfo = authUser?.email || '시스템'
 
-      if (userProfile) {
-        const roleText = userProfile.role === 'admin' ? '관리자' :
-                        userProfile.role === 'homeroom' ? '담임교사' :
-                        userProfile.role === 'helper' ? '도우미' : '사용자'
-        changerInfo = `${userProfile.name} (${roleText})`
+    console.log('PATCH devices - Changer info:', changerInfo)
+
+    // 권한 확인: 관리자, 담임교사, 노트북 관리 도우미만 기기 상태 변경 가능
+    if (!authUser) {
+      console.error('No authenticated user')
+      return NextResponse.json({ error: 'Unauthorized - No user' }, { status: 401 })
+    }
+
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role, grade, class, isApprovedHomeroom')
+      .eq('user_id', authUser.id)
+      .single()
+
+    if (!userProfile) {
+      console.error('User profile not found:', authUser.id)
+      return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
+    }
+
+    if (!['admin', 'homeroom', 'helper'].includes(userProfile.role)) {
+      console.error('Insufficient permissions:', userProfile.role)
+      return NextResponse.json({
+        error: 'Unauthorized - Only admin, homeroom teachers, and helpers can change device status'
+      }, { status: 403 })
+    }
+
+    // 담임교사는 승인된 경우에만, 자신의 반 기기만 변경 가능
+    if (userProfile.role === 'homeroom' && !userProfile.isApprovedHomeroom) {
+      console.error('Homeroom teacher not approved')
+      return NextResponse.json({ error: 'Unauthorized - Homeroom approval required' }, { status: 403 })
+    }
+
+    // 담임교사와 도우미는 자신의 반 기기만 변경 가능 (관리자는 모든 기기 가능)
+    if ((userProfile.role === 'homeroom' || userProfile.role === 'helper') && userProfile.grade && userProfile.class) {
+      // deviceTag를 기반으로 기기의 학급 정보 추출
+      let deviceGrade: number | null = null
+      let deviceClass: number | null = null
+
+      // ICH-30135 -> 3학년 1반 35번 형태로 파싱
+      const assetTagMatch = deviceTag.match(/ICH-(\d)(\d{2})(\d{2})/)
+      if (assetTagMatch) {
+        deviceGrade = parseInt(assetTagMatch[1])
+        deviceClass = parseInt(assetTagMatch[2])
       } else {
-        changerInfo = authUser.email || '알 수 없음'
+        // device_tag가 "3-1-35" 형태인 경우
+        const tagParts = deviceTag.split('-')
+        if (tagParts.length === 3) {
+          deviceGrade = parseInt(tagParts[0])
+          deviceClass = parseInt(tagParts[1])
+        }
+      }
+
+      const userGrade = parseInt(userProfile.grade)
+      const userClass = parseInt(userProfile.class)
+
+      if (deviceGrade !== userGrade || deviceClass !== userClass) {
+        console.error('Class mismatch:', {
+          deviceGrade, deviceClass, userGrade, userClass,
+          userRole: userProfile.role
+        })
+        return NextResponse.json({
+          error: `Unauthorized - Can only change devices in your assigned class (${userProfile.grade}-${userProfile.class})`
+        }, { status: 403 })
       }
     }
 
-    console.log('PATCH devices - Changer info:', changerInfo)
+    // 권한 체크 완료 후 changerInfo 설정
+    const roleText = userProfile.role === 'admin' ? '관리자' :
+                     userProfile.role === 'homeroom' ? '담임교사' :
+                     userProfile.role === 'helper' ? '도우미' : '사용자'
+    changerInfo = `${userProfile.name || authUser.email?.split('@')[0] || '알 수 없음'} (${roleText})`
+
+    console.log('PATCH devices - Permission check passed:', {
+      role: userProfile.role,
+      grade: userProfile.grade,
+      class: userProfile.class,
+      changerInfo
+    })
 
     if (!deviceTag || !status) {
       console.error('Missing required fields:', { deviceTag, status })
