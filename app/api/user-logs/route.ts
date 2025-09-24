@@ -83,20 +83,30 @@ export async function GET(request: Request) {
               ip_address: "192.168.1.100"
             })
 
-            if (loan.approved_at && loan.approved_by) {
+            if (loan.approved_at) {
+              let approverRole = '관리자'
+
+              if (loan.approved_by_role) {
+                switch (loan.approved_by_role) {
+                  case 'admin':
+                    approverRole = '관리자'
+                    break
+                  case 'homeroom':
+                    approverRole = '담임교사'
+                    break
+                  case 'helper':
+                    approverRole = '노트북 관리 도우미'
+                    break
+                  default:
+                    approverRole = '관리자'
+                }
+              }
+
               fallbackLogs.push({
                 id: `loan_${loan.id}_approved`,
                 timestamp: loan.approved_at,
                 action: "대여 승인됨",
-                details: `${loan.device_tag} 기기 대여가 ${loan.approved_by}에 의해 승인되었습니다.`,
-                ip_address: "192.168.1.100"
-              })
-            } else if (loan.approved_at) {
-              fallbackLogs.push({
-                id: `loan_${loan.id}_approved`,
-                timestamp: loan.approved_at,
-                action: "대여 승인됨",
-                details: `${loan.device_tag} 기기 대여가 승인되었습니다.`,
+                details: `${loan.device_tag} 기기 대여가 ${approverRole}에 의해 승인되었습니다.`,
                 ip_address: "192.168.1.100"
               })
             }
@@ -223,20 +233,30 @@ export async function GET(request: Request) {
             })
 
             // 승인 로그 (관리자/담임/도우미에 의한)
-            if (loan.approved_at && loan.approved_by) {
+            if (loan.approved_at) {
+              let approverRole = '관리자'
+
+              if (loan.approved_by_role) {
+                switch (loan.approved_by_role) {
+                  case 'admin':
+                    approverRole = '관리자'
+                    break
+                  case 'homeroom':
+                    approverRole = '담임교사'
+                    break
+                  case 'helper':
+                    approverRole = '노트북 관리 도우미'
+                    break
+                  default:
+                    approverRole = '관리자'
+                }
+              }
+
               userLogs.push({
                 id: `loan_${loan.id}_approved`,
                 timestamp: loan.approved_at,
                 action: "대여 승인됨",
-                details: `${loan.device_tag} 기기 대여가 ${loan.approved_by}에 의해 승인되었습니다.`,
-                ip_address: "192.168.1.100"
-              })
-            } else if (loan.approved_at) {
-              userLogs.push({
-                id: `loan_${loan.id}_approved`,
-                timestamp: loan.approved_at,
-                action: "대여 승인됨",
-                details: `${loan.device_tag} 기기 대여가 승인되었습니다.`,
+                details: `${loan.device_tag} 기기 대여가 ${approverRole}에 의해 승인되었습니다.`,
                 ip_address: "192.168.1.100"
               })
             }

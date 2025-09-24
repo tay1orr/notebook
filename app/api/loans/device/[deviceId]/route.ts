@@ -100,6 +100,19 @@ export async function GET(
           console.log('🔍 DEVICE HISTORY - Found loan records:', loans?.length || 0)
           console.log('🔍 DEVICE HISTORY - Raw loan records:', JSON.stringify(loans, null, 2))
 
+          // Vercel 로그에서도 보이도록 강제 출력
+          console.error('🔥🔥🔥 VERCEL LOG - Found loans:', loans?.length || 0)
+          if (loans && loans.length > 0) {
+            loans.forEach((loan, idx) => {
+              console.error(`🔥🔥🔥 VERCEL LOG - Loan ${idx + 1}:`, {
+                id: loan.id,
+                status: loan.status,
+                returned_at: loan.returned_at,
+                student_name: loan.student_name
+              })
+            })
+          }
+
           // 각 대여 기록의 상태와 날짜 상세 확인
           if (loans && loans.length > 0) {
             loans.forEach((loan, index) => {
@@ -122,21 +135,40 @@ export async function GET(
             loans.forEach((loan, index) => {
               console.log(`🔍 DEVICE HISTORY - Processing loan ${index + 1}:`, loan)
 
+              // 🔥 강력한 디버깅을 위한 Vercel 로그
+              console.error(`🔥🔥🔥 VERCEL STATUS - Loan ${index + 1} 처리 시작`)
+              console.error(`🔥🔥🔥 VERCEL STATUS - 원본 데이터:`, JSON.stringify({
+                id: loan.id,
+                status: loan.status,
+                returned_at: loan.returned_at,
+                returned_at_type: typeof loan.returned_at,
+                student: loan.student_name
+              }, null, 2))
+
               // 🔥 새로운 접근: 상태를 간단하게 결정하기
               let koreanStatus = '알 수 없음'
 
               // 1. 먼저 returned_at 필드 체크 (가장 우선)
-              if (loan.returned_at &&
-                  loan.returned_at !== null &&
-                  loan.returned_at.toString().trim() !== '' &&
-                  loan.returned_at !== 'null') {
+              const hasReturnedAt = loan.returned_at &&
+                                   loan.returned_at !== null &&
+                                   loan.returned_at.toString().trim() !== '' &&
+                                   loan.returned_at !== 'null'
+
+              console.error(`🔥🔥🔥 VERCEL STATUS - returned_at 체크:`, {
+                원본값: loan.returned_at,
+                타입: typeof loan.returned_at,
+                문자열변환: loan.returned_at ? loan.returned_at.toString() : 'null',
+                hasReturnedAt: hasReturnedAt
+              })
+
+              if (hasReturnedAt) {
                 koreanStatus = '반납완료'
-                console.log(`🔥 LOAN ${index + 1}: returned_at 발견 -> 반납완료`)
+                console.error(`🔥🔥🔥 VERCEL STATUS - ✅ returned_at 존재 -> 반납완료`)
               }
               // 2. status 필드가 'returned'인 경우
               else if (loan.status === 'returned') {
                 koreanStatus = '반납완료'
-                console.log(`🔥 LOAN ${index + 1}: status=returned -> 반납완료`)
+                console.error(`🔥🔥🔥 VERCEL STATUS - ✅ status=returned -> 반납완료`)
               }
               // 3. 기타 상태들
               else {
@@ -158,14 +190,10 @@ export async function GET(
                   default:
                     koreanStatus = `원본상태: ${loan.status}`
                 }
-                console.log(`🔥 LOAN ${index + 1}: status=${loan.status} -> ${koreanStatus}`)
+                console.error(`🔥🔥🔥 VERCEL STATUS - status=${loan.status} -> ${koreanStatus}`)
               }
 
-              console.log(`🔥 LOAN ${index + 1} 최종 결정:`, {
-                원본_status: loan.status,
-                원본_returned_at: loan.returned_at,
-                최종_한국어상태: koreanStatus
-              })
+              console.error(`🔥🔥🔥 VERCEL STATUS - 최종 결정: "${koreanStatus}"`)
 
               deviceHistory.push({
                 student_name: loan.student_name,
