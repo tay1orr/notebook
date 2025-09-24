@@ -136,12 +136,27 @@ export async function GET(
               let koreanStatus = loan.status
 
               // 반납일 확인 - null, 'null', 빈 문자열, undefined를 모두 체크
-              const hasValidReturnDate = loan.returned_at &&
-                                       loan.returned_at !== null &&
-                                       loan.returned_at !== 'null' &&
-                                       loan.returned_at !== '' &&
-                                       loan.returned_at.toString().trim() !== '' &&
-                                       loan.returned_at !== 'undefined'
+              // 더 엄격한 검증 추가
+              let hasValidReturnDate = false
+              if (loan.returned_at) {
+                const returnedAtStr = loan.returned_at.toString().trim()
+                hasValidReturnDate = returnedAtStr !== '' &&
+                                   returnedAtStr !== 'null' &&
+                                   returnedAtStr !== 'undefined' &&
+                                   returnedAtStr !== '0' &&
+                                   loan.returned_at !== null &&
+                                   loan.returned_at !== undefined
+
+                // 날짜 형식인지도 확인
+                if (hasValidReturnDate) {
+                  try {
+                    const dateTest = new Date(loan.returned_at)
+                    hasValidReturnDate = dateTest instanceof Date && !isNaN(dateTest.getTime())
+                  } catch (e) {
+                    hasValidReturnDate = false
+                  }
+                }
+              }
 
               console.log(`🔍 DEVICE HISTORY - Return date validation for loan ${index + 1}:`, {
                 returned_at_raw: loan.returned_at,
