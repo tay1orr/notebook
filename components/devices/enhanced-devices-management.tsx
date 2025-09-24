@@ -195,6 +195,10 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
       if (response.ok) {
         const responseData = await response.json()
         console.log('🔍 CLIENT - API Response:', responseData)
+        console.log('🔍 CLIENT - DEBUG INFO:')
+        console.log('  Sample device_tags in DB:', responseData.debug?.sampleTags)
+        console.log('  Total loans in DB:', responseData.debug?.totalLoansInDB)
+        console.log('  Queried patterns:', responseData.debug?.queriedPatterns)
 
         const { history: deviceLoans } = responseData
         console.log('🔍 CLIENT - Device loans:', deviceLoans)
