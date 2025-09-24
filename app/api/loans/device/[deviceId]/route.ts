@@ -155,24 +155,55 @@ export async function GET(
       if (deviceMatch) {
         const { data: deviceInfo, error: deviceError } = await adminSupabase
           .from('devices')
-          .select('status, updated_at')
+          .select('status, updated_at, notes')
           .eq('asset_tag', deviceId)
           .single()
 
         if (deviceError) {
           console.log('🔍 DEVICE HISTORY - No device info found:', deviceError)
-        } else if (deviceInfo && deviceInfo.status === '점검') {
-          // 현재 점검중인 경우 이력에 추가
-          deviceHistory.push({
-            student_name: '관리자',
-            class_name: '시스템',
-            created_at: deviceInfo.updated_at || new Date().toISOString(),
-            returned_at: null,
-            status: '점검중',
-            purpose: '기기 점검',
-            original_status: 'maintenance'
-          })
-          console.log('🔍 DEVICE HISTORY - Added current maintenance status to history')
+        } else if (deviceInfo) {
+          // 관리자/도우미/담임교사가 직접 상태를 변경한 경우 (notes에 "상태 변경" 포함)
+          if (deviceInfo.notes && deviceInfo.notes.includes('상태 변경')) {
+            let changerName = '관리자'
+            let changerClass = '시스템'
+            let statusKorean = '알 수 없음'
+            let purpose = '상태 변경'
+
+            // notes에서 변경자 정보 추출
+            if (deviceInfo.notes) {
+              const changerMatch = deviceInfo.notes.match(/변경자:\s*([^)]+)\s*\([^)]+\)/)
+              if (changerMatch) {
+                changerName = changerMatch[1]
+                changerClass = '관리작업'
+              }
+
+              // 상태 정보 추출
+              const statusMatch = deviceInfo.notes.match(/상태 변경:\s*([^\s(]+)/)
+              if (statusMatch) {
+                statusKorean = statusMatch[1]
+              }
+
+              // 추가 메모가 있으면 purpose로 사용
+              const notesParts = deviceInfo.notes.split(' - ')
+              if (notesParts.length > 1) {
+                purpose = notesParts[1]
+              }
+            }
+
+            // 상태에 따라 반납일 설정
+            const returnedAt = (statusKorean === '대여가능') ? deviceInfo.updated_at : null
+
+            deviceHistory.push({
+              student_name: changerName,
+              class_name: changerClass,
+              created_at: deviceInfo.updated_at || new Date().toISOString(),
+              returned_at: returnedAt,
+              status: statusKorean,
+              purpose: purpose,
+              original_status: `admin_change_${deviceInfo.status}`
+            })
+            console.log('🔍 DEVICE HISTORY - Added admin status change:', { changerName, statusKorean })
+          }
         }
       }
     } catch (error) {

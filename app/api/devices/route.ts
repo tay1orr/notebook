@@ -303,6 +303,29 @@ export async function PATCH(request: NextRequest) {
 
     console.log('PATCH devices - Request body:', { deviceTag, status, currentUser, notes })
 
+    // 현재 사용자 정보 가져오기 (변경자 정보 기록용)
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    let changerInfo = '시스템'
+
+    if (authUser) {
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('name, role')
+        .eq('user_id', authUser.id)
+        .single()
+
+      if (userProfile) {
+        const roleText = userProfile.role === 'admin' ? '관리자' :
+                        userProfile.role === 'homeroom' ? '담임교사' :
+                        userProfile.role === 'helper' ? '도우미' : '사용자'
+        changerInfo = `${userProfile.name} (${roleText})`
+      } else {
+        changerInfo = authUser.email || '알 수 없음'
+      }
+    }
+
+    console.log('PATCH devices - Changer info:', changerInfo)
+
     if (!deviceTag || !status) {
       console.error('Missing required fields:', { deviceTag, status })
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -368,10 +391,17 @@ export async function PATCH(request: NextRequest) {
 
     console.log('Found device(s):', existingDevices?.length || 0)
 
-    // 기기 상태 업데이트 (updated_at은 자동으로 처리되도록 제거)
+    // 기기 상태 업데이트 - 변경자 정보 포함
+    const statusText = status === 'maintenance' ? '점검중' :
+                      status === 'available' ? '대여가능' :
+                      status === 'loaned' ? '대여중' : status
+
+    const changeNote = `상태 변경: ${statusText} (변경자: ${changerInfo})`
+    const finalNotes = notes ? `${changeNote} - ${notes}` : changeNote
+
     const updateData = {
       status: dbStatus,
-      notes: notes || null
+      notes: finalNotes
     }
 
     console.log('Updating device with data:', updateData)
