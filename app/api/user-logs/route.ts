@@ -83,11 +83,19 @@ export async function GET(request: Request) {
               ip_address: "192.168.1.100"
             })
 
-            if (loan.approved_at) {
+            if (loan.approved_at && loan.approved_by) {
               fallbackLogs.push({
                 id: `loan_${loan.id}_approved`,
                 timestamp: loan.approved_at,
-                action: "대여 승인",
+                action: "대여 승인됨",
+                details: `${loan.device_tag} 기기 대여가 ${loan.approved_by}에 의해 승인되었습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            } else if (loan.approved_at) {
+              fallbackLogs.push({
+                id: `loan_${loan.id}_approved`,
+                timestamp: loan.approved_at,
+                action: "대여 승인됨",
                 details: `${loan.device_tag} 기기 대여가 승인되었습니다.`,
                 ip_address: "192.168.1.100"
               })
@@ -109,6 +117,26 @@ export async function GET(request: Request) {
                 timestamp: loan.returned_at,
                 action: "기기 반납",
                 details: `${loan.device_tag} 기기를 반납했습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            }
+
+            // 본인 취소 vs 관리자 거절 구분
+            if (loan.status === 'cancelled') {
+              fallbackLogs.push({
+                id: `loan_${loan.id}_self_cancel`,
+                timestamp: loan.updated_at,
+                action: "대여 취소 (본인)",
+                details: `${loan.device_tag} 기기 대여를 본인이 취소했습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            } else if (loan.status === 'rejected') {
+              const rejecter = loan.rejected_by || '관리자'
+              fallbackLogs.push({
+                id: `loan_${loan.id}_admin_reject`,
+                timestamp: loan.updated_at,
+                action: "대여 거절됨",
+                details: `${loan.device_tag} 기기 대여가 ${rejecter}에 의해 거절되었습니다.`,
                 ip_address: "192.168.1.100"
               })
             }
@@ -177,12 +205,20 @@ export async function GET(request: Request) {
               ip_address: "192.168.1.100"
             })
 
-            // 승인 로그
-            if (loan.approved_at) {
+            // 승인 로그 (관리자/담임/도우미에 의한)
+            if (loan.approved_at && loan.approved_by) {
               userLogs.push({
                 id: `loan_${loan.id}_approved`,
                 timestamp: loan.approved_at,
-                action: "대여 승인",
+                action: "대여 승인됨",
+                details: `${loan.device_tag} 기기 대여가 ${loan.approved_by}에 의해 승인되었습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            } else if (loan.approved_at) {
+              userLogs.push({
+                id: `loan_${loan.id}_approved`,
+                timestamp: loan.approved_at,
+                action: "대여 승인됨",
                 details: `${loan.device_tag} 기기 대여가 승인되었습니다.`,
                 ip_address: "192.168.1.100"
               })
@@ -210,17 +246,90 @@ export async function GET(request: Request) {
               })
             }
 
-            // 취소/거절 로그
-            if (loan.status === 'rejected' || loan.status === 'cancelled') {
+            // 본인 취소 vs 관리자 거절 구분
+            if (loan.status === 'cancelled') {
+              // 본인이 취소한 경우 (사용자 자신이 취소)
               userLogs.push({
-                id: `loan_${loan.id}_cancel`,
+                id: `loan_${loan.id}_self_cancel`,
                 timestamp: loan.updated_at,
-                action: loan.status === 'rejected' ? "대여 거절" : "대여 취소",
-                details: `${loan.device_tag} 기기 대여가 ${loan.status === 'rejected' ? '거절' : '취소'}되었습니다.`,
+                action: "대여 취소 (본인)",
+                details: `${loan.device_tag} 기기 대여를 본인이 취소했습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            } else if (loan.status === 'rejected') {
+              // 관리자/담임/도우미가 거절한 경우
+              const rejecter = loan.rejected_by || '관리자'
+              userLogs.push({
+                id: `loan_${loan.id}_admin_reject`,
+                timestamp: loan.updated_at,
+                action: "대여 거절됨",
+                details: `${loan.device_tag} 기기 대여가 ${rejecter}에 의해 거절되었습니다.`,
                 ip_address: "192.168.1.100"
               })
             }
           })
+        }
+
+        // 2. 사용자가 관리자/담임/도우미 역할로 수행한 작업들 조회 (승인, 거절 등)
+        if (['admin', 'homeroom', 'helper'].includes(targetUser.role)) {
+          console.log('🔍 USER LOGS API - Fetching admin actions performed by user')
+
+          // 사용자가 승인한 대여 신청들
+          const { data: approvedLoans } = await adminSupabase
+            .from('loan_applications')
+            .select('*')
+            .eq('approved_by', targetUser.email)
+            .not('approved_at', 'is', null)
+
+          if (approvedLoans && approvedLoans.length > 0) {
+            approvedLoans.forEach(loan => {
+              userLogs.push({
+                id: `admin_approve_${loan.id}`,
+                timestamp: loan.approved_at,
+                action: "대여 승인 작업",
+                details: `${loan.student_name}의 ${loan.device_tag} 기기 대여를 승인했습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            })
+          }
+
+          // 사용자가 거절한 대여 신청들
+          const { data: rejectedLoans } = await adminSupabase
+            .from('loan_applications')
+            .select('*')
+            .eq('rejected_by', targetUser.email)
+            .eq('status', 'rejected')
+
+          if (rejectedLoans && rejectedLoans.length > 0) {
+            rejectedLoans.forEach(loan => {
+              userLogs.push({
+                id: `admin_reject_${loan.id}`,
+                timestamp: loan.updated_at,
+                action: "대여 거절 작업",
+                details: `${loan.student_name}의 ${loan.device_tag} 기기 대여를 거절했습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            })
+          }
+
+          // 기기 반납 처리 작업들
+          const { data: returnProcessed } = await adminSupabase
+            .from('loan_applications')
+            .select('*')
+            .eq('return_processed_by', targetUser.email)
+            .not('returned_at', 'is', null)
+
+          if (returnProcessed && returnProcessed.length > 0) {
+            returnProcessed.forEach(loan => {
+              userLogs.push({
+                id: `admin_return_${loan.id}`,
+                timestamp: loan.returned_at,
+                action: "반납 처리 작업",
+                details: `${loan.student_name}의 ${loan.device_tag} 기기 반납을 처리했습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            })
+          }
         }
       }
 

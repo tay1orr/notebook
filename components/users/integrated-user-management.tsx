@@ -704,10 +704,18 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                           icon: '📝'
                         }
                       case '대여 승인':
+                      case '대여 승인됨':
                         return {
                           bgColor: 'bg-green-50 border-green-200',
                           textColor: 'text-green-700',
                           badgeColor: 'bg-green-100 text-green-800',
+                          icon: '✅'
+                        }
+                      case '대여 승인 작업':
+                        return {
+                          bgColor: 'bg-emerald-50 border-emerald-200',
+                          textColor: 'text-emerald-700',
+                          badgeColor: 'bg-emerald-100 text-emerald-800',
                           icon: '✅'
                         }
                       case '기기 수령':
@@ -724,13 +732,41 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                           badgeColor: 'bg-gray-100 text-gray-800',
                           icon: '↩️'
                         }
+                      case '반납 처리 작업':
+                        return {
+                          bgColor: 'bg-slate-50 border-slate-200',
+                          textColor: 'text-slate-700',
+                          badgeColor: 'bg-slate-100 text-slate-800',
+                          icon: '📦'
+                        }
+                      case '대여 취소 (본인)':
+                        return {
+                          bgColor: 'bg-orange-50 border-orange-200',
+                          textColor: 'text-orange-700',
+                          badgeColor: 'bg-orange-100 text-orange-800',
+                          icon: '🚫'
+                        }
                       case '대여 거절':
-                      case '대여 취소':
+                      case '대여 거절됨':
                         return {
                           bgColor: 'bg-red-50 border-red-200',
                           textColor: 'text-red-700',
                           badgeColor: 'bg-red-100 text-red-800',
                           icon: '❌'
+                        }
+                      case '대여 거절 작업':
+                        return {
+                          bgColor: 'bg-rose-50 border-rose-200',
+                          textColor: 'text-rose-700',
+                          badgeColor: 'bg-rose-100 text-rose-800',
+                          icon: '❌'
+                        }
+                      case '대여 취소':
+                        return {
+                          bgColor: 'bg-orange-50 border-orange-200',
+                          textColor: 'text-orange-700',
+                          badgeColor: 'bg-orange-100 text-orange-800',
+                          icon: '🚫'
                         }
                       case '계정 생성':
                         return {

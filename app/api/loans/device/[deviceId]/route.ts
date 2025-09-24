@@ -119,21 +119,55 @@ export async function GET(
 
           // 대여 기록을 기기 이력 형식으로 변환 (모든 기록 포함)
           if (loans && loans.length > 0) {
-            loans.forEach(loan => {
+            loans.forEach((loan, index) => {
+              console.log(`🔍 DEVICE HISTORY - Processing loan ${index + 1}:`, {
+                id: loan.id,
+                student_name: loan.student_name,
+                device_tag: loan.device_tag,
+                status: loan.status,
+                returned_at: loan.returned_at,
+                returned_at_type: typeof loan.returned_at,
+                approved_at: loan.approved_at,
+                picked_up_at: loan.picked_up_at,
+                created_at: loan.created_at
+              })
+
               // 상태를 한국어로 변환 - returned_at이 있으면 반납완료로 우선 처리
               let koreanStatus = loan.status
 
-              if (loan.returned_at && loan.returned_at !== null && loan.returned_at !== 'null' && loan.returned_at.trim() !== '') {
-                // 반납일이 있으면 실제 상태와 관계없이 반납완료로 표시
+              // 반납일 확인 - null, 'null', 빈 문자열, undefined를 모두 체크
+              const hasValidReturnDate = loan.returned_at &&
+                                       loan.returned_at !== null &&
+                                       loan.returned_at !== 'null' &&
+                                       loan.returned_at !== '' &&
+                                       loan.returned_at.toString().trim() !== '' &&
+                                       loan.returned_at !== 'undefined'
+
+              console.log(`🔍 DEVICE HISTORY - Return date validation for loan ${index + 1}:`, {
+                returned_at_raw: loan.returned_at,
+                type: typeof loan.returned_at,
+                not_null: loan.returned_at !== null,
+                not_string_null: loan.returned_at !== 'null',
+                not_empty: loan.returned_at !== '',
+                not_undefined_string: loan.returned_at !== 'undefined',
+                toString_check: loan.returned_at ? loan.returned_at.toString().trim() !== '' : false,
+                final_hasValidReturnDate: hasValidReturnDate
+              })
+
+              // 상태 결정 로직 - 더 명확하게
+              if (hasValidReturnDate) {
                 koreanStatus = '반납완료'
-                console.log('🔍 DEVICE HISTORY - Setting to 반납완료 due to returned_at:', loan.returned_at)
+                console.log(`🔍 DEVICE HISTORY - ✅ SETTING TO 반납완료 for loan ${index + 1} due to valid returned_at:`, loan.returned_at)
               } else {
-                // 반납일이 없는 경우에만 상태별 변환
+                // 반납일이 없는 경우 상태별 변환
+                const originalStatus = loan.status
                 switch (loan.status) {
                   case 'requested':
                     koreanStatus = '대여신청중'
                     break
                   case 'approved':
+                    koreanStatus = '대여중'
+                    break
                   case 'picked_up':
                     koreanStatus = '대여중'
                     break
@@ -141,6 +175,8 @@ export async function GET(
                     koreanStatus = '반납완료'
                     break
                   case 'rejected':
+                    koreanStatus = '취소됨'
+                    break
                   case 'cancelled':
                     koreanStatus = '취소됨'
                     break
@@ -150,14 +186,14 @@ export async function GET(
                   default:
                     koreanStatus = loan.status
                 }
+                console.log(`🔍 DEVICE HISTORY - Status conversion for loan ${index + 1}:`, {
+                  original_status: originalStatus,
+                  converted_status: koreanStatus,
+                  reason: 'no_valid_return_date'
+                })
               }
 
-              console.log('🔍 DEVICE HISTORY - Status conversion:', {
-                original_status: loan.status,
-                returned_at: loan.returned_at,
-                final_status: koreanStatus,
-                student: loan.student_name
-              })
+              console.log(`🔍 DEVICE HISTORY - ✅ FINAL STATUS for loan ${index + 1}: "${koreanStatus}" (student: ${loan.student_name})`)
 
               deviceHistory.push({
                 student_name: loan.student_name,
@@ -249,7 +285,18 @@ export async function GET(
 
     console.log('🔍 DEVICE HISTORY - Total history entries:', deviceHistory.length)
 
-    return NextResponse.json({
+    // 최종 반환 전 데이터 확인
+    console.log('🔍 DEVICE HISTORY - FINAL RETURN DATA:')
+    deviceHistory.forEach((entry, index) => {
+      console.log(`  Entry ${index + 1}:`, {
+        student: entry.student_name,
+        status: entry.status,
+        created_at: entry.created_at,
+        returned_at: entry.returned_at
+      })
+    })
+
+    const response = {
       deviceId,
       history: deviceHistory,
       debug: {
@@ -258,7 +305,11 @@ export async function GET(
         historyFound: deviceHistory.length > 0,
         totalRecords: deviceHistory.length
       }
-    })
+    }
+
+    console.log('🔍 DEVICE HISTORY - RESPONSE OBJECT:', JSON.stringify(response, null, 2))
+
+    return NextResponse.json(response)
 
   } catch (error) {
     console.error('Device history API error:', error)
