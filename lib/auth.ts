@@ -325,7 +325,12 @@ export function hasPermission(userRole: UserRole | '', action: string, resource?
       'devices:read',
       'dashboard:read'
     ],
-    teacher: [
+    manager: [
+      'users:write',
+      'loans:write',
+      'devices:write',
+      'students:write',
+      'approvals:write',
       'loans:read',
       'students:read',
       'devices:read',
@@ -389,8 +394,8 @@ export function isHelper(user: AuthUser): boolean {
   return user.role === 'helper'
 }
 
-export function isTeacher(user: AuthUser): boolean {
-  return user.role === 'teacher'
+export function isManager(user: AuthUser): boolean {
+  return user.role === 'manager'
 }
 
 export function isStudent(user: AuthUser): boolean {
@@ -398,7 +403,7 @@ export function isStudent(user: AuthUser): boolean {
 }
 
 export function isStaff(user: AuthUser): boolean {
-  return ['admin', 'homeroom', 'helper', 'teacher'].includes(user.role)
+  return ['admin', 'manager', 'homeroom', 'helper'].includes(user.role)
 }
 
 export function canApproveLoans(user: AuthUser): boolean {

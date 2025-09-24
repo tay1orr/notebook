@@ -25,7 +25,7 @@ export function UserManagement({ initialUsers }: UserManagementProps) {
       'admin': '관리자',
       'homeroom': '담임교사',
       'helper': '노트북 관리 도우미',
-      'teacher': '교사',
+      'manager': '관리팀',
       'student': '학생'
     }
     return roleMap[role as keyof typeof roleMap] || role
@@ -95,7 +95,7 @@ export function UserManagement({ initialUsers }: UserManagementProps) {
                 <SelectItem value="admin">관리자</SelectItem>
                 <SelectItem value="homeroom">담임교사</SelectItem>
                 <SelectItem value="helper">노트북 관리 도우미</SelectItem>
-                <SelectItem value="teacher">교사</SelectItem>
+                <SelectItem value="manager">관리팀</SelectItem>
                 <SelectItem value="student">학생</SelectItem>
               </SelectContent>
             </Select>
@@ -181,7 +181,7 @@ export function UserManagement({ initialUsers }: UserManagementProps) {
             <div className="space-y-2">
               <label className="text-sm font-medium">새 권한</label>
               <div className="grid grid-cols-1 gap-2">
-                {['student', 'teacher', 'helper', 'homeroom', 'admin'].map((role) => (
+                {['student', 'helper", "homeroom", "manager", "admin'].map((role) => (
                   <Button
                     key={role}
                     variant={selectedUser?.role === role ? "default" : "outline"}

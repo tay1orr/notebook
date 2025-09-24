@@ -112,7 +112,7 @@ export function Header({ user }: HeaderProps) {
     {
       href: '/dashboard',
       label: '대시보드',
-      roles: ['admin', 'homeroom', 'helper', 'teacher', 'student'],
+      roles: ['admin', 'homeroom', 'helper', 'manager', 'student'],
       badge: 0
     },
     {

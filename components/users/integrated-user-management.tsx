@@ -210,8 +210,8 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
           const userClass = parseInt(currentUser.class)
 
           allUsers = allUsers.filter(user => {
-            // 관리자나 다른 담임교사는 표시하지 않음
-            if (user.role === 'admin' || (user.role === 'homeroom' && user.email !== currentUser.email)) {
+            // 관리자, 관리팀, 다른 담임교사는 표시하지 않음
+            if (user.role === 'admin' || user.role === 'manager' || (user.role === 'homeroom' && user.email !== currentUser.email)) {
               return false
             }
 
@@ -345,7 +345,7 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
       'admin': '관리자',
       'homeroom': '담임교사',
       'helper': '노트북 관리 도우미',
-      'teacher': '교사',
+      'manager': '관리팀',
       'student': '학생'
     }
     return roleMap[role as keyof typeof roleMap] || role
@@ -398,7 +398,7 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
               <TabsTrigger value="all-users">
                 전체 사용자 ({users.length})
               </TabsTrigger>
-              {(currentUser.role === 'admin' || currentUser.role === 'homeroom') && (
+              {(currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'homeroom') && (
                 <TabsTrigger value="pending-approvals">
                   승인 대기 {pendingCount > 0 && (
                     <Badge variant="destructive" className="ml-2">
@@ -427,7 +427,7 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                     <SelectItem value="admin">관리자</SelectItem>
                     <SelectItem value="homeroom">담임교사</SelectItem>
                     <SelectItem value="helper">노트북 관리 도우미</SelectItem>
-                    <SelectItem value="teacher">교사</SelectItem>
+                    <SelectItem value="manager">관리팀</SelectItem>
                     <SelectItem value="student">학생</SelectItem>
                   </SelectContent>
                 </Select>
@@ -462,19 +462,41 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
-                              {currentUser.role === 'admin' ? (
+                              {(currentUser.role === 'admin' || currentUser.role === 'manager') ? (
                                 <Select
                                   value={user.role}
-                                  onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
+                                  onValueChange={(newRole) => {
+                                    // 권한 체크: 관리팀은 admin이나 manager 역할을 지정할 수 없음
+                                    if (currentUser.role === 'manager' && (newRole === 'admin' || newRole === 'manager')) {
+                                      alert('관리팀은 관리자나 관리팀 역할을 지정할 수 없습니다.')
+                                      return
+                                    }
+
+                                    // 관리자 역할은 taylorr@gclass.ice.go.kr만 지정 가능
+                                    if (newRole === 'admin' && currentUser.email !== 'taylorr@gclass.ice.go.kr') {
+                                      alert('관리자 역할은 최고 관리자만 지정할 수 있습니다.')
+                                      return
+                                    }
+
+                                    handleRoleChange(user.id, newRole)
+                                  }}
                                 >
                                   <SelectTrigger className="w-32">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="student">학생</SelectItem>
-                                    <SelectItem value="teacher">교사</SelectItem>
                                     <SelectItem value="helper">노트북 관리 도우미</SelectItem>
                                     <SelectItem value="homeroom">담임교사</SelectItem>
+                                    {/* 관리팀은 admin, manager 역할 선택 불가 */}
+                                    {currentUser.role === 'admin' && (
+                                      <>
+                                        <SelectItem value="manager">관리팀</SelectItem>
+                                        {currentUser.email === 'taylorr@gclass.ice.go.kr' && (
+                                          <SelectItem value="admin">관리자</SelectItem>
+                                        )}
+                                      </>
+                                    )}
                                   </SelectContent>
                                 </Select>
                               ) : (
@@ -512,7 +534,7 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                           <TableCell>{user.createdAt || '-'}</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
-                              {(currentUser.role === 'admin' || currentUser.role === 'homeroom') && (
+                              {(currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'homeroom') && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -529,7 +551,7 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                                   </svg>
                                 </Button>
                               )}
-                              {user.pendingApproval && (currentUser.role === 'admin' ||
+                              {user.pendingApproval && (currentUser.role === 'admin' || currentUser.role === 'manager' ||
                                 (currentUser.role === 'homeroom' && user.className === `${currentUser.grade}-${currentUser.class}`)) && (
                                 <div className="flex space-x-1">
                                   <Button
@@ -659,7 +681,18 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
             <div className="space-y-2">
               <label className="text-sm font-medium">새 권한</label>
               <div className="grid grid-cols-1 gap-2">
-                {['student', 'teacher', 'helper', 'homeroom', 'admin'].map((role) => (
+                {(() => {
+                  const availableRoles = ['student', 'helper', 'homeroom']
+                  // admin만 manager 역할 부여 가능
+                  if (currentUser.role === 'admin') {
+                    availableRoles.push('manager')
+                  }
+                  // taylorr@gclass.ice.go.kr만 admin 역할 부여 가능
+                  if (currentUser.email === 'taylorr@gclass.ice.go.kr') {
+                    availableRoles.push('admin')
+                  }
+                  return availableRoles
+                })().map((role) => (
                   <Button
                     key={role}
                     variant={selectedUser?.role === role ? "default" : "outline"}

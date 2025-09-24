@@ -94,7 +94,7 @@ export async function GET() {
         model: device.model,
         serialNumber: device.serial_number,
         status: loan ? 'loaned' : mapDeviceStatus(device.status), // 대여 정보가 있으면 강제로 대여중으로 설정
-        assignedClass: device.assigned_class ? `${device.assigned_class.grade}-${device.assigned_class.name}` : '',
+        assignedClass: device.assigned_class && typeof device.assigned_class === 'object' && 'grade' in device.assigned_class && 'name' in device.assigned_class ? `${device.assigned_class.grade}-${device.assigned_class.name}` : '',
         deviceNumber: device.asset_tag.replace('ICH-', ''),
         currentUser: loan ? loan.student_name : null,
         notes: device.notes || '',
@@ -232,13 +232,13 @@ async function fetchExistingDevices(supabase: any) {
     return generateInMemoryDevices()
   }
 
-  const formattedDevices = devices.map(device => ({
+  const formattedDevices = devices.map((device: any) => ({
     id: device.asset_tag,
     assetNumber: device.asset_tag,
     model: device.model,
     serialNumber: device.serial_number,
     status: mapDeviceStatus(device.status),
-    assignedClass: device.assigned_class ? `${device.assigned_class.grade}-${device.assigned_class.name}` : '',
+    assignedClass: device.assigned_class && typeof device.assigned_class === 'object' && 'grade' in device.assigned_class && 'name' in device.assigned_class ? `${device.assigned_class.grade}-${device.assigned_class.name}` : '',
     deviceNumber: device.asset_tag.replace('ICH-', ''),
     currentUser: null,
     notes: device.notes || '',
@@ -375,9 +375,10 @@ export async function PATCH(request: NextRequest) {
 
     // 권한 체크 완료 후 changerInfo 설정
     const roleText = userProfile.role === 'admin' ? '관리자' :
+                     userProfile.role === 'manager' ? '관리팀' :
                      userProfile.role === 'homeroom' ? '담임교사' :
                      userProfile.role === 'helper' ? '도우미' : '사용자'
-    changerInfo = `${userProfile.name || authUser.email?.split('@')[0] || '알 수 없음'} (${roleText})`
+    changerInfo = `${(userProfile as any).name || authUser.email?.split('@')[0] || '알 수 없음'} (${roleText})`
 
     console.log('PATCH devices - Permission check passed:', {
       role: userProfile.role,

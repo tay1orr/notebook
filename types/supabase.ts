@@ -14,7 +14,7 @@ export interface Database {
           id: string
           email: string
           name: string
-          role: 'admin' | 'homeroom' | 'helper' | 'teacher' | 'student'
+          role: 'admin' | 'manager' | 'homeroom' | 'helper' | 'student'
           class_id: string | null
           active: boolean
           created_at: string
@@ -24,7 +24,7 @@ export interface Database {
           id?: string
           email: string
           name: string
-          role: 'admin' | 'homeroom' | 'helper' | 'teacher' | 'student'
+          role: 'admin' | 'manager' | 'homeroom' | 'helper' | 'student'
           class_id?: string | null
           active?: boolean
           created_at?: string
@@ -34,7 +34,7 @@ export interface Database {
           id?: string
           email?: string
           name?: string
-          role?: 'admin' | 'homeroom' | 'helper' | 'teacher' | 'student'
+          role?: 'admin | manager | homeroom | helper | student'
           class_id?: string | null
           active?: boolean
           created_at?: string

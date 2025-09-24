@@ -23,7 +23,7 @@ export async function POST() {
         CREATE TABLE IF NOT EXISTS public.user_roles (
             id SERIAL PRIMARY KEY,
             user_id UUID NOT NULL,
-            role TEXT NOT NULL CHECK (role IN ('admin', 'homeroom', 'helper', 'teacher', 'student')),
+            role TEXT NOT NULL CHECK (role IN ('admin', 'homeroom', 'helper', 'manager', 'student')),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(user_id)
