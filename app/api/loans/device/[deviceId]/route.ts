@@ -102,7 +102,19 @@ export async function GET(
 
           // 대여 기록을 기기 이력 형식으로 변환
           if (loans && loans.length > 0) {
+            // 학생별로 그룹화하고 최신 대여 기록만 표시
+            const loansByStudent = new Map()
+
             loans.forEach(loan => {
+              const key = `${loan.student_name}-${loan.created_at.split('T')[0]}` // 학생명-날짜로 키 생성
+              if (!loansByStudent.has(key) ||
+                  new Date(loan.created_at) > new Date(loansByStudent.get(key).created_at)) {
+                loansByStudent.set(key, loan)
+              }
+            })
+
+            // 중복 제거된 대여 기록을 기기 이력에 추가
+            Array.from(loansByStudent.values()).forEach(loan => {
               deviceHistory.push({
                 student_name: loan.student_name,
                 class_name: loan.class_name,
@@ -112,6 +124,9 @@ export async function GET(
                 purpose: loan.purpose
               })
             })
+
+            console.log('🔍 DEVICE HISTORY - Original loans:', loans.length)
+            console.log('🔍 DEVICE HISTORY - After deduplication:', deviceHistory.length)
           }
         }
       }
