@@ -64,20 +64,76 @@ export async function GET(request: Request) {
 
       console.log('🔍 USER LOGS API - Using fallback user data:', fallbackUser)
 
-      const userLogs = [
-        {
-          id: "1",
-          timestamp: "2024-01-15T09:00:00Z",
-          action: "계정 생성",
-          details: "사용자 계정이 생성되었습니다.",
-          ip_address: "192.168.1.100"
+      // fallback 사용자도 실제 대여 기록 조회 시도
+      const fallbackLogs: any[] = []
+      try {
+        const { data: userLoans } = await adminSupabase
+          .from('loan_applications')
+          .select('*')
+          .eq('email', fallbackUser.email)
+          .order('created_at', { ascending: false })
+
+        if (userLoans && userLoans.length > 0) {
+          userLoans.forEach((loan) => {
+            fallbackLogs.push({
+              id: `loan_${loan.id}_request`,
+              timestamp: loan.created_at,
+              action: "대여 신청",
+              details: `${loan.device_tag} 기기를 대여 신청했습니다. (목적: ${loan.purpose})`,
+              ip_address: "192.168.1.100"
+            })
+
+            if (loan.approved_at) {
+              fallbackLogs.push({
+                id: `loan_${loan.id}_approved`,
+                timestamp: loan.approved_at,
+                action: "대여 승인",
+                details: `${loan.device_tag} 기기 대여가 승인되었습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            }
+
+            if (loan.picked_up_at) {
+              fallbackLogs.push({
+                id: `loan_${loan.id}_pickup`,
+                timestamp: loan.picked_up_at,
+                action: "기기 수령",
+                details: `${loan.device_tag} 기기를 수령했습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            }
+
+            if (loan.returned_at) {
+              fallbackLogs.push({
+                id: `loan_${loan.id}_return`,
+                timestamp: loan.returned_at,
+                action: "기기 반납",
+                details: `${loan.device_tag} 기기를 반납했습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            }
+          })
         }
-      ]
+      } catch (error) {
+        console.error('🔍 USER LOGS API - Fallback loan fetch error:', error)
+      }
+
+      // 기본 로그 추가
+      fallbackLogs.push({
+        id: "account_created",
+        timestamp: authUser.user.created_at,
+        action: "계정 생성",
+        details: "사용자 계정이 생성되었습니다.",
+        ip_address: "192.168.1.100"
+      })
+
+      // 시간순 정렬
+      fallbackLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
       return NextResponse.json({
         userId,
         userName: fallbackUser.name,
-        logs: userLogs
+        logs: fallbackLogs
       })
     }
 
@@ -91,37 +147,109 @@ export async function GET(request: Request) {
       }
     }
 
-    // 모의 로그 데이터 생성
-    const userLogs = [
-      {
+    console.log('🔍 USER LOGS API - Fetching real user activity data')
+
+    // 실제 사용자 활동 로그 데이터 생성
+    const userLogs: any[] = []
+
+    try {
+      // 1. 사용자의 대여 신청 기록 조회
+      const { data: userLoans, error: loansError } = await adminSupabase
+        .from('loan_applications')
+        .select('*')
+        .eq('email', targetUser.email)
+        .order('created_at', { ascending: false })
+
+      if (loansError) {
+        console.error('🔍 USER LOGS API - Error fetching loans:', loansError)
+      } else {
+        console.log('🔍 USER LOGS API - Found loans:', userLoans?.length || 0)
+
+        // 대여 기록을 로그 형식으로 변환
+        if (userLoans && userLoans.length > 0) {
+          userLoans.forEach((loan, index) => {
+            // 대여 신청 로그
+            userLogs.push({
+              id: `loan_${loan.id}_request`,
+              timestamp: loan.created_at,
+              action: "대여 신청",
+              details: `${loan.device_tag} 기기를 대여 신청했습니다. (목적: ${loan.purpose})`,
+              ip_address: "192.168.1.100"
+            })
+
+            // 승인 로그
+            if (loan.approved_at) {
+              userLogs.push({
+                id: `loan_${loan.id}_approved`,
+                timestamp: loan.approved_at,
+                action: "대여 승인",
+                details: `${loan.device_tag} 기기 대여가 승인되었습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            }
+
+            // 수령 로그
+            if (loan.picked_up_at) {
+              userLogs.push({
+                id: `loan_${loan.id}_pickup`,
+                timestamp: loan.picked_up_at,
+                action: "기기 수령",
+                details: `${loan.device_tag} 기기를 수령했습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            }
+
+            // 반납 로그
+            if (loan.returned_at) {
+              userLogs.push({
+                id: `loan_${loan.id}_return`,
+                timestamp: loan.returned_at,
+                action: "기기 반납",
+                details: `${loan.device_tag} 기기를 반납했습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            }
+
+            // 취소/거절 로그
+            if (loan.status === 'rejected' || loan.status === 'cancelled') {
+              userLogs.push({
+                id: `loan_${loan.id}_cancel`,
+                timestamp: loan.updated_at,
+                action: loan.status === 'rejected' ? "대여 거절" : "대여 취소",
+                details: `${loan.device_tag} 기기 대여가 ${loan.status === 'rejected' ? '거절' : '취소'}되었습니다.`,
+                ip_address: "192.168.1.100"
+              })
+            }
+          })
+        }
+      }
+
+      // 계정 생성 로그 추가 (기본)
+      userLogs.push({
+        id: "account_created",
+        timestamp: targetUser.created_at || "2024-01-15T09:00:00Z",
+        action: "계정 생성",
+        details: "사용자 계정이 생성되었습니다.",
+        ip_address: "192.168.1.100"
+      })
+
+    } catch (error) {
+      console.error('🔍 USER LOGS API - Error generating logs:', error)
+
+      // 오류 시 기본 로그만 반환
+      userLogs.push({
         id: "1",
         timestamp: "2024-01-15T09:00:00Z",
         action: "계정 생성",
         details: "사용자 계정이 생성되었습니다.",
         ip_address: "192.168.1.100"
-      },
-      {
-        id: "2",
-        timestamp: "2024-01-15T09:30:00Z",
-        action: "로그인",
-        details: "사용자가 로그인했습니다.",
-        ip_address: "192.168.1.100"
-      },
-      {
-        id: "3",
-        timestamp: "2024-01-15T10:00:00Z",
-        action: "대여 신청",
-        details: "ICH-30135 기기를 대여 신청했습니다.",
-        ip_address: "192.168.1.100"
-      },
-      {
-        id: "4",
-        timestamp: "2024-01-15T11:00:00Z",
-        action: "기기 수령",
-        details: "ICH-30135 기기를 수령했습니다.",
-        ip_address: "192.168.1.100"
-      }
-    ]
+      })
+    }
+
+    // 시간순으로 정렬 (최신순)
+    userLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+
+    console.log('🔍 USER LOGS API - Generated logs:', userLogs.length)
 
     console.log('🔍 USER LOGS API - Returning logs for user:', targetUser.name)
 

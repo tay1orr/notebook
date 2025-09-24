@@ -103,29 +103,43 @@ export async function GET(
           // 대여 기록을 기기 이력 형식으로 변환 (모든 기록 포함)
           if (loans && loans.length > 0) {
             loans.forEach(loan => {
-              // 상태를 한국어로 변환
+              // 상태를 한국어로 변환 - returned_at이 있으면 반납완료로 우선 처리
               let koreanStatus = loan.status
-              switch (loan.status) {
-                case 'requested':
-                  koreanStatus = '대여신청중'
-                  break
-                case 'approved':
-                case 'picked_up':
-                  koreanStatus = '대여중'
-                  break
-                case 'returned':
-                  koreanStatus = '반납완료'
-                  break
-                case 'rejected':
-                case 'cancelled':
-                  koreanStatus = '취소됨'
-                  break
-                case 'maintenance':
-                  koreanStatus = '점검중'
-                  break
-                default:
-                  koreanStatus = loan.status
+
+              if (loan.returned_at && loan.returned_at !== null) {
+                // 반납일이 있으면 실제 상태와 관계없이 반납완료로 표시
+                koreanStatus = '반납완료'
+              } else {
+                // 반납일이 없는 경우에만 상태별 변환
+                switch (loan.status) {
+                  case 'requested':
+                    koreanStatus = '대여신청중'
+                    break
+                  case 'approved':
+                  case 'picked_up':
+                    koreanStatus = '대여중'
+                    break
+                  case 'returned':
+                    koreanStatus = '반납완료'
+                    break
+                  case 'rejected':
+                  case 'cancelled':
+                    koreanStatus = '취소됨'
+                    break
+                  case 'maintenance':
+                    koreanStatus = '점검중'
+                    break
+                  default:
+                    koreanStatus = loan.status
+                }
               }
+
+              console.log('🔍 DEVICE HISTORY - Status conversion:', {
+                original_status: loan.status,
+                returned_at: loan.returned_at,
+                final_status: koreanStatus,
+                student: loan.student_name
+              })
 
               deviceHistory.push({
                 student_name: loan.student_name,
