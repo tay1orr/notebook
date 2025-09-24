@@ -67,27 +67,35 @@ export async function GET(
       }
     }
 
+    // 변수들을 먼저 선언
+    let allLoans: any[] = []
+    let sampleTags: any[] = []
+    let deviceNumber = ''
+    let shortTag = ''
+
     try {
       // 먼저 전체 대여 기록에서 device_tag 패턴 확인
-      const { data: allLoans } = await adminSupabase
+      const { data: loansData } = await adminSupabase
         .from('loans')
         .select('device_tag, student_name, created_at')
         .not('device_tag', 'is', null)
         .limit(50)
 
+      allLoans = loansData || []
+
       // 응답에 샘플 데이터 포함
-      const sampleTags = allLoans?.map(l => ({
+      sampleTags = allLoans.map(l => ({
         device_tag: l.device_tag,
         student: l.student_name,
         date: l.created_at?.substring(0, 10)
       })).slice(0, 15)
 
       // ICH-30135에서 다양한 패턴으로 매칭 시도
-      const deviceNumber = deviceId.replace('ICH-', '') // 30135
+      deviceNumber = deviceId.replace('ICH-', '') // 30135
       const grade = deviceNumber.charAt(0) // 3
       const classNum = deviceNumber.substring(1, 3) // 01
       const deviceNum = deviceNumber.substring(3) // 35
-      const shortTag = `${grade}-${parseInt(classNum)}-${parseInt(deviceNum)}` // 3-1-35
+      shortTag = `${grade}-${parseInt(classNum)}-${parseInt(deviceNum)}` // 3-1-35
 
       console.log('🔍 DEVICE HISTORY - Device parsing:', {
         deviceId,
@@ -202,7 +210,7 @@ export async function GET(
           shortTag,
           deviceNumber
         },
-        totalLoansInDB: allLoans?.length || 0
+        totalLoansInDB: allLoans.length
       }
     })
 
