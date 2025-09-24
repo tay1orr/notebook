@@ -68,14 +68,47 @@ export async function GET(
     }
 
     try {
-      // device_tag로 관련된 모든 대여 기록 조회
+      // 먼저 전체 대여 기록에서 device_tag 패턴 확인
+      const { data: allLoans } = await adminSupabase
+        .from('loans')
+        .select('device_tag')
+        .not('device_tag', 'is', null)
+        .limit(20)
+
+      console.log('🔍 DEVICE HISTORY - Sample device_tags in database:',
+        allLoans?.map(l => l.device_tag).slice(0, 10)
+      )
+
+      // ICH-30135에서 다양한 패턴으로 매칭 시도
+      const deviceNumber = deviceId.replace('ICH-', '') // 30135
+      const grade = deviceNumber.charAt(0) // 3
+      const classNum = deviceNumber.substring(1, 3) // 01
+      const deviceNum = deviceNumber.substring(3) // 35
+      const shortTag = `${grade}-${parseInt(classNum)}-${parseInt(deviceNum)}` // 3-1-35
+
+      console.log('🔍 DEVICE HISTORY - Device parsing:', {
+        deviceId,
+        deviceNumber,
+        grade,
+        classNum: parseInt(classNum),
+        deviceNum: parseInt(deviceNum),
+        shortTag
+      })
+
+      // 다양한 패턴으로 조회
       const { data: loans, error: loansError } = await adminSupabase
         .from('loans')
         .select('*')
-        .or(`device_tag.eq.${deviceId},device_tag.like.%${deviceId.split('-').slice(-2).join('-')}%`)
+        .or(`device_tag.eq.${deviceId},device_tag.eq.${shortTag},device_tag.like.%${shortTag}%,device_tag.like.%${deviceNumber}%`)
         .order('created_at', { ascending: false })
 
-      console.log('🔍 DEVICE HISTORY - Loans query result:', { count: loans?.length || 0, error: loansError })
+      console.log('🔍 DEVICE HISTORY - Loans query result:', {
+        deviceId,
+        shortTag,
+        count: loans?.length || 0,
+        error: loansError,
+        foundTags: loans?.map(l => l.device_tag).slice(0, 5)
+      })
 
       if (loans) {
         loans.forEach(loan => {
