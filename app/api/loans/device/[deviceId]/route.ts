@@ -107,11 +107,9 @@ export async function GET(
               let koreanStatus = loan.status
               switch (loan.status) {
                 case 'requested':
-                  koreanStatus = '대여신청'
+                  koreanStatus = '대여신청중'
                   break
                 case 'approved':
-                  koreanStatus = '승인됨'
-                  break
                 case 'picked_up':
                   koreanStatus = '대여중'
                   break
@@ -121,6 +119,9 @@ export async function GET(
                 case 'rejected':
                 case 'cancelled':
                   koreanStatus = '취소됨'
+                  break
+                case 'maintenance':
+                  koreanStatus = '점검중'
                   break
                 default:
                   koreanStatus = loan.status
@@ -143,11 +144,42 @@ export async function GET(
         }
       }
 
-      console.log('🔍 DEVICE HISTORY - Total history entries:', deviceHistory.length)
-
     } catch (error) {
       console.error('🔍 DEVICE HISTORY - Error fetching device history:', error)
     }
+
+    // 현재 기기 상태도 확인하여 이력에 추가 (점검중 등의 관리 상태)
+    try {
+      // device_tag를 asset_tag로 변환하여 현재 기기 정보 조회
+      const deviceMatch = deviceId.match(/ICH-(\d)(\d{2})(\d{2})/)
+      if (deviceMatch) {
+        const { data: deviceInfo, error: deviceError } = await adminSupabase
+          .from('devices')
+          .select('status, updated_at')
+          .eq('asset_tag', deviceId)
+          .single()
+
+        if (deviceError) {
+          console.log('🔍 DEVICE HISTORY - No device info found:', deviceError)
+        } else if (deviceInfo && deviceInfo.status === '점검') {
+          // 현재 점검중인 경우 이력에 추가
+          deviceHistory.push({
+            student_name: '관리자',
+            class_name: '시스템',
+            created_at: deviceInfo.updated_at || new Date().toISOString(),
+            returned_at: null,
+            status: '점검중',
+            purpose: '기기 점검',
+            original_status: 'maintenance'
+          })
+          console.log('🔍 DEVICE HISTORY - Added current maintenance status to history')
+        }
+      }
+    } catch (error) {
+      console.error('🔍 DEVICE HISTORY - Error fetching current device status:', error)
+    }
+
+    console.log('🔍 DEVICE HISTORY - Total history entries (including current status):', deviceHistory.length)
 
     // 시간순으로 정렬 (최신순)
     deviceHistory.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
