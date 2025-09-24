@@ -78,38 +78,36 @@ export async function GET(
       // 간단한 모의 데이터로 기기 이력 기능 테스트
       console.log('🔍 DEVICE HISTORY - Creating mock data for testing')
 
-      // ICH-30135 기기를 위한 모의 데이터
+      // ICH-30135 기기를 위한 모의 데이터 (기기 이력 모달 형식에 맞춤)
       if (deviceId === 'ICH-30135') {
+        // 현재 대여 중인 상태
         deviceHistory.push({
-          timestamp: '2024-01-15T09:00:00Z',
-          action: '대여 신청',
-          details: '김중산2가 기기를 신청했습니다.',
-          metadata: {
-            student_name: '김중산2',
-            class_name: '3-1반',
-            purpose: '수업용',
-            status: 'requested'
-          }
+          student_name: '김중산2',
+          class_name: '3-1반',
+          created_at: '2024-01-15T09:00:00Z',
+          returned_at: null,
+          status: 'picked_up',
+          purpose: '수업용'
         })
 
+        // 이전 대여 기록 1
         deviceHistory.push({
-          timestamp: '2024-01-15T10:00:00Z',
-          action: '대여 승인',
-          details: '대여 신청이 승인되었습니다. (승인자: 관리자)',
-          metadata: {
-            approved_by: '관리자',
-            student_name: '김중산2'
-          }
+          student_name: '박학생',
+          class_name: '3-1반',
+          created_at: '2024-01-10T09:00:00Z',
+          returned_at: '2024-01-14T16:00:00Z',
+          status: 'returned',
+          purpose: '과제용'
         })
 
+        // 이전 대여 기록 2
         deviceHistory.push({
-          timestamp: '2024-01-15T11:00:00Z',
-          action: '기기 수령',
-          details: '김중산2가 기기를 수령했습니다.',
-          metadata: {
-            student_name: '김중산2',
-            class_name: '3-1반'
-          }
+          student_name: '이학생',
+          class_name: '3-1반',
+          created_at: '2024-01-05T09:00:00Z',
+          returned_at: '2024-01-09T15:30:00Z',
+          status: 'returned',
+          purpose: '프로젝트용'
         })
       }
 
