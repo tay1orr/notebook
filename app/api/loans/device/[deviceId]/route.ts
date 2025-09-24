@@ -74,12 +74,21 @@ export async function GET(
     let shortTag = ''
 
     try {
-      // 먼저 전체 대여 기록에서 device_tag 패턴 확인
+      // 먼저 전체 대여 기록 확인 (device_tag가 null인 것도 포함)
+      const { data: allLoansData } = await adminSupabase
+        .from('loans')
+        .select('device_tag, student_name, created_at, status, class_name')
+        .limit(50)
+
+      // device_tag가 있는 것들만 별도로 조회
       const { data: loansData } = await adminSupabase
         .from('loans')
-        .select('device_tag, student_name, created_at')
+        .select('device_tag, student_name, created_at, status, class_name')
         .not('device_tag', 'is', null)
         .limit(50)
+
+      console.log('🔍 DEVICE HISTORY - All loans (including null device_tag):', allLoansData?.length)
+      console.log('🔍 DEVICE HISTORY - Loans with device_tag:', loansData?.length)
 
       allLoans = loansData || []
 
@@ -205,12 +214,20 @@ export async function GET(
       history: deviceHistory,
       debug: {
         sampleTags,
+        allSampleLoans: allLoansData?.slice(0, 10).map(l => ({
+          student: l.student_name,
+          device_tag: l.device_tag,
+          status: l.status,
+          class: l.class_name,
+          date: l.created_at?.substring(0, 10)
+        })),
         queriedPatterns: {
           deviceId,
           shortTag,
           deviceNumber
         },
-        totalLoansInDB: allLoans.length
+        totalLoansInDB: allLoansData?.length || 0,
+        loansWithDeviceTag: allLoans.length
       }
     })
 

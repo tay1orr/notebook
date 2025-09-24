@@ -197,7 +197,9 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
         console.log('🔍 CLIENT - API Response:', responseData)
         console.log('🔍 CLIENT - DEBUG INFO:')
         console.log('  Sample device_tags in DB:', responseData.debug?.sampleTags)
+        console.log('  All sample loans (including null device_tag):', responseData.debug?.allSampleLoans)
         console.log('  Total loans in DB:', responseData.debug?.totalLoansInDB)
+        console.log('  Loans with device_tag:', responseData.debug?.loansWithDeviceTag)
         console.log('  Queried patterns:', responseData.debug?.queriedPatterns)
 
         const { history: deviceLoans } = responseData
