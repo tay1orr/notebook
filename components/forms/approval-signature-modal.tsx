@@ -122,7 +122,18 @@ export function ApprovalSignatureModal({
               )}
               <div className="flex justify-between items-center p-2 bg-white rounded border">
                 <span className="text-gray-600 font-medium">📅 반납 예정:</span>
-                <span className="font-bold text-red-600">{loanData.due_date || loanData.dueDate}</span>
+                <span className="font-bold text-red-600">
+                  {(() => {
+                    const dueDate = loanData.due_date || loanData.dueDate || loanData.return_date;
+                    if (!dueDate) return '미정';
+                    const date = new Date(dueDate);
+                    return date.toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    });
+                  })()}
+                </span>
               </div>
               <div className="flex justify-between items-center p-2 bg-white rounded border">
                 <span className="text-gray-600 font-medium">📞 연락처:</span>
