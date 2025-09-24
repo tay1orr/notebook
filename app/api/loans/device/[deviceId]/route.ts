@@ -76,10 +76,12 @@ export async function GET(
 
     try {
       // 먼저 전체 대여 기록 확인 (device_tag가 null인 것도 포함)
-      const { data: allLoansResponse } = await adminSupabase
+      const { data: allLoansResponse, error: allLoansError } = await adminSupabase
         .from('loans')
         .select('device_tag, student_name, created_at, status, class_name')
         .limit(50)
+
+      console.log('🔍 DEVICE HISTORY - All loans query error:', allLoansError)
 
       allLoansData = allLoansResponse || []
 

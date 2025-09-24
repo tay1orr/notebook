@@ -360,6 +360,19 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
                     <SelectItem value="3">3학년</SelectItem>
                   </SelectContent>
                 </Select>
+                <Select value={classFilter} onValueChange={setClassFilter}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue placeholder="학급" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체</SelectItem>
+                    {[...Array(20)].map((_, i) => (
+                      <SelectItem key={i + 1} value={(i + 1).toString()}>
+                        {i + 1}반
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* 기기 테이블 */}
