@@ -339,7 +339,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized - Homeroom approval required' }, { status: 403 })
     }
 
-    // 담임교사와 도우미는 자신의 반 기기만 변경 가능 (관리자는 모든 기기 가능)
+    // 담임교사와 도우미는 자신의 반 기기만 변경 가능 (관리자와 관리팀은 모든 기기 가능)
     if ((userProfile.role === 'homeroom' || userProfile.role === 'helper') && userProfile.grade && userProfile.class) {
       // deviceTag를 기반으로 기기의 학급 정보 추출
       let deviceGrade: number | null = null

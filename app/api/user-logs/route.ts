@@ -15,8 +15,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // 관리자, 담임교사만 사용자 로그 조회 가능
-    if (!["admin", "homeroom"].includes(user.role)) {
+    // 관리자, 관리팀, 담임교사만 사용자 로그 조회 가능
+    if (!["admin", "manager", "homeroom"].includes(user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -80,6 +80,9 @@ export async function GET(request: Request) {
                   case 'admin':
                     approverRole = '관리자'
                     break
+                  case 'manager':
+                    approverRole = '관리팀'
+                    break
                   case 'homeroom':
                     approverRole = '담임교사'
                     break
@@ -136,6 +139,9 @@ export async function GET(request: Request) {
                 switch (loan.rejected_by_role) {
                   case 'admin':
                     rejecterRole = '관리자'
+                    break
+                  case 'manager':
+                    rejecterRole = '관리팀'
                     break
                   case 'homeroom':
                     rejecterRole = '담임교사'
@@ -228,6 +234,9 @@ export async function GET(request: Request) {
                   case 'admin':
                     approverRole = '관리자'
                     break
+                  case 'manager':
+                    approverRole = '관리팀'
+                    break
                   case 'homeroom':
                     approverRole = '담임교사'
                     break
@@ -288,6 +297,9 @@ export async function GET(request: Request) {
                 switch (loan.rejected_by_role) {
                   case 'admin':
                     rejecterRole = '관리자'
+                    break
+                  case 'manager':
+                    rejecterRole = '관리팀'
                     break
                   case 'homeroom':
                     rejecterRole = '담임교사'
