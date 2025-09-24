@@ -100,18 +100,6 @@ export async function GET(
           console.log('🔍 DEVICE HISTORY - Found loan records:', loans?.length || 0)
           console.log('🔍 DEVICE HISTORY - Raw loan records:', JSON.stringify(loans, null, 2))
 
-          // Vercel 로그에서도 보이도록 강제 출력
-          console.error('🔥🔥🔥 VERCEL LOG - Found loans:', loans?.length || 0)
-          if (loans && loans.length > 0) {
-            loans.forEach((loan, idx) => {
-              console.error(`🔥🔥🔥 VERCEL LOG - Loan ${idx + 1}:`, {
-                id: loan.id,
-                status: loan.status,
-                returned_at: loan.returned_at,
-                student_name: loan.student_name
-              })
-            })
-          }
 
           // 각 대여 기록의 상태와 날짜 상세 확인
           if (loans && loans.length > 0) {
@@ -133,19 +121,7 @@ export async function GET(
           // 대여 기록을 기기 이력 형식으로 변환 (모든 기록 포함)
           if (loans && loans.length > 0) {
             loans.forEach((loan, index) => {
-              console.log(`🔍 DEVICE HISTORY - Processing loan ${index + 1}:`, loan)
-
-              // 🔥 강력한 디버깅을 위한 Vercel 로그
-              console.error(`🔥🔥🔥 VERCEL STATUS - Loan ${index + 1} 처리 시작`)
-              console.error(`🔥🔥🔥 VERCEL STATUS - 원본 데이터:`, JSON.stringify({
-                id: loan.id,
-                status: loan.status,
-                returned_at: loan.returned_at,
-                returned_at_type: typeof loan.returned_at,
-                student: loan.student_name
-              }, null, 2))
-
-              // 🔥 새로운 접근: 상태를 간단하게 결정하기
+              // 상태를 한국어로 변환
               let koreanStatus = '알 수 없음'
 
               // 1. 먼저 returned_at 필드 체크 (가장 우선)
@@ -154,21 +130,12 @@ export async function GET(
                                    loan.returned_at.toString().trim() !== '' &&
                                    loan.returned_at !== 'null'
 
-              console.error(`🔥🔥🔥 VERCEL STATUS - returned_at 체크:`, {
-                원본값: loan.returned_at,
-                타입: typeof loan.returned_at,
-                문자열변환: loan.returned_at ? loan.returned_at.toString() : 'null',
-                hasReturnedAt: hasReturnedAt
-              })
-
               if (hasReturnedAt) {
                 koreanStatus = '반납완료'
-                console.error(`🔥🔥🔥 VERCEL STATUS - ✅ returned_at 존재 -> 반납완료`)
               }
               // 2. status 필드가 'returned'인 경우
               else if (loan.status === 'returned') {
                 koreanStatus = '반납완료'
-                console.error(`🔥🔥🔥 VERCEL STATUS - ✅ status=returned -> 반납완료`)
               }
               // 3. 기타 상태들
               else {
@@ -190,12 +157,9 @@ export async function GET(
                     koreanStatus = '점검중'
                     break
                   default:
-                    koreanStatus = `원본상태: ${loan.status}`
+                    koreanStatus = loan.status
                 }
-                console.error(`🔥🔥🔥 VERCEL STATUS - status=${loan.status} -> ${koreanStatus}`)
               }
-
-              console.error(`🔥🔥🔥 VERCEL STATUS - 최종 결정: "${koreanStatus}"`)
 
               deviceHistory.push({
                 student_name: loan.student_name,
@@ -232,11 +196,8 @@ export async function GET(
         if (deviceError) {
           console.log('🔍 DEVICE HISTORY - No device info found:', deviceError)
         } else if (deviceInfo) {
-          console.error('🔥🔥🔥 VERCEL LOG - Device info found:', deviceInfo)
-
           // 관리자/도우미/담임교사가 직접 상태를 변경한 경우 (notes에 "상태 변경" 포함)
           if (deviceInfo.notes && deviceInfo.notes.includes('상태 변경')) {
-            console.error('🔥🔥🔥 VERCEL LOG - Found status change notes, adding to history')
             let changerName = '관리자'
             let changerClass = '시스템'
             let statusKorean = '알 수 없음'
@@ -290,24 +251,8 @@ export async function GET(
 
     console.log('🔍 DEVICE HISTORY - Total history entries:', deviceHistory.length)
 
-    // 최종 반환 전 데이터 확인
-    console.log('🔍 DEVICE HISTORY - FINAL RETURN DATA:')
-    console.error('🔥🔥🔥 VERCEL LOG - FINAL RETURN DATA:')
-    deviceHistory.forEach((entry, index) => {
-      console.log(`  Entry ${index + 1}:`, {
-        student: entry.student_name,
-        status: entry.status,
-        created_at: entry.created_at,
-        returned_at: entry.returned_at
-      })
-      console.error(`🔥🔥🔥 VERCEL LOG - Entry ${index + 1}:`, {
-        student: entry.student_name,
-        status: entry.status,
-        created_at: entry.created_at,
-        returned_at: entry.returned_at,
-        original_status: entry.original_status
-      })
-    })
+    // 최종 반환 전 데이터 확인 (간단한 로그만)
+    console.log('🔍 DEVICE HISTORY - Total entries:', deviceHistory.length)
 
     const response = {
       deviceId,

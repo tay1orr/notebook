@@ -5,16 +5,11 @@ import { NextResponse } from "next/server"
 export const dynamic = "force-dynamic"
 
 export async function GET(request: Request) {
-  console.log('🔍 USER LOGS API - Alternative endpoint accessed')
-
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
 
-  console.log('🔍 USER LOGS API - Request for userId:', userId)
-
   try {
     const user = await getCurrentUser()
-    console.log('🔍 USER LOGS API - Current user:', user?.email, user?.role)
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -32,24 +27,19 @@ export async function GET(request: Request) {
     const adminSupabase = createAdminClient()
 
     // 사용자 정보 조회 (여러 테이블 확인)
-    console.log('🔍 USER LOGS API - Looking up user in user_profiles table')
     const { data: targetUser, error: userError } = await adminSupabase
       .from("user_profiles")
       .select("*")
       .eq("user_id", userId)
       .single()
 
-    console.log('🔍 USER LOGS API - User lookup result:', { targetUser, error: userError })
 
     if (!targetUser) {
       // user_profiles 테이블에 없으면 auth.users 테이블에서 확인
-      console.log('🔍 USER LOGS API - User not found in user_profiles, checking auth.users')
 
       const { data: authUser, error: authError } = await adminSupabase.auth.admin.getUserById(userId)
-      console.log('🔍 USER LOGS API - Auth user lookup result:', { authUser, error: authError })
 
       if (!authUser?.user) {
-        console.log('🔍 USER LOGS API - User not found in auth.users either')
         return NextResponse.json({ error: "User not found" }, { status: 404 })
       }
 
@@ -62,7 +52,6 @@ export async function GET(request: Request) {
         class: '알 수 없음'
       }
 
-      console.log('🔍 USER LOGS API - Using fallback user data:', fallbackUser)
 
       // fallback 사용자도 실제 대여 기록 조회 시도
       const fallbackLogs: any[] = []
@@ -170,7 +159,7 @@ export async function GET(request: Request) {
           })
         }
       } catch (error) {
-        console.error('🔍 USER LOGS API - Fallback loan fetch error:', error)
+        // Silently handle fallback loan fetch errors
       }
 
       // 기본 로그 추가
@@ -202,7 +191,6 @@ export async function GET(request: Request) {
       }
     }
 
-    console.log('🔍 USER LOGS API - Fetching real user activity data')
 
     // 실제 사용자 활동 로그 데이터 생성
     const userLogs: any[] = []
@@ -216,9 +204,8 @@ export async function GET(request: Request) {
         .order('created_at', { ascending: false })
 
       if (loansError) {
-        console.error('🔍 USER LOGS API - Error fetching loans:', loansError)
+        // Handle loan fetch error
       } else {
-        console.log('🔍 USER LOGS API - Found loans:', userLoans?.length || 0)
 
         // 대여 기록을 로그 형식으로 변환
         if (userLoans && userLoans.length > 0) {
@@ -326,7 +313,6 @@ export async function GET(request: Request) {
 
         // 2. 사용자가 관리자/담임/도우미 역할로 수행한 작업들 조회 (승인, 거절 등)
         if (['admin', 'homeroom', 'helper'].includes(targetUser.role)) {
-          console.log('🔍 USER LOGS API - Fetching admin actions performed by user')
 
           // 사용자가 승인한 대여 신청들 (본인 대여가 아닌 경우만)
           const { data: approvedLoans } = await adminSupabase
@@ -400,7 +386,7 @@ export async function GET(request: Request) {
       })
 
     } catch (error) {
-      console.error('🔍 USER LOGS API - Error generating logs:', error)
+      // Handle error generating logs
 
       // 오류 시 기본 로그만 반환
       userLogs.push({
@@ -415,9 +401,6 @@ export async function GET(request: Request) {
     // 시간순으로 정렬 (최신순)
     userLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
-    console.log('🔍 USER LOGS API - Generated logs:', userLogs.length)
-
-    console.log('🔍 USER LOGS API - Returning logs for user:', targetUser.name)
 
     return NextResponse.json({
       userId,
@@ -426,7 +409,6 @@ export async function GET(request: Request) {
     })
 
   } catch (error) {
-    console.error("User logs API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

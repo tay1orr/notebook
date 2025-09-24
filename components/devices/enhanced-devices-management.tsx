@@ -657,19 +657,14 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={
-                          loan.status === '반납완료' ? 'default' :
-                          loan.status === '대여신청중' ? 'outline' :
-                          loan.status === '대여중' ? 'secondary' :
-                          loan.status === '취소됨' ? 'destructive' :
-                          loan.status === '거절됨' ? 'destructive' :
-                          'secondary'
-                        }
+                        variant="outline"
                         className={
-                          loan.status === '대여신청중' ? 'border-orange-500 text-orange-700 bg-orange-50' :
-                          loan.status === '취소됨' ? 'bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-50' :
-                          loan.status === '거절됨' ? 'bg-red-100 text-red-800 border-red-300 hover:bg-red-50' :
-                          ''
+                          loan.status === '반납완료' ? 'bg-gray-100 text-gray-700 border-gray-300' :
+                          loan.status === '대여중' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                          loan.status === '대여신청중' ? 'bg-orange-100 text-orange-700 border-orange-300' :
+                          loan.status === '취소됨' ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
+                          loan.status === '거절됨' ? 'bg-red-100 text-red-700 border-red-300' :
+                          'bg-gray-100 text-gray-700 border-gray-300'
                         }
                       >
                         {loan.status || '대여중'}

@@ -501,11 +501,11 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       }`}>
                         {getStatusText(loan.status, loan.notes)}
                       </span>
-                      <Button variant="outline" size="sm" onClick={() => handleReject(loan)}>
-                        거절
-                      </Button>
                       <Button size="sm" onClick={() => handleApprove(loan)}>
                         승인
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleReject(loan)}>
+                        거절
                       </Button>
                     </div>
                   </div>
@@ -763,11 +763,11 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       </span>
                       {loan.status === 'requested' && (
                         <>
-                          <Button size="sm" variant="outline" onClick={() => handleReject(loan)}>
-                            거절
-                          </Button>
                           <Button size="sm" onClick={() => handleApprove(loan)}>
                             승인
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleReject(loan)}>
+                            거절
                           </Button>
                         </>
                       )}
