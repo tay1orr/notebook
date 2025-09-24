@@ -123,9 +123,10 @@ export async function GET(
               // 상태를 한국어로 변환 - returned_at이 있으면 반납완료로 우선 처리
               let koreanStatus = loan.status
 
-              if (loan.returned_at && loan.returned_at !== null) {
+              if (loan.returned_at && loan.returned_at !== null && loan.returned_at !== 'null' && loan.returned_at.trim() !== '') {
                 // 반납일이 있으면 실제 상태와 관계없이 반납완료로 표시
                 koreanStatus = '반납완료'
+                console.log('🔍 DEVICE HISTORY - Setting to 반납완료 due to returned_at:', loan.returned_at)
               } else {
                 // 반납일이 없는 경우에만 상태별 변환
                 switch (loan.status) {

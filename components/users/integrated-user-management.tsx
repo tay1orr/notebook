@@ -691,27 +691,100 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                 <div className="text-muted-foreground">로그를 불러오는 중...</div>
               </div>
             ) : userLogs.length > 0 ? (
-              <div className="space-y-2">
-                {userLogs.map((log, index) => (
-                  <div key={index} className="border rounded-lg p-3 space-y-2">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <div className="font-medium">{log.action}</div>
-                        <div className="text-sm text-muted-foreground">{log.details}</div>
+              <div className="space-y-3">
+                {userLogs.map((log, index) => {
+                  // 액션별 스타일 및 아이콘 정의
+                  const getLogStyle = (action: string) => {
+                    switch (action) {
+                      case '대여 신청':
+                        return {
+                          bgColor: 'bg-blue-50 border-blue-200',
+                          textColor: 'text-blue-700',
+                          badgeColor: 'bg-blue-100 text-blue-800',
+                          icon: '📝'
+                        }
+                      case '대여 승인':
+                        return {
+                          bgColor: 'bg-green-50 border-green-200',
+                          textColor: 'text-green-700',
+                          badgeColor: 'bg-green-100 text-green-800',
+                          icon: '✅'
+                        }
+                      case '기기 수령':
+                        return {
+                          bgColor: 'bg-purple-50 border-purple-200',
+                          textColor: 'text-purple-700',
+                          badgeColor: 'bg-purple-100 text-purple-800',
+                          icon: '📱'
+                        }
+                      case '기기 반납':
+                        return {
+                          bgColor: 'bg-gray-50 border-gray-200',
+                          textColor: 'text-gray-700',
+                          badgeColor: 'bg-gray-100 text-gray-800',
+                          icon: '↩️'
+                        }
+                      case '대여 거절':
+                      case '대여 취소':
+                        return {
+                          bgColor: 'bg-red-50 border-red-200',
+                          textColor: 'text-red-700',
+                          badgeColor: 'bg-red-100 text-red-800',
+                          icon: '❌'
+                        }
+                      case '계정 생성':
+                        return {
+                          bgColor: 'bg-yellow-50 border-yellow-200',
+                          textColor: 'text-yellow-700',
+                          badgeColor: 'bg-yellow-100 text-yellow-800',
+                          icon: '👤'
+                        }
+                      default:
+                        return {
+                          bgColor: 'bg-gray-50 border-gray-200',
+                          textColor: 'text-gray-700',
+                          badgeColor: 'bg-gray-100 text-gray-800',
+                          icon: '📄'
+                        }
+                    }
+                  }
+
+                  const style = getLogStyle(log.action)
+
+                  return (
+                    <div key={index} className={`border rounded-lg p-4 ${style.bgColor} hover:shadow-sm transition-shadow`}>
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl">{style.icon}</span>
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${style.badgeColor}`}>
+                              {log.action}
+                            </span>
+                          </div>
+                          <div className={`text-sm ${style.textColor} ml-8 leading-relaxed`}>
+                            {log.details}
+                          </div>
+                        </div>
+                        <div className={`text-sm ${style.textColor} opacity-75 whitespace-nowrap`}>
+                          {new Date(log.timestamp).toLocaleString('ko-KR', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(log.timestamp).toLocaleString('ko-KR')}
-                      </div>
+                      {log.metadata && (
+                        <div className="text-xs bg-white bg-opacity-50 p-3 rounded mt-3 ml-8">
+                          <pre className="whitespace-pre-wrap text-gray-600">
+                            {JSON.stringify(log.metadata, null, 2)}
+                          </pre>
+                        </div>
+                      )}
                     </div>
-                    {log.metadata && (
-                      <div className="text-xs bg-muted p-2 rounded">
-                        <pre className="whitespace-pre-wrap">
-                          {JSON.stringify(log.metadata, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
