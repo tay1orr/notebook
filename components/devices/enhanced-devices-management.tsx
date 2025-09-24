@@ -187,17 +187,31 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
 
   const handleShowLoanHistory = async (assetNumber: string) => {
     try {
+      console.log('🔍 CLIENT - Fetching history for:', assetNumber)
       const response = await fetch(`/api/loans/device/${assetNumber}`)
+
+      console.log('🔍 CLIENT - Response status:', response.status)
+
       if (response.ok) {
-        const { history: deviceLoans } = await response.json()
+        const responseData = await response.json()
+        console.log('🔍 CLIENT - API Response:', responseData)
+
+        const { history: deviceLoans } = responseData
+        console.log('🔍 CLIENT - Device loans:', deviceLoans)
+        console.log('🔍 CLIENT - Device loans length:', deviceLoans?.length)
+
         const sortedLoans = (deviceLoans || []).sort((a: any, b: any) =>
           new Date(b.timestamp || b.created_at || b.requestedAt).getTime() - new Date(a.timestamp || a.created_at || a.requestedAt).getTime()
         )
+
+        console.log('🔍 CLIENT - Sorted loans:', sortedLoans)
 
         setSelectedDeviceAsset(assetNumber)
         setSelectedDeviceLoanHistory(sortedLoans)
         setShowLoanHistory(true)
       } else {
+        const errorText = await response.text()
+        console.error('🔍 CLIENT - API Error:', response.status, errorText)
         alert('대여 기록을 불러오는데 실패했습니다.')
       }
     } catch (error) {
