@@ -100,6 +100,23 @@ export async function GET(
           console.log('🔍 DEVICE HISTORY - Found loan records:', loans?.length || 0)
           console.log('🔍 DEVICE HISTORY - Raw loan records:', JSON.stringify(loans, null, 2))
 
+          // 각 대여 기록의 상태와 날짜 상세 확인
+          if (loans && loans.length > 0) {
+            loans.forEach((loan, index) => {
+              console.log(`🔍 DEVICE HISTORY - Loan ${index + 1}:`, {
+                id: loan.id,
+                student_name: loan.student_name,
+                status: loan.status,
+                created_at: loan.created_at,
+                approved_at: loan.approved_at,
+                picked_up_at: loan.picked_up_at,
+                returned_at: loan.returned_at,
+                updated_at: loan.updated_at,
+                device_tag: loan.device_tag
+              })
+            })
+          }
+
           // 대여 기록을 기기 이력 형식으로 변환 (모든 기록 포함)
           if (loans && loans.length > 0) {
             loans.forEach(loan => {

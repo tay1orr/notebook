@@ -282,7 +282,22 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
       if (response.ok) {
         const logs = await response.json()
         console.log('🔍 User logs loaded:', logs)
-        setUserLogs(logs)
+        console.log('🔍 User logs structure check:', {
+          hasLogs: logs.logs ? 'YES' : 'NO',
+          logsLength: logs.logs ? logs.logs.length : 0,
+          directLogsLength: Array.isArray(logs) ? logs.length : 0,
+          logsSample: logs.logs ? logs.logs.slice(0, 2) : 'No logs.logs property'
+        })
+
+        // API 응답이 { logs: [...] } 형태인지 확인하고 적절히 처리
+        if (logs.logs && Array.isArray(logs.logs)) {
+          setUserLogs(logs.logs)
+        } else if (Array.isArray(logs)) {
+          setUserLogs(logs)
+        } else {
+          console.error('🔍 Unexpected logs format:', logs)
+          setUserLogs([])
+        }
       } else {
         const errorText = await response.text()
         console.error('Failed to load user logs:', response.status, errorText)
