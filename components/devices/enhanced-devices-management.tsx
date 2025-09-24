@@ -656,11 +656,22 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
                       }
                     </TableCell>
                     <TableCell>
-                      <Badge variant={
-                        loan.status === '반납완료' ? 'default' :
-                        loan.status === '취소됨' ? 'destructive' :
-                        'secondary'
-                      }>
+                      <Badge
+                        variant={
+                          loan.status === '반납완료' ? 'default' :
+                          loan.status === '대여신청중' ? 'outline' :
+                          loan.status === '대여중' ? 'secondary' :
+                          loan.status === '취소됨' ? 'destructive' :
+                          loan.status === '거절됨' ? 'destructive' :
+                          'secondary'
+                        }
+                        className={
+                          loan.status === '대여신청중' ? 'border-orange-500 text-orange-700 bg-orange-50' :
+                          loan.status === '취소됨' ? 'bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-50' :
+                          loan.status === '거절됨' ? 'bg-red-100 text-red-800 border-red-300 hover:bg-red-50' :
+                          ''
+                        }
+                      >
                         {loan.status || '대여중'}
                       </Badge>
                     </TableCell>

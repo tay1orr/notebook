@@ -181,6 +181,8 @@ export async function GET(
                     koreanStatus = '대여중'
                     break
                   case 'rejected':
+                    koreanStatus = '거절됨'
+                    break
                   case 'cancelled':
                     koreanStatus = '취소됨'
                     break
