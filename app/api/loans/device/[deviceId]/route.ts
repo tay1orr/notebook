@@ -71,13 +71,16 @@ export async function GET(
       // 먼저 전체 대여 기록에서 device_tag 패턴 확인
       const { data: allLoans } = await adminSupabase
         .from('loans')
-        .select('device_tag')
+        .select('device_tag, student_name, created_at')
         .not('device_tag', 'is', null)
-        .limit(20)
+        .limit(50)
 
-      console.log('🔍 DEVICE HISTORY - Sample device_tags in database:',
-        allLoans?.map(l => l.device_tag).slice(0, 10)
-      )
+      // 응답에 샘플 데이터 포함
+      const sampleTags = allLoans?.map(l => ({
+        device_tag: l.device_tag,
+        student: l.student_name,
+        date: l.created_at?.substring(0, 10)
+      })).slice(0, 15)
 
       // ICH-30135에서 다양한 패턴으로 매칭 시도
       const deviceNumber = deviceId.replace('ICH-', '') // 30135
@@ -191,7 +194,16 @@ export async function GET(
 
     return NextResponse.json({
       deviceId,
-      history: deviceHistory
+      history: deviceHistory,
+      debug: {
+        sampleTags,
+        queriedPatterns: {
+          deviceId,
+          shortTag,
+          deviceNumber
+        },
+        totalLoansInDB: allLoans?.length || 0
+      }
     })
 
   } catch (error) {
