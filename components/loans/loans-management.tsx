@@ -504,7 +504,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                       <Button size="sm" onClick={() => handleApprove(loan)}>
                         승인
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleReject(loan)}>
+                      <Button variant="destructive" size="sm" onClick={() => handleReject(loan)}>
                         거절
                       </Button>
                     </div>
@@ -766,7 +766,7 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                           <Button size="sm" onClick={() => handleApprove(loan)}>
                             승인
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleReject(loan)}>
+                          <Button size="sm" variant="destructive" onClick={() => handleReject(loan)}>
                             거절
                           </Button>
                         </>

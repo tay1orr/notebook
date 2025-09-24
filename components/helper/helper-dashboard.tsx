@@ -382,16 +382,16 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
                     <div className="flex space-x-2 ml-4">
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={() => handleReject(loan)}
-                      >
-                        거절
-                      </Button>
-                      <Button
-                        size="sm"
                         onClick={() => handleApprove(loan)}
                       >
                         승인
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleReject(loan)}
+                      >
+                        거절
                       </Button>
                     </div>
                   </div>
