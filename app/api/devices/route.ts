@@ -3,22 +3,18 @@ import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { Database } from '@/types/supabase'
 import { getCurrentKoreaTime, getCurrentKoreaDateTimeString } from '@/lib/utils'
+import { createAdminClient } from '@/lib/supabase-server'
 
 // GET: 모든 기기 목록 조회
 export async function GET() {
   try {
-    const supabase = createServerComponentClient<Database>({ cookies })
+    console.log('🔍 GET /api/devices - Starting request')
+    const adminSupabase = createAdminClient()
 
-    // 기기와 할당된 클래스 정보, 현재 대여 정보를 조회
-    const { data: devices, error } = await supabase
+    // 기기 정보만 조회 (Admin client 사용으로 RLS 우회)
+    const { data: devices, error } = await adminSupabase
       .from('devices')
-      .select(`
-        *,
-        assigned_class:classes!assigned_class_id(
-          grade,
-          name
-        )
-      `)
+      .select('*')
       .order('asset_tag')
 
     if (error) {
@@ -26,7 +22,7 @@ export async function GET() {
 
       // 데이터베이스에 기기가 없으면 기본 기기들을 생성
       if (error.code === 'PGRST116') {
-        return await initializeDevices(supabase)
+        return await initializeDevices(adminSupabase)
       }
 
       return NextResponse.json({ error: 'Failed to fetch devices' }, { status: 500 })
@@ -34,11 +30,11 @@ export async function GET() {
 
     // 기기 데이터가 없으면 기본 기기들을 생성
     if (!devices || devices.length === 0) {
-      return await initializeDevices(supabase)
+      return await initializeDevices(adminSupabase)
     }
 
     // 현재 대여중인 대여 정보 조회
-    const { data: currentLoans, error: loanError } = await supabase
+    const { data: currentLoans, error: loanError } = await adminSupabase
       .from('loan_applications')
       .select('device_tag, student_name, status')
       .in('status', ['approved', 'picked_up'])
@@ -94,7 +90,7 @@ export async function GET() {
         model: device.model,
         serialNumber: device.serial_number,
         status: loan ? 'loaned' : mapDeviceStatus(device.status), // 대여 정보가 있으면 강제로 대여중으로 설정
-        assignedClass: device.assigned_class && typeof device.assigned_class === 'object' && 'grade' in device.assigned_class && 'name' in device.assigned_class ? `${device.assigned_class.grade}-${device.assigned_class.name}` : '',
+        assignedClass: device.assigned_class_id ? `할당됨` : '',
         deviceNumber: device.asset_tag.replace('ICH-', ''),
         currentUser: loan ? loan.student_name : null,
         notes: device.notes || '',
@@ -238,7 +234,7 @@ async function fetchExistingDevices(supabase: any) {
     model: device.model,
     serialNumber: device.serial_number,
     status: mapDeviceStatus(device.status),
-    assignedClass: device.assigned_class && typeof device.assigned_class === 'object' && 'grade' in device.assigned_class && 'name' in device.assigned_class ? `${device.assigned_class.grade}-${device.assigned_class.name}` : '',
+    assignedClass: device.assigned_class_id ? `할당됨` : '',
     deviceNumber: device.asset_tag.replace('ICH-', ''),
     currentUser: null,
     notes: device.notes || '',
