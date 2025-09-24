@@ -656,8 +656,12 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
                       }
                     </TableCell>
                     <TableCell>
-                      <Badge variant={loan.status === 'returned' ? 'default' : 'secondary'}>
-                        {loan.status === 'returned' ? '반납완료' : '대여중'}
+                      <Badge variant={
+                        loan.status === '반납완료' ? 'default' :
+                        loan.status === '취소됨' ? 'destructive' :
+                        'secondary'
+                      }>
+                        {loan.status || '대여중'}
                       </Badge>
                     </TableCell>
                   </TableRow>
