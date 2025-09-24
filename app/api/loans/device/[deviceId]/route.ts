@@ -78,7 +78,12 @@ export async function GET(
         const classNum = parseInt(deviceMatch[2]).toString()
         const deviceNum = parseInt(deviceMatch[3]).toString()
         deviceTag = `${grade}-${classNum}-${deviceNum}`
-        console.log('🔍 DEVICE HISTORY - Device tag converted:', deviceId, '->', deviceTag)
+        console.log('🔍 DEVICE HISTORY - Device ID:', deviceId)
+        console.log('🔍 DEVICE HISTORY - Match result:', deviceMatch)
+        console.log('🔍 DEVICE HISTORY - Parsed values:', { grade, classNum, deviceNum })
+        console.log('🔍 DEVICE HISTORY - Final device tag:', deviceTag)
+      } else {
+        console.log('🔍 DEVICE HISTORY - Device ID did not match pattern:', deviceId)
       }
 
       if (deviceTag) {
