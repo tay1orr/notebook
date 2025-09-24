@@ -131,25 +131,21 @@ export async function GET(request: Request) {
                 ip_address: "192.168.1.100"
               })
             } else if (loan.status === 'rejected') {
-              let rejecterName = '관리자'
               let rejecterRole = '관리자'
 
-              if (loan.rejected_by) {
-                rejecterName = loan.rejected_by
-                if (loan.rejected_by_role) {
-                  switch (loan.rejected_by_role) {
-                    case 'admin':
-                      rejecterRole = '관리자'
-                      break
-                    case 'homeroom':
-                      rejecterRole = '담임교사'
-                      break
-                    case 'helper':
-                      rejecterRole = '노트북 관리 도우미'
-                      break
-                    default:
-                      rejecterRole = '관리자'
-                  }
+              if (loan.rejected_by_role) {
+                switch (loan.rejected_by_role) {
+                  case 'admin':
+                    rejecterRole = '관리자'
+                    break
+                  case 'homeroom':
+                    rejecterRole = '담임교사'
+                    break
+                  case 'helper':
+                    rejecterRole = '노트북 관리 도우미'
+                    break
+                  default:
+                    rejecterRole = '관리자'
                 }
               }
 
@@ -157,7 +153,7 @@ export async function GET(request: Request) {
                 id: `loan_${loan.id}_admin_reject`,
                 timestamp: loan.updated_at,
                 action: "대여 거절됨",
-                details: `${loan.device_tag} 기기 대여가 ${rejecterName} (${rejecterRole})에 의해 거절되었습니다.`,
+                details: `${loan.device_tag} 기기 대여가 ${rejecterRole}에 의해 거절되었습니다.`,
                 ip_address: "192.168.1.100"
               })
             }
@@ -279,27 +275,21 @@ export async function GET(request: Request) {
               })
             } else if (loan.status === 'rejected') {
               // 관리자/담임/도우미가 거절한 경우
-              let rejecterName = '관리자'
               let rejecterRole = '관리자'
 
-              if (loan.rejected_by) {
-                // rejected_by에서 이메일과 역할 정보 추출
-                rejecterName = loan.rejected_by
-                // 역할 정보가 있으면 한국어로 변환
-                if (loan.rejected_by_role) {
-                  switch (loan.rejected_by_role) {
-                    case 'admin':
-                      rejecterRole = '관리자'
-                      break
-                    case 'homeroom':
-                      rejecterRole = '담임교사'
-                      break
-                    case 'helper':
-                      rejecterRole = '노트북 관리 도우미'
-                      break
-                    default:
-                      rejecterRole = '관리자'
-                  }
+              if (loan.rejected_by_role) {
+                switch (loan.rejected_by_role) {
+                  case 'admin':
+                    rejecterRole = '관리자'
+                    break
+                  case 'homeroom':
+                    rejecterRole = '담임교사'
+                    break
+                  case 'helper':
+                    rejecterRole = '노트북 관리 도우미'
+                    break
+                  default:
+                    rejecterRole = '관리자'
                 }
               }
 
@@ -307,7 +297,7 @@ export async function GET(request: Request) {
                 id: `loan_${loan.id}_admin_reject`,
                 timestamp: loan.updated_at,
                 action: "대여 거절됨",
-                details: `${loan.device_tag} 기기 대여가 ${rejecterName} (${rejecterRole})에 의해 거절되었습니다.`,
+                details: `${loan.device_tag} 기기 대여가 ${rejecterRole}에 의해 거절되었습니다.`,
                 ip_address: "192.168.1.100"
               })
             }
@@ -318,12 +308,13 @@ export async function GET(request: Request) {
         if (['admin', 'homeroom', 'helper'].includes(targetUser.role)) {
           console.log('🔍 USER LOGS API - Fetching admin actions performed by user')
 
-          // 사용자가 승인한 대여 신청들
+          // 사용자가 승인한 대여 신청들 (본인 대여가 아닌 경우만)
           const { data: approvedLoans } = await adminSupabase
             .from('loan_applications')
             .select('*')
             .eq('approved_by', targetUser.email)
             .not('approved_at', 'is', null)
+            .neq('email', targetUser.email) // 본인 대여는 제외
 
           if (approvedLoans && approvedLoans.length > 0) {
             approvedLoans.forEach(loan => {
@@ -337,12 +328,13 @@ export async function GET(request: Request) {
             })
           }
 
-          // 사용자가 거절한 대여 신청들
+          // 사용자가 거절한 대여 신청들 (본인 대여가 아닌 경우만)
           const { data: rejectedLoans } = await adminSupabase
             .from('loan_applications')
             .select('*')
             .eq('rejected_by', targetUser.email)
             .eq('status', 'rejected')
+            .neq('email', targetUser.email) // 본인 대여는 제외
 
           if (rejectedLoans && rejectedLoans.length > 0) {
             rejectedLoans.forEach(loan => {
@@ -356,12 +348,13 @@ export async function GET(request: Request) {
             })
           }
 
-          // 기기 반납 처리 작업들
+          // 기기 반납 처리 작업들 (본인 대여가 아닌 경우만)
           const { data: returnProcessed } = await adminSupabase
             .from('loan_applications')
             .select('*')
             .eq('return_processed_by', targetUser.email)
             .not('returned_at', 'is', null)
+            .neq('email', targetUser.email) // 본인 대여는 제외
 
           if (returnProcessed && returnProcessed.length > 0) {
             returnProcessed.forEach(loan => {

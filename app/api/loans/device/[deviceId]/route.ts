@@ -120,78 +120,35 @@ export async function GET(
           // 대여 기록을 기기 이력 형식으로 변환 (모든 기록 포함)
           if (loans && loans.length > 0) {
             loans.forEach((loan, index) => {
-              console.log(`🔍 DEVICE HISTORY - Processing loan ${index + 1}:`, {
-                id: loan.id,
-                student_name: loan.student_name,
-                device_tag: loan.device_tag,
-                status: loan.status,
-                returned_at: loan.returned_at,
-                returned_at_type: typeof loan.returned_at,
-                approved_at: loan.approved_at,
-                picked_up_at: loan.picked_up_at,
-                created_at: loan.created_at
-              })
+              console.log(`🔍 DEVICE HISTORY - Processing loan ${index + 1}:`, loan)
 
-              // 상태를 한국어로 변환 - returned_at이 있으면 반납완료로 우선 처리
-              let koreanStatus = loan.status
+              // 🔥 새로운 접근: 상태를 간단하게 결정하기
+              let koreanStatus = '알 수 없음'
 
-              // 반납일 확인 - null, 'null', 빈 문자열, undefined를 모두 체크
-              // 더 엄격한 검증 추가
-              let hasValidReturnDate = false
-              if (loan.returned_at) {
-                const returnedAtStr = loan.returned_at.toString().trim()
-                hasValidReturnDate = returnedAtStr !== '' &&
-                                   returnedAtStr !== 'null' &&
-                                   returnedAtStr !== 'undefined' &&
-                                   returnedAtStr !== '0' &&
-                                   loan.returned_at !== null &&
-                                   loan.returned_at !== undefined
-
-                // 날짜 형식인지도 확인
-                if (hasValidReturnDate) {
-                  try {
-                    const dateTest = new Date(loan.returned_at)
-                    hasValidReturnDate = dateTest instanceof Date && !isNaN(dateTest.getTime())
-                  } catch (e) {
-                    hasValidReturnDate = false
-                  }
-                }
-              }
-
-              console.log(`🔍 DEVICE HISTORY - Return date validation for loan ${index + 1}:`, {
-                returned_at_raw: loan.returned_at,
-                type: typeof loan.returned_at,
-                not_null: loan.returned_at !== null,
-                not_string_null: loan.returned_at !== 'null',
-                not_empty: loan.returned_at !== '',
-                not_undefined_string: loan.returned_at !== 'undefined',
-                toString_check: loan.returned_at ? loan.returned_at.toString().trim() !== '' : false,
-                final_hasValidReturnDate: hasValidReturnDate
-              })
-
-              // 상태 결정 로직 - 더 명확하게
-              if (hasValidReturnDate) {
+              // 1. 먼저 returned_at 필드 체크 (가장 우선)
+              if (loan.returned_at &&
+                  loan.returned_at !== null &&
+                  loan.returned_at.toString().trim() !== '' &&
+                  loan.returned_at !== 'null') {
                 koreanStatus = '반납완료'
-                console.log(`🔍 DEVICE HISTORY - ✅ SETTING TO 반납완료 for loan ${index + 1} due to valid returned_at:`, loan.returned_at)
-              } else {
-                // 반납일이 없는 경우 상태별 변환
-                const originalStatus = loan.status
+                console.log(`🔥 LOAN ${index + 1}: returned_at 발견 -> 반납완료`)
+              }
+              // 2. status 필드가 'returned'인 경우
+              else if (loan.status === 'returned') {
+                koreanStatus = '반납완료'
+                console.log(`🔥 LOAN ${index + 1}: status=returned -> 반납완료`)
+              }
+              // 3. 기타 상태들
+              else {
                 switch (loan.status) {
                   case 'requested':
                     koreanStatus = '대여신청중'
                     break
                   case 'approved':
-                    koreanStatus = '대여중'
-                    break
                   case 'picked_up':
                     koreanStatus = '대여중'
                     break
-                  case 'returned':
-                    koreanStatus = '반납완료'
-                    break
                   case 'rejected':
-                    koreanStatus = '취소됨'
-                    break
                   case 'cancelled':
                     koreanStatus = '취소됨'
                     break
@@ -199,16 +156,16 @@ export async function GET(
                     koreanStatus = '점검중'
                     break
                   default:
-                    koreanStatus = loan.status
+                    koreanStatus = `원본상태: ${loan.status}`
                 }
-                console.log(`🔍 DEVICE HISTORY - Status conversion for loan ${index + 1}:`, {
-                  original_status: originalStatus,
-                  converted_status: koreanStatus,
-                  reason: 'no_valid_return_date'
-                })
+                console.log(`🔥 LOAN ${index + 1}: status=${loan.status} -> ${koreanStatus}`)
               }
 
-              console.log(`🔍 DEVICE HISTORY - ✅ FINAL STATUS for loan ${index + 1}: "${koreanStatus}" (student: ${loan.student_name})`)
+              console.log(`🔥 LOAN ${index + 1} 최종 결정:`, {
+                원본_status: loan.status,
+                원본_returned_at: loan.returned_at,
+                최종_한국어상태: koreanStatus
+              })
 
               deviceHistory.push({
                 student_name: loan.student_name,
