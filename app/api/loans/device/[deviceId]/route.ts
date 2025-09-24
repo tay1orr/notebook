@@ -230,8 +230,11 @@ export async function GET(
         if (deviceError) {
           console.log('🔍 DEVICE HISTORY - No device info found:', deviceError)
         } else if (deviceInfo) {
+          console.error('🔥🔥🔥 VERCEL LOG - Device info found:', deviceInfo)
+
           // 관리자/도우미/담임교사가 직접 상태를 변경한 경우 (notes에 "상태 변경" 포함)
           if (deviceInfo.notes && deviceInfo.notes.includes('상태 변경')) {
+            console.error('🔥🔥🔥 VERCEL LOG - Found status change notes, adding to history')
             let changerName = '관리자'
             let changerClass = '시스템'
             let statusKorean = '알 수 없음'
@@ -287,12 +290,20 @@ export async function GET(
 
     // 최종 반환 전 데이터 확인
     console.log('🔍 DEVICE HISTORY - FINAL RETURN DATA:')
+    console.error('🔥🔥🔥 VERCEL LOG - FINAL RETURN DATA:')
     deviceHistory.forEach((entry, index) => {
       console.log(`  Entry ${index + 1}:`, {
         student: entry.student_name,
         status: entry.status,
         created_at: entry.created_at,
         returned_at: entry.returned_at
+      })
+      console.error(`🔥🔥🔥 VERCEL LOG - Entry ${index + 1}:`, {
+        student: entry.student_name,
+        status: entry.status,
+        created_at: entry.created_at,
+        returned_at: entry.returned_at,
+        original_status: entry.original_status
       })
     })
 
