@@ -58,10 +58,7 @@ export async function GET(request: Request) {
       try {
         const { data: userLoans } = await adminSupabase
           .from('loan_applications')
-          .select(`
-            *,
-            approver:users!approved_by(name, email)
-          `)
+          .select('*')
           .eq('email', fallbackUser.email)
           .order('created_at', { ascending: false })
 
@@ -98,21 +95,13 @@ export async function GET(request: Request) {
                 }
               }
 
-              // 승인자 이름 가져오기
-              if (loan.approver && loan.approver.name) {
-                approverName = loan.approver.name
-              } else if (loan.approved_by) {
-                // approved_by가 이메일인 경우 이메일에서 이름 추출
-                approverName = loan.approved_by.includes('@')
-                  ? loan.approved_by.split('@')[0]
-                  : loan.approved_by
-              }
+              // 승인자 이름은 제거하고 역할만 사용
 
               fallbackLogs.push({
                 id: `loan_${loan.id}_approved`,
                 timestamp: loan.approved_at,
                 action: "대여 승인됨",
-                details: `${loan.device_tag} 기기 대여가 ${approverName}(${approverRole})에 의해 승인되었습니다.`,
+                details: `${loan.device_tag} 기기 대여가 ${approverRole}에 의해 승인되었습니다.`,
                 ip_address: "192.168.1.100"
               })
             }
@@ -183,7 +172,7 @@ export async function GET(request: Request) {
                 id: `loan_${loan.id}_admin_reject`,
                 timestamp: loan.updated_at,
                 action: "대여 거절됨",
-                details: `${loan.device_tag} 기기 대여가 ${rejecterName}(${rejecterRole})에 의해 거절되었습니다.`,
+                details: `${loan.device_tag} 기기 대여가 ${rejecterRole}에 의해 거절되었습니다.`,
                 ip_address: "192.168.1.100"
               })
             }
@@ -227,18 +216,16 @@ export async function GET(request: Request) {
     const userLogs: any[] = []
 
     try {
-      // 1. 사용자의 대여 신청 기록 조회 (승인자 정보 포함)
+      // 1. 사용자의 대여 신청 기록 조회 (조인 없이 간단하게)
       const { data: userLoans, error: loansError } = await adminSupabase
         .from('loan_applications')
-        .select(`
-          *,
-          approver:users!approved_by(name, email)
-        `)
+        .select('*')
         .eq('email', targetUser.email)
         .order('created_at', { ascending: false })
 
       if (loansError) {
-        // Handle loan fetch error
+        console.error('사용자 대여 기록 조회 실패:', loansError)
+        // 에러 시에도 계속 진행
       } else {
 
         // 대여 기록을 로그 형식으로 변환
@@ -278,21 +265,13 @@ export async function GET(request: Request) {
                 }
               }
 
-              // 승인자 이름 가져오기
-              if (loan.approver && loan.approver.name) {
-                approverName = loan.approver.name
-              } else if (loan.approved_by) {
-                // approved_by가 이메일인 경우 이메일에서 이름 추출
-                approverName = loan.approved_by.includes('@')
-                  ? loan.approved_by.split('@')[0]
-                  : loan.approved_by
-              }
+              // 승인자 이름은 제거하고 역할만 사용
 
               userLogs.push({
                 id: `loan_${loan.id}_approved`,
                 timestamp: loan.approved_at,
                 action: "대여 승인됨",
-                details: `${loan.device_tag} 기기 대여가 ${approverName}(${approverRole})에 의해 승인되었습니다.`,
+                details: `${loan.device_tag} 기기 대여가 ${approverRole}에 의해 승인되었습니다.`,
                 ip_address: "192.168.1.100"
               })
             }
@@ -368,7 +347,7 @@ export async function GET(request: Request) {
                 id: `loan_${loan.id}_admin_reject`,
                 timestamp: loan.updated_at,
                 action: "대여 거절됨",
-                details: `${loan.device_tag} 기기 대여가 ${rejecterName}(${rejecterRole})에 의해 거절되었습니다.`,
+                details: `${loan.device_tag} 기기 대여가 ${rejecterRole}에 의해 거절되었습니다.`,
                 ip_address: "192.168.1.100"
               })
             }
