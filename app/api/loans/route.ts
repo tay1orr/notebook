@@ -135,7 +135,6 @@ export async function PATCH(request: NextRequest) {
       approved_by?: string
       approved_by_role?: string
       approved_at?: string
-      rejected_by_role?: string
       notes?: string
       picked_up_at?: string
       returned_at?: string
@@ -168,13 +167,12 @@ export async function PATCH(request: NextRequest) {
     } else if (status === 'returned') {
       updateData.returned_at = getCurrentKoreaTime()
     } else if (status === 'rejected') {
-      // 거절 시 거절한 사용자의 정보 저장 (기존 필드 활용)
-      updateData.rejected_by_role = currentUser.role
-      // rejected_by와 rejected_at 필드가 DB에 없을 수 있으므로 조건부 추가
+      // 거절 시에는 기본적으로 status만 업데이트
+      // rejected_by_role 필드가 DB에 없으므로 제거
       if (approved_by) {
         updateData.approved_by = approved_by
       }
-      // rejected_at은 updated_at으로 대체 가능
+      // 거절 시간은 updated_at으로 추적
     }
 
     console.log('About to update database with:', updateData)
