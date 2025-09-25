@@ -19,26 +19,57 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient()
 
-    // 백업 스케줄 설정을 데이터베이스에 저장 (간단한 설정 테이블 필요)
-    // 현재는 로컬 설정으로 처리
+    // 다음 실행 시간 계산
+    const next_run = calculateNextRun(schedule_type, time)
 
-    const scheduleConfig = {
-      enabled: enabled || false,
-      schedule_type: schedule_type || 'daily', // daily, weekly, monthly
-      time: time || '02:00', // HH:MM 형식
-      last_run: null,
-      next_run: calculateNextRun(schedule_type, time),
-      created_by: user.email,
-      updated_at: new Date().toISOString()
+    // 백업 스케줄 설정을 데이터베이스에 저장/업데이트
+    const { data: existingSchedule } = await supabase
+      .from('backup_schedule')
+      .select('id')
+      .limit(1)
+      .single()
+
+    let result
+    if (existingSchedule) {
+      // 기존 스케줄 업데이트
+      result = await supabase
+        .from('backup_schedule')
+        .update({
+          enabled: enabled || false,
+          schedule_type: schedule_type || 'daily',
+          time: time || '02:00',
+          next_run,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingSchedule.id)
+        .select()
+        .single()
+    } else {
+      // 새 스케줄 생성
+      result = await supabase
+        .from('backup_schedule')
+        .insert({
+          enabled: enabled || false,
+          schedule_type: schedule_type || 'daily',
+          time: time || '02:00',
+          next_run,
+          created_by: user.email
+        })
+        .select()
+        .single()
     }
 
-    // TODO: 실제 cron job 설정 (Vercel Cron Jobs 또는 서버 cron)
-    console.log('📅 백업 스케줄 설정:', scheduleConfig)
+    if (result.error) {
+      console.error('백업 스케줄 저장 실패:', result.error)
+      throw new Error(result.error.message)
+    }
+
+    console.log('✅ 백업 스케줄 저장 완료:', result.data)
 
     return NextResponse.json({
       success: true,
       message: '백업 스케줄이 설정되었습니다.',
-      config: scheduleConfig
+      config: result.data
     })
 
   } catch (error) {
@@ -60,17 +91,51 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const supabase = createAdminClient()
+
     // 현재 백업 스케줄 조회
-    const currentSchedule = {
-      enabled: true,
-      schedule_type: 'daily' as const,
-      time: '02:00',
-      last_run: null,
-      next_run: calculateNextRun('daily', '02:00'),
-      timezone: 'Asia/Seoul'
+    const { data: schedule, error } = await supabase
+      .from('backup_schedule')
+      .select('*')
+      .limit(1)
+      .single()
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('백업 스케줄 조회 실패:', error)
+      throw new Error(error.message)
     }
 
-    return NextResponse.json(currentSchedule)
+    if (!schedule) {
+      // 기본 스케줄 생성
+      const defaultSchedule = {
+        enabled: true,
+        schedule_type: 'daily',
+        time: '02:00',
+        next_run: calculateNextRun('daily', '02:00'),
+        created_by: user.email
+      }
+
+      const { data: newSchedule, error: insertError } = await supabase
+        .from('backup_schedule')
+        .insert(defaultSchedule)
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('기본 스케줄 생성 실패:', insertError)
+        throw new Error(insertError.message)
+      }
+
+      return NextResponse.json({
+        ...newSchedule,
+        timezone: 'Asia/Seoul'
+      })
+    }
+
+    return NextResponse.json({
+      ...schedule,
+      timezone: 'Asia/Seoul'
+    })
 
   } catch (error) {
     console.error('백업 스케줄 조회 실패:', error)

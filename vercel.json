@@ -8,6 +8,12 @@
       "maxDuration": 30
     }
   },
+  "crons": [
+    {
+      "path": "/api/backup/cron",
+      "schedule": "0 2 * * *"
+    }
+  ],
   "cleanUrls": true,
   "trailingSlash": false
 }

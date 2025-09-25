@@ -6,25 +6,46 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔄 서버 백업 트리거 요청 시작')
 
-    const user = await getCurrentUserForAPI()
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json(
-        { error: '관리자 권한이 필요합니다.' },
-        { status: 403 }
-      )
-    }
+    const body = await request.json().catch(() => ({}))
+    const { type } = body
+    const backupSource = request.headers.get('X-Backup-Source')
 
-    console.log('✅ 관리자 인증 완료:', user.email)
+    // 크론 작업에서 오는 경우 인증 생략
+    let user = null
+    let triggeredBy = 'system'
+
+    if (backupSource === 'cron') {
+      console.log('🤖 크론 작업에서 자동 백업 실행')
+      triggeredBy = 'system'
+    } else {
+      // 수동 백업은 관리자 인증 필요
+      user = await getCurrentUserForAPI()
+      if (!user || user.role !== 'admin') {
+        return NextResponse.json(
+          { error: '관리자 권한이 필요합니다.' },
+          { status: 403 }
+        )
+      }
+      triggeredBy = user.email
+      console.log('✅ 관리자 인증 완료:', user.email)
+    }
 
     // 여기서 실제로는 서버의 백업 프로세스를 트리거하게 됩니다
     // 예: 데이터베이스를 파일로 저장, 외부 스토리지에 업로드 등
 
+    // 백업 타입 결정
+    const backupType = type === 'scheduled' || backupSource === 'cron' ? 'scheduled' : 'manual'
+    const message = backupType === 'scheduled'
+      ? '자동 백업이 성공적으로 완료되었습니다.'
+      : '수동 백업이 성공적으로 완료되었습니다.'
+
     const backupResult = {
       status: 'completed',
       timestamp: new Date().toISOString(),
-      triggeredBy: user.email,
-      message: '수동 백업이 성공적으로 완료되었습니다.',
-      backupLocation: 'server://backups/manual/' + new Date().toISOString().split('T')[0]
+      triggeredBy,
+      type: backupType,
+      message,
+      backupLocation: `server://backups/${backupType}/` + new Date().toISOString().split('T')[0]
     }
 
     // 백업 기록에 직접 추가 (메모리 기반)
@@ -35,11 +56,11 @@ export async function POST(request: NextRequest) {
       const { addBackupRecord } = await import('./backup-history-utils')
 
       const record = await addBackupRecord({
-        type: 'manual',
+        type: backupType,
         status: 'success',
         table: 'all',
         size: Math.floor(Math.random() * 1000000),
-        triggeredBy: user.email
+        triggeredBy
       })
 
       console.log('🔍 백업 기록 직접 추가 성공:', record)
