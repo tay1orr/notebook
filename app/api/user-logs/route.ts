@@ -11,6 +11,15 @@ export async function GET(request: Request) {
   try {
     const user = await getCurrentUser()
 
+    console.log('🔍 USER-LOGS - Request details:', {
+      userId: userId,
+      currentUser: user?.email,
+      currentUserRole: user?.role,
+      currentUserGrade: user?.grade,
+      currentUserClass: user?.class,
+      isApproved: user?.isApprovedHomeroom
+    })
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -27,19 +36,34 @@ export async function GET(request: Request) {
     const adminSupabase = createAdminClient()
 
     // 사용자 정보 조회 (여러 테이블 확인)
+    console.log('🔍 USER-LOGS - Looking up user in user_profiles:', userId)
+
     const { data: targetUser, error: userError } = await adminSupabase
       .from("user_profiles")
       .select("*")
       .eq("user_id", userId)
       .single()
 
+    console.log('🔍 USER-LOGS - user_profiles result:', {
+      found: !!targetUser,
+      error: userError?.message,
+      targetUser: targetUser ? { email: targetUser.email, grade: targetUser.grade, class: targetUser.class } : null
+    })
 
     if (!targetUser) {
       // user_profiles 테이블에 없으면 auth.users 테이블에서 확인
+      console.log('🔍 USER-LOGS - User not in profiles, checking auth.users:', userId)
 
       const { data: authUser, error: authError } = await adminSupabase.auth.admin.getUserById(userId)
 
+      console.log('🔍 USER-LOGS - auth.users result:', {
+        found: !!authUser?.user,
+        error: authError?.message,
+        email: authUser?.user?.email
+      })
+
       if (!authUser?.user) {
+        console.log('🔍 USER-LOGS - User not found anywhere, returning 404')
         return NextResponse.json({ error: "User not found" }, { status: 404 })
       }
 
