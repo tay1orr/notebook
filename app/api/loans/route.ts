@@ -116,17 +116,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    console.log('PATCH request body:', body)
-
     const { id, status, device_tag, approved_by, approved_at, notes } = body
 
     if (!id || !status) {
-      console.error('Missing required fields:', { id, status })
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
-
-    console.log('Updating loan with:', { id, status, device_tag, approved_by, approved_at, notes })
-    console.log('Current user role:', currentUser.role)
 
     interface LoanUpdateData {
       status: string
@@ -175,8 +169,6 @@ export async function PATCH(request: NextRequest) {
       // 거절 시간은 updated_at으로 추적
     }
 
-    console.log('About to update database with:', updateData)
-
     const { data: loan, error } = await supabase
       .from('loan_applications')
       .update(updateData)
@@ -185,22 +177,9 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('💥 Database error:', error)
-      console.error('💥 Error code:', error.code)
-      console.error('💥 Error message:', error.message)
-      console.error('💥 Update data that failed:', updateData)
-      console.error('💥 Loan ID that failed:', id)
-      console.error('💥 Current user:', currentUser)
-      console.error('💥 Full error details:', JSON.stringify(error, null, 2))
-      return NextResponse.json({
-        error: 'Failed to update loan application',
-        details: error.message,
-        code: error.code,
-        updateData
-      }, { status: 500 })
+      console.error('Database error:', error)
+      return NextResponse.json({ error: 'Failed to update loan application', details: error.message }, { status: 500 })
     }
-
-    console.log('Successfully updated loan:', loan)
 
     // 기기 상태 업데이트
     if (device_tag) {
@@ -217,7 +196,6 @@ export async function PATCH(request: NextRequest) {
         }
 
         // 기기 상태 업데이트 API 호출
-        console.log(`Updating device status: ${device_tag} -> ${deviceStatus}`)
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
         const deviceResponse = await fetch(`${baseUrl}/api/devices`, {
           method: 'PATCH',
@@ -233,9 +211,6 @@ export async function PATCH(request: NextRequest) {
         if (!deviceResponse.ok) {
           const errorText = await deviceResponse.text()
           console.error(`Device update failed: ${deviceResponse.status} - ${errorText}`)
-        } else {
-          const deviceResult = await deviceResponse.json()
-          console.log(`Device update successful:`, deviceResult)
         }
       } catch (deviceError) {
         console.error('Failed to update device status:', deviceError)
