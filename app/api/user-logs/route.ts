@@ -227,10 +227,13 @@ export async function GET(request: Request) {
     const userLogs: any[] = []
 
     try {
-      // 1. 사용자의 대여 신청 기록 조회
+      // 1. 사용자의 대여 신청 기록 조회 (승인자 정보 포함)
       const { data: userLoans, error: loansError } = await adminSupabase
         .from('loan_applications')
-        .select('*')
+        .select(`
+          *,
+          approver:users!approved_by(name, email)
+        `)
         .eq('email', targetUser.email)
         .order('created_at', { ascending: false })
 
@@ -253,7 +256,9 @@ export async function GET(request: Request) {
             // 승인 로그 (관리자/담임/도우미에 의한)
             if (loan.approved_at) {
               let approverRole = '관리자'
+              let approverName = '알 수 없음'
 
+              // 역할 결정
               if (loan.approved_by_role) {
                 switch (loan.approved_by_role) {
                   case 'admin':
@@ -273,11 +278,21 @@ export async function GET(request: Request) {
                 }
               }
 
+              // 승인자 이름 가져오기
+              if (loan.approver && loan.approver.name) {
+                approverName = loan.approver.name
+              } else if (loan.approved_by) {
+                // approved_by가 이메일인 경우 이메일에서 이름 추출
+                approverName = loan.approved_by.includes('@')
+                  ? loan.approved_by.split('@')[0]
+                  : loan.approved_by
+              }
+
               userLogs.push({
                 id: `loan_${loan.id}_approved`,
                 timestamp: loan.approved_at,
                 action: "대여 승인됨",
-                details: `${loan.device_tag} 기기 대여가 ${approverRole}에 의해 승인되었습니다.`,
+                details: `${loan.device_tag} 기기 대여가 ${approverName}(${approverRole})에 의해 승인되었습니다.`,
                 ip_address: "192.168.1.100"
               })
             }
@@ -317,7 +332,9 @@ export async function GET(request: Request) {
             } else if (loan.status === 'rejected') {
               // 관리자/담임/도우미가 거절한 경우
               let rejecterRole = '관리자'
+              let rejecterName = '알 수 없음'
 
+              // 역할 결정
               if (loan.rejected_by_role) {
                 switch (loan.rejected_by_role) {
                   case 'admin':
@@ -337,11 +354,21 @@ export async function GET(request: Request) {
                 }
               }
 
+              // 거절자 이름 가져오기 (approved_by 필드 사용 - 실제로는 rejected_by 역할)
+              if (loan.approver && loan.approver.name) {
+                rejecterName = loan.approver.name
+              } else if (loan.approved_by) {
+                // approved_by가 이메일인 경우 이메일에서 이름 추출
+                rejecterName = loan.approved_by.includes('@')
+                  ? loan.approved_by.split('@')[0]
+                  : loan.approved_by
+              }
+
               userLogs.push({
                 id: `loan_${loan.id}_admin_reject`,
                 timestamp: loan.updated_at,
                 action: "대여 거절됨",
-                details: `${loan.device_tag} 기기 대여가 ${rejecterRole}에 의해 거절되었습니다.`,
+                details: `${loan.device_tag} 기기 대여가 ${rejecterName}(${rejecterRole})에 의해 거절되었습니다.`,
                 ip_address: "192.168.1.100"
               })
             }

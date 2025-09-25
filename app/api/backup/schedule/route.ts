@@ -100,36 +100,70 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .single()
 
-    if (error && error.code !== 'PGRST116') {
+    // 테이블이 존재하지 않거나 데이터가 없는 경우 기본값 반환
+    if (error && (error.code === 'PGRST116' || error.code === '42P01')) {
+      console.log('백업 스케줄 테이블이 존재하지 않거나 데이터 없음, 기본값 반환')
+      return NextResponse.json({
+        enabled: true,
+        schedule_type: 'daily',
+        time: '02:00',
+        last_run: null,
+        next_run: calculateNextRun('daily', '02:00'),
+        timezone: 'Asia/Seoul'
+      })
+    }
+
+    if (error) {
       console.error('백업 스케줄 조회 실패:', error)
       throw new Error(error.message)
     }
 
     if (!schedule) {
-      // 기본 스케줄 생성
-      const defaultSchedule = {
-        enabled: true,
-        schedule_type: 'daily',
-        time: '02:00',
-        next_run: calculateNextRun('daily', '02:00'),
-        created_by: user.email
+      // 기본 스케줄 생성 시도
+      try {
+        const defaultSchedule = {
+          enabled: true,
+          schedule_type: 'daily',
+          time: '02:00',
+          next_run: calculateNextRun('daily', '02:00'),
+          created_by: user.email
+        }
+
+        const { data: newSchedule, error: insertError } = await supabase
+          .from('backup_schedule')
+          .insert(defaultSchedule)
+          .select()
+          .single()
+
+        if (insertError) {
+          console.error('기본 스케줄 생성 실패:', insertError)
+          // 생성 실패 시 기본값 반환
+          return NextResponse.json({
+            enabled: true,
+            schedule_type: 'daily',
+            time: '02:00',
+            last_run: null,
+            next_run: calculateNextRun('daily', '02:00'),
+            timezone: 'Asia/Seoul'
+          })
+        }
+
+        return NextResponse.json({
+          ...newSchedule,
+          timezone: 'Asia/Seoul'
+        })
+      } catch (createError) {
+        console.error('스케줄 생성 중 오류:', createError)
+        // 오류 발생 시 기본값 반환
+        return NextResponse.json({
+          enabled: true,
+          schedule_type: 'daily',
+          time: '02:00',
+          last_run: null,
+          next_run: calculateNextRun('daily', '02:00'),
+          timezone: 'Asia/Seoul'
+        })
       }
-
-      const { data: newSchedule, error: insertError } = await supabase
-        .from('backup_schedule')
-        .insert(defaultSchedule)
-        .select()
-        .single()
-
-      if (insertError) {
-        console.error('기본 스케줄 생성 실패:', insertError)
-        throw new Error(insertError.message)
-      }
-
-      return NextResponse.json({
-        ...newSchedule,
-        timezone: 'Asia/Seoul'
-      })
     }
 
     return NextResponse.json({
