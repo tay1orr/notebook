@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Database } from '@/types/supabase'
 import { getCurrentKoreaTime, getCurrentKoreaDateTimeString } from '@/lib/utils'
 import { handleSupabaseError, logError } from '@/lib/error-handler'
+import { getCurrentUser } from '@/lib/auth'
 
 // GET: 모든 대여 신청 조회
 export async function GET() {
@@ -108,6 +109,12 @@ export async function PATCH(request: NextRequest) {
   try {
     const supabase = createServerComponentClient<Database>({ cookies })
 
+    // 현재 사용자 정보 가져오기 (역할 추적을 위해)
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     console.log('PATCH request body:', body)
 
@@ -119,13 +126,16 @@ export async function PATCH(request: NextRequest) {
     }
 
     console.log('Updating loan with:', { id, status, device_tag, approved_by, approved_at, notes })
+    console.log('Current user role:', currentUser.role)
 
     interface LoanUpdateData {
       status: string
       updated_at: string
       device_tag?: string
       approved_by?: string
+      approved_by_role?: string
       approved_at?: string
+      rejected_by_role?: string
       notes?: string
       picked_up_at?: string
       returned_at?: string
@@ -141,19 +151,26 @@ export async function PATCH(request: NextRequest) {
     if (approved_at) updateData.approved_at = approved_at || getCurrentKoreaTime()
     if (notes) updateData.notes = notes
 
-    // 상태별 시간 기록
+    // 상태별 시간 기록 및 역할 추적
     if (status === 'approved') {
       updateData.approved_at = getCurrentKoreaTime()
+      updateData.approved_by_role = currentUser.role
+      // approved_by는 요청에서 온 값 사용하거나 현재 사용자 이메일
+      updateData.approved_by = approved_by || currentUser.email
     } else if (status === 'picked_up') {
       updateData.picked_up_at = getCurrentKoreaTime()
       // picked_up 상태일 때 승인 시간이 없으면 지금 시간으로 설정
       if (!updateData.approved_at) {
         updateData.approved_at = getCurrentKoreaTime()
+        updateData.approved_by_role = currentUser.role
+        updateData.approved_by = approved_by || currentUser.email
       }
     } else if (status === 'returned') {
       updateData.returned_at = getCurrentKoreaTime()
     } else if (status === 'rejected') {
-      // 거절(취소 포함) 시에는 별도 시간 기록 없음 (updated_at으로 충분)
+      // 거절 시 거절한 사용자의 역할 저장
+      updateData.rejected_by_role = currentUser.role
+      updateData.approved_by = approved_by || currentUser.email
     }
 
     console.log('About to update database with:', updateData)
