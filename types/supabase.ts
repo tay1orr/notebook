@@ -232,7 +232,9 @@ export interface Database {
           approved_by: string | null
           approved_by_role: 'admin' | 'manager' | 'homeroom' | 'helper' | null
           approved_at: string | null
+          rejected_by: string | null
           rejected_by_role: 'admin' | 'manager' | 'homeroom' | 'helper' | null
+          rejected_at: string | null
           picked_up_at: string | null
           returned_at: string | null
           notes: string | null
@@ -257,7 +259,9 @@ export interface Database {
           approved_by?: string | null
           approved_by_role?: 'admin' | 'manager' | 'homeroom' | 'helper' | null
           approved_at?: string | null
+          rejected_by?: string | null
           rejected_by_role?: 'admin' | 'manager' | 'homeroom' | 'helper' | null
+          rejected_at?: string | null
           picked_up_at?: string | null
           returned_at?: string | null
           notes?: string | null
@@ -282,7 +286,9 @@ export interface Database {
           approved_by?: string | null
           approved_by_role?: 'admin' | 'manager' | 'homeroom' | 'helper' | null
           approved_at?: string | null
+          rejected_by?: string | null
           rejected_by_role?: 'admin' | 'manager' | 'homeroom' | 'helper' | null
+          rejected_at?: string | null
           picked_up_at?: string | null
           returned_at?: string | null
           notes?: string | null

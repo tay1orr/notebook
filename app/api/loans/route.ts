@@ -135,7 +135,9 @@ export async function PATCH(request: NextRequest) {
       approved_by?: string
       approved_by_role?: string
       approved_at?: string
+      rejected_by?: string
       rejected_by_role?: string
+      rejected_at?: string
       notes?: string
       picked_up_at?: string
       returned_at?: string
@@ -168,9 +170,10 @@ export async function PATCH(request: NextRequest) {
     } else if (status === 'returned') {
       updateData.returned_at = getCurrentKoreaTime()
     } else if (status === 'rejected') {
-      // 거절 시 거절한 사용자의 역할 저장
+      // 거절 시 거절한 사용자의 정보 저장
+      updateData.rejected_by = approved_by || currentUser.email
       updateData.rejected_by_role = currentUser.role
-      updateData.approved_by = approved_by || currentUser.email
+      updateData.rejected_at = getCurrentKoreaTime()
     }
 
     console.log('About to update database with:', updateData)
