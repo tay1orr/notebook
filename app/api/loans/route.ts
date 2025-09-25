@@ -135,9 +135,7 @@ export async function PATCH(request: NextRequest) {
       approved_by?: string
       approved_by_role?: string
       approved_at?: string
-      rejected_by?: string
       rejected_by_role?: string
-      rejected_at?: string
       notes?: string
       picked_up_at?: string
       returned_at?: string
@@ -170,10 +168,13 @@ export async function PATCH(request: NextRequest) {
     } else if (status === 'returned') {
       updateData.returned_at = getCurrentKoreaTime()
     } else if (status === 'rejected') {
-      // 거절 시 거절한 사용자의 정보 저장
-      updateData.rejected_by = approved_by || currentUser.email
+      // 거절 시 거절한 사용자의 정보 저장 (기존 필드 활용)
       updateData.rejected_by_role = currentUser.role
-      updateData.rejected_at = getCurrentKoreaTime()
+      // rejected_by와 rejected_at 필드가 DB에 없을 수 있으므로 조건부 추가
+      if (approved_by) {
+        updateData.approved_by = approved_by
+      }
+      // rejected_at은 updated_at으로 대체 가능
     }
 
     console.log('About to update database with:', updateData)
@@ -186,10 +187,19 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Database error:', error)
-      console.error('Update data that failed:', updateData)
-      console.error('Loan ID that failed:', id)
-      return NextResponse.json({ error: 'Failed to update loan application', details: error.message }, { status: 500 })
+      console.error('💥 Database error:', error)
+      console.error('💥 Error code:', error.code)
+      console.error('💥 Error message:', error.message)
+      console.error('💥 Update data that failed:', updateData)
+      console.error('💥 Loan ID that failed:', id)
+      console.error('💥 Current user:', currentUser)
+      console.error('💥 Full error details:', JSON.stringify(error, null, 2))
+      return NextResponse.json({
+        error: 'Failed to update loan application',
+        details: error.message,
+        code: error.code,
+        updateData
+      }, { status: 500 })
     }
 
     console.log('Successfully updated loan:', loan)
