@@ -43,14 +43,45 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "User not found" }, { status: 404 })
       }
 
-      // auth.users에서만 찾은 경우 기본 정보로 처리
+      // 이메일에서 학급 정보 추출 시도 (예: kim31@example.com -> 3학년 1반)
+      let extractedGrade = '알 수 없음'
+      let extractedClass = '알 수 없음'
+
+      if (authUser.user.email) {
+        // 이메일 주소에서 숫자 패턴 찾기 (예: coding1, 김중산20135)
+        const emailPrefix = authUser.user.email.split('@')[0]
+        const numberMatch = emailPrefix.match(/(\d+)/)
+
+        if (numberMatch) {
+          const numbers = numberMatch[1]
+          if (numbers.length >= 4) {
+            // 5자리 숫자인 경우 (예: 20135 -> 2학년 01반 35번)
+            const firstDigit = numbers.substring(0, 1)
+            const secondTwoDigits = numbers.substring(1, 3)
+            extractedGrade = firstDigit
+            extractedClass = parseInt(secondTwoDigits).toString()
+          } else if (numbers.length === 1) {
+            // 1자리 숫자인 경우 (예: coding1 -> 3학년 1반으로 가정)
+            extractedGrade = '3'
+            extractedClass = numbers
+          }
+        }
+      }
+
+      // auth.users에서만 찾은 경우 추출된 정보로 처리
       const fallbackUser = {
         user_id: authUser.user.id,
         name: authUser.user.user_metadata?.name || authUser.user.email?.split('@')[0] || '알 수 없음',
         email: authUser.user.email,
-        grade: '알 수 없음',
-        class: '알 수 없음'
+        grade: extractedGrade,
+        class: extractedClass
       }
+
+      console.log('🔍 USER-LOGS - Fallback user with extracted info:', {
+        email: fallbackUser.email,
+        grade: extractedGrade,
+        class: extractedClass
+      })
 
 
       // fallback 사용자도 실제 대여 기록 조회 시도
@@ -194,6 +225,23 @@ export async function GET(request: Request) {
       // 시간순 정렬
       fallbackLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
+      // fallback 사용자에 대해서도 담임교사 권한 검사 수행
+      if (user.role === "homeroom" && user.isApprovedHomeroom) {
+        const teacherClass = `${user.grade}-${user.class}`
+        const studentClass = `${fallbackUser.grade}-${fallbackUser.class}`
+
+        console.log('🔍 USER-LOGS - Homeroom permission check for fallback:', {
+          teacherClass,
+          studentClass,
+          email: fallbackUser.email
+        })
+
+        if (teacherClass !== studentClass && fallbackUser.grade !== '알 수 없음') {
+          console.log('🔍 USER-LOGS - Access denied for fallback user')
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
+      }
+
       return NextResponse.json({
         userId,
         userName: fallbackUser.name,
@@ -206,7 +254,15 @@ export async function GET(request: Request) {
       const teacherClass = `${user.grade}-${user.class}`
       const studentClass = `${targetUser.grade}-${targetUser.class}`
 
+      console.log('🔍 USER-LOGS - Homeroom permission check for regular user:', {
+        teacherClass,
+        studentClass,
+        targetUserEmail: targetUser.email,
+        userId: userId
+      })
+
       if (teacherClass !== studentClass) {
+        console.log('🔍 USER-LOGS - Access denied for regular user')
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
     }
