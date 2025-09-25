@@ -245,6 +245,14 @@ export async function GET(request: Request) {
               let approverRole = '관리자'
               let approverName = '알 수 없음'
 
+              // 디버깅: 실제 데이터 로그 출력
+              console.log('🔍 승인 로그 디버깅:', {
+                loan_id: loan.id,
+                approved_by_role: loan.approved_by_role,
+                approved_by: loan.approved_by,
+                device_tag: loan.device_tag
+              })
+
               // 역할 결정
               if (loan.approved_by_role) {
                 switch (loan.approved_by_role) {
@@ -262,7 +270,10 @@ export async function GET(request: Request) {
                     break
                   default:
                     approverRole = '관리자'
+                    console.log('⚠️ 알 수 없는 승인자 역할:', loan.approved_by_role)
                 }
+              } else {
+                console.log('⚠️ approved_by_role이 null 또는 undefined')
               }
 
               // 승인자 이름은 제거하고 역할만 사용
@@ -313,6 +324,15 @@ export async function GET(request: Request) {
               let rejecterRole = '관리자'
               let rejecterName = '알 수 없음'
 
+              // 디버깅: 실제 데이터 로그 출력
+              console.log('🔍 거절 로그 디버깅:', {
+                loan_id: loan.id,
+                rejected_by_role: loan.rejected_by_role,
+                approved_by: loan.approved_by,
+                device_tag: loan.device_tag,
+                status: loan.status
+              })
+
               // 역할 결정
               if (loan.rejected_by_role) {
                 switch (loan.rejected_by_role) {
@@ -330,7 +350,10 @@ export async function GET(request: Request) {
                     break
                   default:
                     rejecterRole = '관리자'
+                    console.log('⚠️ 알 수 없는 거절자 역할:', loan.rejected_by_role)
                 }
+              } else {
+                console.log('⚠️ rejected_by_role이 null 또는 undefined')
               }
 
               // 거절자 이름 가져오기 (approved_by 필드 사용 - 실제로는 rejected_by 역할)
