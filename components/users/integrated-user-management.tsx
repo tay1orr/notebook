@@ -541,7 +541,8 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                                   onClick={() => {
                                     setSelectedUser(user)
                                     setShowUserLogsModal(true)
-                                    loadUserLogs(user.id)
+                                    // Always use email address for user logs API
+                                    loadUserLogs(user.email)
                                   }}
                                   title="사용자 로그 보기"
                                 >

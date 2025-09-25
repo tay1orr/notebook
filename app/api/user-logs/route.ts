@@ -38,10 +38,16 @@ export async function GET(request: Request) {
     // 사용자 정보 조회 (여러 테이블 확인)
     console.log('🔍 USER-LOGS - Looking up user in user_profiles:', userId)
 
+    // userId가 이메일 형식인지 확인하고 적절한 필드로 검색
+    const isEmail = userId.includes('@')
+    const searchField = isEmail ? 'email' : 'user_id'
+
+    console.log('🔍 USER-LOGS - Search method:', { userId, isEmail, searchField })
+
     const { data: targetUser, error: userError } = await adminSupabase
       .from("user_profiles")
       .select("*")
-      .eq("user_id", userId)
+      .eq(searchField, userId)
       .single()
 
     console.log('🔍 USER-LOGS - user_profiles result:', {
@@ -54,7 +60,21 @@ export async function GET(request: Request) {
       // user_profiles 테이블에 없으면 auth.users 테이블에서 확인
       console.log('🔍 USER-LOGS - User not in profiles, checking auth.users:', userId)
 
-      const { data: authUser, error: authError } = await adminSupabase.auth.admin.getUserById(userId)
+      let authUser, authError
+
+      if (isEmail) {
+        // 이메일로 사용자 검색
+        console.log('🔍 USER-LOGS - Searching by email in auth.users')
+        const { data, error } = await adminSupabase.auth.admin.listUsers()
+        authUser = { user: data?.users?.find(u => u.email === userId) }
+        authError = error
+      } else {
+        // UUID로 사용자 검색
+        console.log('🔍 USER-LOGS - Searching by UUID in auth.users')
+        const result = await adminSupabase.auth.admin.getUserById(userId)
+        authUser = result.data
+        authError = result.error
+      }
 
       console.log('🔍 USER-LOGS - auth.users result:', {
         found: !!authUser?.user,
@@ -194,8 +214,8 @@ export async function GET(request: Request) {
               let rejecterRole = '관리자'
               let rejecterName = '알 수 없음'
 
-              if (loan.rejected_by_role) {
-                switch (loan.rejected_by_role) {
+              if (loan.approved_by_role) {
+                switch (loan.approved_by_role) {
                   case 'admin':
                     rejecterRole = '관리자'
                     break
@@ -396,8 +416,8 @@ export async function GET(request: Request) {
 
 
               // 역할 결정
-              if (loan.rejected_by_role) {
-                switch (loan.rejected_by_role) {
+              if (loan.approved_by_role) {
+                switch (loan.approved_by_role) {
                   case 'admin':
                     rejecterRole = '관리자'
                     break
