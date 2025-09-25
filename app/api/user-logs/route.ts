@@ -330,6 +330,15 @@ export async function GET(request: Request) {
 
         // 대여 기록을 로그 형식으로 변환
         if (userLoans && userLoans.length > 0) {
+          console.log('🔍 USER-LOGS - Sample loan data for role debugging:', {
+            loanId: userLoans[0]?.id,
+            status: userLoans[0]?.status,
+            approved_by_role: userLoans[0]?.approved_by_role,
+            approved_by: userLoans[0]?.approved_by,
+            approved_at: userLoans[0]?.approved_at,
+            updated_at: userLoans[0]?.updated_at
+          })
+
           userLoans.forEach((loan, index) => {
             // 대여 신청 로그
             userLogs.push({

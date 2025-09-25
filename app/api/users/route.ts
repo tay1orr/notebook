@@ -77,7 +77,17 @@ export async function GET() {
     // 담임교사인 경우 본인과 자기 학급 학생들만 필터링
     let filteredUsers = usersWithRoles
     if (currentUser.role === 'homeroom' && currentUser.isApprovedHomeroom) {
-      console.log('🔍 USERS API - Filtering for homeroom teacher:', currentUser.grade, currentUser.class)
+      console.log('🔍 USERS API - Filtering for homeroom teacher:', {
+        teacherGrade: currentUser.grade,
+        teacherClass: currentUser.class,
+        totalUsers: usersWithRoles.length,
+        userSample: usersWithRoles.slice(0, 3).map(u => ({
+          email: u.email,
+          role: u.role,
+          grade: u.grade,
+          class: u.class
+        }))
+      })
 
       filteredUsers = usersWithRoles.filter(user => {
         // 본인은 항상 포함
@@ -85,22 +95,27 @@ export async function GET() {
           return true
         }
 
-        // 자기 학급 학생들만 포함
-        const isSameClass = user.grade === parseInt(currentUser.grade) && user.class === parseInt(currentUser.class)
-        const isStudent = user.role === 'student' || user.role === ''
+        // 자기 학급 학생들만 포함 (helper도 포함)
+        const teacherGradeInt = parseInt(currentUser.grade)
+        const teacherClassInt = parseInt(currentUser.class)
+        const isSameClass = user.grade === teacherGradeInt && user.class === teacherClassInt
+        const isStudentOrHelper = user.role === 'student' || user.role === '' || user.role === 'helper'
+
+        const shouldInclude = isSameClass && isStudentOrHelper
 
         console.log('🔍 USERS API - User filter check:', {
           email: user.email,
           userGrade: user.grade,
           userClass: user.class,
-          teacherGrade: parseInt(currentUser.grade),
-          teacherClass: parseInt(currentUser.class),
+          userRole: user.role,
+          teacherGrade: teacherGradeInt,
+          teacherClass: teacherClassInt,
           isSameClass,
-          isStudent,
-          included: isSameClass && isStudent
+          isStudentOrHelper,
+          shouldInclude
         })
 
-        return isSameClass && isStudent
+        return shouldInclude
       })
 
       console.log('🔍 USERS API - Filtered users for homeroom:', filteredUsers.length)
