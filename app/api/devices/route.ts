@@ -1,4 +1,3 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { Database } from '@/types/supabase'
@@ -290,53 +289,38 @@ function mapDeviceStatus(dbStatus: string): string {
 // PATCH: 기기 상태 업데이트
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = createServerComponentClient<Database>({ cookies })
+    const adminSupabase = createAdminClient()
     const body = await request.json()
     const { deviceTag, status, currentUser, notes } = body
 
     console.log('PATCH devices - Request body:', { deviceTag, status, currentUser, notes })
 
-    // 현재 사용자 정보 가져오기 (변경자 정보 기록용)
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    let changerInfo = '시스템'
+    // getCurrentUser 함수 사용
+    const { getCurrentUser } = require('@/lib/auth')
+    const user = await getCurrentUser()
 
-    // userProfile은 아래에서 더 자세히 조회할 예정
-    changerInfo = authUser?.email || '시스템'
-
-    console.log('PATCH devices - Changer info:', changerInfo)
-
-    // 권한 확인: 관리자, 담임교사, 노트북 관리 도우미만 기기 상태 변경 가능
-    if (!authUser) {
-      console.error('No authenticated user')
-      return NextResponse.json({ error: 'Unauthorized - No user' }, { status: 401 })
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('role, grade, class, isApprovedHomeroom')
-      .eq('user_id', authUser.id)
-      .single()
+    console.log('PATCH devices - User role:', user.role)
 
-    if (!userProfile) {
-      console.error('User profile not found:', authUser.id)
-      return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
-    }
-
-    if (!['admin', 'manager', 'homeroom', 'helper'].includes(userProfile.role)) {
-      console.error('Insufficient permissions:', userProfile.role)
+    // 관리자, 관리팀, 담임교사, 노트북 관리 도우미만 기기 상태 변경 가능
+    if (!['admin', 'manager', 'homeroom', 'helper'].includes(user.role)) {
+      console.error('Insufficient permissions:', user.role)
       return NextResponse.json({
         error: 'Unauthorized - Only admin, managers, homeroom teachers, and helpers can change device status'
       }, { status: 403 })
     }
 
-    // 담임교사는 승인된 경우에만, 자신의 반 기기만 변경 가능
-    if (userProfile.role === 'homeroom' && !userProfile.isApprovedHomeroom) {
+    // 담임교사는 승인된 경우에만 기기 변경 가능
+    if (user.role === 'homeroom' && !user.isApprovedHomeroom) {
       console.error('Homeroom teacher not approved')
       return NextResponse.json({ error: 'Unauthorized - Homeroom approval required' }, { status: 403 })
     }
 
     // 담임교사와 도우미는 자신의 반 기기만 변경 가능 (관리자와 관리팀은 모든 기기 가능)
-    if ((userProfile.role === 'homeroom' || userProfile.role === 'helper') && userProfile.grade && userProfile.class) {
+    if ((user.role === 'homeroom' || user.role === 'helper') && user.grade && user.class) {
       // deviceTag를 기반으로 기기의 학급 정보 추출
       let deviceGrade: number | null = null
       let deviceClass: number | null = null
@@ -355,31 +339,31 @@ export async function PATCH(request: NextRequest) {
         }
       }
 
-      const userGrade = parseInt(userProfile.grade)
-      const userClass = parseInt(userProfile.class)
+      const userGrade = parseInt(user.grade || '0')
+      const userClass = parseInt(user.class || '0')
 
       if (deviceGrade !== userGrade || deviceClass !== userClass) {
         console.error('Class mismatch:', {
           deviceGrade, deviceClass, userGrade, userClass,
-          userRole: userProfile.role
+          userRole: user.role
         })
         return NextResponse.json({
-          error: `Unauthorized - Can only change devices in your assigned class (${userProfile.grade}-${userProfile.class})`
+          error: `Unauthorized - Can only change devices in your assigned class (${user.grade}-${user.class})`
         }, { status: 403 })
       }
     }
 
     // 권한 체크 완료 후 changerInfo 설정
-    const roleText = userProfile.role === 'admin' ? '관리자' :
-                     userProfile.role === 'manager' ? '관리팀' :
-                     userProfile.role === 'homeroom' ? '담임교사' :
-                     userProfile.role === 'helper' ? '도우미' : '사용자'
-    changerInfo = `${(userProfile as any).name || authUser.email?.split('@')[0] || '알 수 없음'} (${roleText})`
+    const roleText = user.role === 'admin' ? '관리자' :
+                     user.role === 'manager' ? '관리팀' :
+                     user.role === 'homeroom' ? '담임교사' :
+                     user.role === 'helper' ? '도우미' : '사용자'
+    const changerInfo = `${user.name || user.email?.split('@')[0] || '알 수 없음'} (${roleText})`
 
     console.log('PATCH devices - Permission check passed:', {
-      role: userProfile.role,
-      grade: userProfile.grade,
-      class: userProfile.class,
+      role: user.role,
+      grade: user.grade,
+      class: user.class,
       changerInfo
     })
 
@@ -405,15 +389,9 @@ export async function PATCH(request: NextRequest) {
 
     console.log(`Converting deviceTag '${deviceTag}' to assetTag '${assetTag}'`)
 
-    // 서비스 역할로 기기가 존재하는지 먼저 확인 (RLS 우회)
-    const { createClient } = require('@supabase/supabase-js')
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
+    // adminSupabase 사용 (RLS 우회)
 
-    const { data: existingDevices, error: checkError } = await supabaseAdmin
+    const { data: existingDevices, error: checkError } = await adminSupabase
       .from('devices')
       .select('asset_tag, status')
       .eq('asset_tag', assetTag)
@@ -429,7 +407,7 @@ export async function PATCH(request: NextRequest) {
     if (!existingDevices || existingDevices.length === 0) {
       console.log('Device not found, creating new device:', assetTag)
       // 기기가 없으면 새로 생성
-      const { error: createError } = await supabaseAdmin
+      const { error: createError } = await adminSupabase
         .from('devices')
         .insert({
           asset_tag: assetTag,
@@ -463,7 +441,7 @@ export async function PATCH(request: NextRequest) {
 
     console.log('Updating device with data:', updateData)
 
-    const { data: devices, error } = await supabaseAdmin
+    const { data: devices, error } = await adminSupabase
       .from('devices')
       .update(updateData)
       .eq('asset_tag', assetTag)
@@ -494,6 +472,31 @@ export async function PATCH(request: NextRequest) {
     }
 
     console.log(`Device ${deviceTag} status updated successfully:`, device)
+
+    // audit_logs에 기기 상태 변경 기록
+    try {
+      await adminSupabase
+        .from('audit_logs')
+        .insert({
+          actor_id: user.id,
+          action: '기기 상태 변경',
+          entity_type: 'device',
+          entity_id: device.id,
+          old_values: { status: '이전 상태' }, // TODO: 실제 이전 상태 저장
+          new_values: { status: device.status },
+          metadata: {
+            asset_tag: device.asset_tag,
+            changer_info: changerInfo,
+            user_notes: notes,
+            device_tag: deviceTag
+          }
+        })
+
+      console.log('Audit log created for device status change')
+    } catch (auditError) {
+      console.error('Failed to create audit log:', auditError)
+      // audit log 실패는 전체 작업을 중단시키지 않음
+    }
 
     return NextResponse.json({
       success: true,
