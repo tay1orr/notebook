@@ -26,9 +26,6 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
   const [showLoanHistory, setShowLoanHistory] = useState(false)
   const [selectedDeviceLoanHistory, setSelectedDeviceLoanHistory] = useState<any[]>([])
   const [selectedDeviceAsset, setSelectedDeviceAsset] = useState('')
-  const [showDetailedLogs, setShowDetailedLogs] = useState(false)
-  const [selectedDeviceLogs, setSelectedDeviceLogs] = useState<any[]>([])
-  const [selectedDeviceInfo, setSelectedDeviceInfo] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [gradeFilter, setGradeFilter] = useState('all')
@@ -229,29 +226,6 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
     }
   }
 
-  // 상세 로그 조회 함수
-  const handleShowDetailedLogs = async (deviceId: string) => {
-    try {
-      console.log('🔍 Fetching detailed logs for device:', deviceId)
-      const response = await fetch(`/api/devices/${deviceId}/logs`)
-
-      if (response.ok) {
-        const responseData = await response.json()
-        console.log('🔍 Detailed logs response:', responseData)
-
-        setSelectedDeviceInfo(responseData.device)
-        setSelectedDeviceLogs(responseData.logs || [])
-        setShowDetailedLogs(true)
-      } else {
-        const errorText = await response.text()
-        console.error('🔍 Detailed logs API error:', response.status, errorText)
-        alert('상세 로그를 불러오는데 실패했습니다.')
-      }
-    } catch (error) {
-      console.error('Detailed logs error:', error)
-      alert('상세 로그를 불러오는 중 오류가 발생했습니다.')
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -452,16 +426,6 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
                                 이력
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleShowDetailedLogs(device.assetNumber || device.deviceTag)}
-                              >
-                                <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                상세 로그
                               </Button>
                             </div>
                           </TableCell>
@@ -795,107 +759,6 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
         </DialogContent>
       </Dialog>
 
-      {/* 상세 로그 다이얼로그 */}
-      <Dialog open={showDetailedLogs} onOpenChange={setShowDetailedLogs}>
-        <DialogContent className="max-w-6xl max-h-[80vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>기기 상세 로그</DialogTitle>
-            <DialogDescription>
-              {selectedDeviceInfo?.asset_tag} 기기의 모든 활동 로그입니다.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* 기기 정보 요약 */}
-            {selectedDeviceInfo && (
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="font-medium text-gray-500">자산태그</p>
-                      <p className="font-mono">{selectedDeviceInfo.asset_tag}</p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-500">모델</p>
-                      <p>{selectedDeviceInfo.model}</p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-500">시리얼번호</p>
-                      <p className="font-mono">{selectedDeviceInfo.serial_number}</p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-500">현재 상태</p>
-                      <Badge variant="outline">
-                        {selectedDeviceInfo.status === '충전함' ? '대여가능' :
-                         selectedDeviceInfo.status === '대여중' ? '대여중' :
-                         selectedDeviceInfo.status === '점검' ? '점검중' :
-                         selectedDeviceInfo.status === '분실' ? '분실' :
-                         selectedDeviceInfo.status}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* 로그 목록 */}
-            <div className="max-h-96 overflow-y-auto border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[180px]">시간</TableHead>
-                    <TableHead className="w-[100px]">종류</TableHead>
-                    <TableHead className="w-[120px]">작업</TableHead>
-                    <TableHead className="w-[120px]">작업자</TableHead>
-                    <TableHead>세부사항</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {selectedDeviceLogs.length > 0 ? selectedDeviceLogs.map((log, index) => (
-                    <TableRow key={log.id || index}>
-                      <TableCell className="font-mono text-sm">
-                        {new Date(log.timestamp).toLocaleString('ko-KR', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                          hour12: false
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={log.type === 'audit' ?
-                            'bg-purple-100 text-purple-700 border-purple-300' :
-                            'bg-blue-100 text-blue-700 border-blue-300'
-                          }
-                        >
-                          {log.type === 'audit' ? '시스템' : '대여'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{log.action}</TableCell>
-                      <TableCell className="truncate" title={log.actor}>
-                        {log.actor}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {log.details}
-                      </TableCell>
-                    </TableRow>
-                  )) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        로그가 없습니다.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
