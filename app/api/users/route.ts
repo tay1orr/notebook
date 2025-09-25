@@ -42,6 +42,14 @@ export async function GET() {
           .eq('user_id', authUser.id)
           .single()
 
+        console.log('🔍 USERS API - Role lookup for user:', {
+          email: authUser.email,
+          userId: authUser.id,
+          roleFound: !!roleData,
+          role: roleData?.role,
+          roleError: roleError?.message
+        })
+
         // Get profile information (grade, class)
         const { data: profileData } = await adminSupabase
           .from('user_profiles')

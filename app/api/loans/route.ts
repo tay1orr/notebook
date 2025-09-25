@@ -161,11 +161,9 @@ export async function PATCH(request: NextRequest) {
     } else if (status === 'returned') {
       updateData.returned_at = getCurrentKoreaTime()
     } else if (status === 'rejected') {
-      // 거절 시에는 기본적으로 status만 업데이트
-      // rejected_by_role 필드가 DB에 없으므로 제거
-      if (approved_by) {
-        updateData.approved_by = approved_by
-      }
+      // 거절 시에도 역할 정보 저장 (approved_by_role 필드 사용)
+      updateData.approved_by_role = currentUser.role
+      updateData.approved_by = approved_by || currentUser.email
       // 거절 시간은 updated_at으로 추적
     }
 
