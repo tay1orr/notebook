@@ -6,7 +6,7 @@ export const loanApplicationSchema = z.object({
   class_name: z.string().min(1, '학급을 입력해주세요').regex(/^\d{1}-\d{1,2}$/, '올바른 학급 형식이 아닙니다 (예: 2-1)'),
   email: z.string().email('올바른 이메일 형식이 아닙니다'),
   student_contact: z.string().optional(),
-  purpose: z.enum(['study', 'assignment', 'project', 'other'], {
+  purpose: z.enum(['homework', 'report', 'research', 'presentation', 'project', 'exam_prep', 'other'], {
     errorMap: () => ({ message: '사용 목적을 선택해주세요' })
   }),
   purpose_detail: z.string().max(200, '세부 목적은 200자를 초과할 수 없습니다').optional(),
