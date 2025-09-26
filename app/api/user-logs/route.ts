@@ -170,6 +170,16 @@ export async function GET(request: Request) {
 
         if (userLoans && userLoans.length > 0) {
           for (const loan of userLoans) {
+            console.log('🔍 USER-LOGS - Processing fallback loan for approval log check:', {
+              id: loan.id,
+              status: loan.status,
+              approved_at: loan.approved_at,
+              picked_up_at: loan.picked_up_at,
+              approved_by: loan.approved_by,
+              approved_by_role: loan.approved_by_role,
+              device_tag: loan.device_tag
+            })
+
             fallbackLogs.push({
               id: `loan_${loan.id}_request`,
               timestamp: loan.created_at,
@@ -367,6 +377,16 @@ export async function GET(request: Request) {
           })
 
           for (const loan of userLoans) {
+            console.log('🔍 USER-LOGS - Processing loan for approval log check:', {
+              id: loan.id,
+              status: loan.status,
+              approved_at: loan.approved_at,
+              picked_up_at: loan.picked_up_at,
+              approved_by: loan.approved_by,
+              approved_by_role: loan.approved_by_role,
+              device_tag: loan.device_tag
+            })
+
             // 대여 신청 로그
             userLogs.push({
               id: `loan_${loan.id}_request`,
