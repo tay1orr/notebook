@@ -11,14 +11,6 @@ export async function GET(request: Request) {
   try {
     const user = await getCurrentUser()
 
-    console.log('🔍 USER-LOGS - Request details:', {
-      userId: userId,
-      currentUser: user?.email,
-      currentUserRole: user?.role,
-      currentUserGrade: user?.grade,
-      currentUserClass: user?.class,
-      isApproved: user?.isApprovedHomeroom
-    })
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -68,13 +60,9 @@ export async function GET(request: Request) {
     }
 
     // 사용자 정보 조회 (여러 테이블 확인)
-    console.log('🔍 USER-LOGS - Looking up user in user_profiles:', userId)
-
     // userId가 이메일 형식인지 확인하고 적절한 필드로 검색
     const isEmail = userId.includes('@')
     const searchField = isEmail ? 'email' : 'user_id'
-
-    console.log('🔍 USER-LOGS - Search method:', { userId, isEmail, searchField })
 
     const { data: targetUser, error: userError } = await adminSupabase
       .from("user_profiles")
@@ -82,11 +70,6 @@ export async function GET(request: Request) {
       .eq(searchField, userId)
       .single()
 
-    console.log('🔍 USER-LOGS - user_profiles result:', {
-      found: !!targetUser,
-      error: userError?.message,
-      targetUser: targetUser ? { email: targetUser.email, grade: targetUser.grade, class: targetUser.class } : null
-    })
 
     if (!targetUser) {
       // user_profiles 테이블에 없으면 auth.users 테이블에서 확인

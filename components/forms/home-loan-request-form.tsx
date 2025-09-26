@@ -68,12 +68,26 @@ export function HomeLoanRequestForm({
     signaturePadRef.current?.clear()
   }
 
-  // 폼이 열릴 때마다 초기화
+  // 폼이 열릴 때마다 초기화 및 프로필 정보 자동 입력
   useEffect(() => {
     if (isOpen) {
       resetForm()
+
+      // 프로필에서 학급 정보 자동 입력
+      if (studentInfo.className && studentInfo.studentNo) {
+        const classParts = studentInfo.className.split('-') // "3-1" -> ["3", "1"]
+        if (classParts.length === 2) {
+          setFormData(prev => ({
+            ...prev,
+            currentGrade: classParts[0],
+            currentClassNumber: classParts[1],
+            currentClass: studentInfo.className,
+            currentStudentNumber: studentInfo.studentNo
+          }))
+        }
+      }
     }
-  }, [isOpen])
+  }, [isOpen, studentInfo])
 
   // 전각 문자를 반각으로 변환하는 함수
   const convertToHalfWidth = (str: string) => {
@@ -510,13 +524,15 @@ export function HomeLoanRequestForm({
 
               <div className="space-y-2">
                 <Label>자필 서명 *</Label>
-                <SignaturePad
-                  ref={signaturePadRef}
-                  width={400}
-                  height={120}
-                  className="w-full"
-                  onSignatureChange={setSignatureEmpty}
-                />
+                <div className="w-full max-w-lg mx-auto">
+                  <SignaturePad
+                    ref={signaturePadRef}
+                    width={450}
+                    height={150}
+                    className="w-full h-32 sm:h-36 md:h-40 border-2 border-gray-300"
+                    onSignatureChange={setSignatureEmpty}
+                  />
+                </div>
                 <div className="flex justify-end">
                   <Button
                     type="button"

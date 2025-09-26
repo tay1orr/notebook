@@ -224,10 +224,12 @@ export function ApprovalSignatureModal({
 
               <div className="space-y-2">
                 <Label>담당자 서명 *</Label>
-                <div className="w-full max-w-md mx-auto">
+                <div className="w-full max-w-lg mx-auto">
                   <SignaturePad
                     ref={signaturePadRef}
-                    className="w-full h-24 sm:h-28 md:h-32"
+                    width={450}
+                    height={150}
+                    className="w-full h-32 sm:h-36 md:h-40 border-2 border-gray-300"
                     onSignatureChange={setSignatureEmpty}
                   />
                 </div>
