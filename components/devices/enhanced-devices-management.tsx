@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CSVUpload } from '@/components/forms/csv-upload'
+import { ReturnSignatureModal } from '@/components/forms/return-signature-modal'
 
 interface EnhancedDevicesManagementProps {
   devices: any[]
@@ -28,6 +29,8 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
   const [selectedDeviceAsset, setSelectedDeviceAsset] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedLoan, setSelectedLoan] = useState<any>(null)
+  const [showReturnModal, setShowReturnModal] = useState(false)
   const [gradeFilter, setGradeFilter] = useState('all')
   const [classFilter, setClassFilter] = useState('all')
   const [activeTab, setActiveTab] = useState('devices')
@@ -132,6 +135,54 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
 
     return matchesSearch && matchesStatus && matchesGrade && matchesClass
   })
+
+  const handleReturnClick = (loan: any) => {
+    setSelectedLoan(loan)
+    setShowReturnModal(true)
+  }
+
+  const handleReturnSignature = async (data: {
+    signature: string
+    condition: string
+    notes?: string
+    receiverName: string
+  }) => {
+    if (!selectedLoan) return
+
+    try {
+      // API로 반납 처리
+      const response = await fetch('/api/loans', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: selectedLoan.id,
+          status: 'returned',
+          returned_at: new Date().toISOString(),
+          return_condition: data.condition,
+          return_notes: data.notes,
+          return_signature: data.signature,
+          receiver_name: data.receiverName
+        })
+      })
+
+      if (response.ok) {
+        // 대여 데이터에서 제거
+        setLoanData(prev => prev.filter(l => l.id !== selectedLoan.id))
+        // 페이지 새로고침하여 최신 상태 반영
+        window.location.reload()
+      } else {
+        throw new Error('API failed')
+      }
+    } catch (error) {
+      console.error('반납 처리 실패:', error)
+      alert('반납 처리 중 오류가 발생했습니다.')
+    }
+
+    setSelectedLoan(null)
+    setShowReturnModal(false)
+  }
 
   const handleStatusChange = async (deviceId: string, newStatus: string) => {
     try {
@@ -523,7 +574,11 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
                               )}
                             </TableCell>
                             <TableCell>
-                              <Button variant="outline" size="sm">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleReturnClick(loan)}
+                              >
                                 반납 처리
                               </Button>
                             </TableCell>
@@ -758,6 +813,24 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 반납 서명 모달 */}
+      {selectedLoan && (
+        <ReturnSignatureModal
+          open={showReturnModal}
+          onClose={() => {
+            setShowReturnModal(false)
+            setSelectedLoan(null)
+          }}
+          onConfirm={handleReturnSignature}
+          loanInfo={{
+            studentName: selectedLoan.student_name || selectedLoan.studentName,
+            className: selectedLoan.class_name || selectedLoan.className,
+            deviceTag: selectedLoan.device_tag || selectedLoan.deviceTag,
+            loanDate: selectedLoan.created_at || selectedLoan.requestedAt
+          }}
+        />
+      )}
 
     </div>
   )
