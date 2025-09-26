@@ -176,37 +176,59 @@ export async function GET(request: Request) {
                     approverRole = loan.approved_by_role || '알 수 없는 역할'
                 }
               } else {
-                console.log('🔍 USER-LOGS - No approved_by_role found, checking approved_by:', loan.approved_by)
-                // approved_by_role이 없으면 approved_by에서 추정
+                console.log('🔍 USER-LOGS - No approved_by_role found, looking up current role for:', loan.approved_by)
+                // approved_by_role이 없으면 데이터베이스에서 실시간 역할 조회
                 if (loan.approved_by) {
-                  // 관리자 계정 체크
-                  if (loan.approved_by === 'taylorr@gclass.ice.go.kr' || loan.approved_by.includes('admin')) {
-                    approverRole = '관리자'
-                  }
-                  // 담임교사 계정 체크 (coding으로 시작하는 계정들)
-                  else if (loan.approved_by.includes('coding') || loan.approved_by.includes('kko92-coding')) {
-                    approverRole = '담임교사'
-                  }
-                  // 관리팀 계정 체크
-                  else if (loan.approved_by.includes('manager')) {
-                    approverRole = '관리팀'
-                  }
-                  // 노트북 관리 도우미 계정 체크
-                  else if (loan.approved_by.includes('helper')) {
-                    approverRole = '노트북 관리 도우미'
-                  }
-                  // gclass.ice.go.kr 도메인이면 일반적으로 담임교사로 추정
-                  else if (loan.approved_by.includes('@gclass.ice.go.kr')) {
-                    approverRole = '담임교사'
-                  }
-                  else {
+                  try {
+                    // 먼저 auth.users에서 사용자 찾기
+                    const { data: authUser } = await adminSupabase.auth.admin.listUsers()
+                    const user = authUser?.users.find(u => u.email === loan.approved_by)
+
+                    if (user) {
+                      // user_roles에서 역할 조회
+                      const { data: roleData } = await adminSupabase
+                        .from('user_roles')
+                        .select('role')
+                        .eq('user_id', user.id)
+                        .single()
+
+                      if (roleData?.role) {
+                        switch (roleData.role) {
+                          case 'admin':
+                            approverRole = '관리자'
+                            break
+                          case 'manager':
+                            approverRole = '관리팀'
+                            break
+                          case 'homeroom':
+                            approverRole = '담임교사'
+                            break
+                          case 'helper':
+                            approverRole = '노트북 관리 도우미'
+                            break
+                          case 'student':
+                            approverRole = '학생'
+                            break
+                          default:
+                            approverRole = roleData.role
+                        }
+                        console.log('🔍 USER-LOGS - Found role from database:', {
+                          email: loan.approved_by,
+                          role: roleData.role,
+                          display_role: approverRole
+                        })
+                      } else {
+                        approverRole = '알 수 없는 역할'
+                        console.log('🔍 USER-LOGS - No role found in user_roles for:', loan.approved_by)
+                      }
+                    } else {
+                      approverRole = '알 수 없는 역할'
+                      console.log('🔍 USER-LOGS - User not found in auth.users:', loan.approved_by)
+                    }
+                  } catch (roleError) {
+                    console.error('🔍 USER-LOGS - Error looking up role:', roleError)
                     approverRole = '알 수 없는 역할'
                   }
-
-                  console.log('🔍 USER-LOGS - Role estimation result:', {
-                    approved_by: loan.approved_by,
-                    estimated_role: approverRole
-                  })
                 }
               }
 
@@ -285,37 +307,59 @@ export async function GET(request: Request) {
                     rejecterRole = loan.approved_by_role || '알 수 없는 역할'
                 }
               } else {
-                console.log('🔍 USER-LOGS - No approved_by_role for rejection, checking approved_by:', loan.approved_by)
-                // approved_by_role이 없으면 approved_by에서 추정
+                console.log('🔍 USER-LOGS - No approved_by_role for rejection, looking up current role for:', loan.approved_by)
+                // approved_by_role이 없으면 데이터베이스에서 실시간 역할 조회
                 if (loan.approved_by) {
-                  // 관리자 계정 체크
-                  if (loan.approved_by === 'taylorr@gclass.ice.go.kr' || loan.approved_by.includes('admin')) {
-                    rejecterRole = '관리자'
-                  }
-                  // 담임교사 계정 체크 (coding으로 시작하는 계정들)
-                  else if (loan.approved_by.includes('coding') || loan.approved_by.includes('kko92-coding')) {
-                    rejecterRole = '담임교사'
-                  }
-                  // 관리팀 계정 체크
-                  else if (loan.approved_by.includes('manager')) {
-                    rejecterRole = '관리팀'
-                  }
-                  // 노트북 관리 도우미 계정 체크
-                  else if (loan.approved_by.includes('helper')) {
-                    rejecterRole = '노트북 관리 도우미'
-                  }
-                  // gclass.ice.go.kr 도메인이면 일반적으로 담임교사로 추정
-                  else if (loan.approved_by.includes('@gclass.ice.go.kr')) {
-                    rejecterRole = '담임교사'
-                  }
-                  else {
+                  try {
+                    // 먼저 auth.users에서 사용자 찾기
+                    const { data: authUser } = await adminSupabase.auth.admin.listUsers()
+                    const user = authUser?.users.find(u => u.email === loan.approved_by)
+
+                    if (user) {
+                      // user_roles에서 역할 조회
+                      const { data: roleData } = await adminSupabase
+                        .from('user_roles')
+                        .select('role')
+                        .eq('user_id', user.id)
+                        .single()
+
+                      if (roleData?.role) {
+                        switch (roleData.role) {
+                          case 'admin':
+                            rejecterRole = '관리자'
+                            break
+                          case 'manager':
+                            rejecterRole = '관리팀'
+                            break
+                          case 'homeroom':
+                            rejecterRole = '담임교사'
+                            break
+                          case 'helper':
+                            rejecterRole = '노트북 관리 도우미'
+                            break
+                          case 'student':
+                            rejecterRole = '학생'
+                            break
+                          default:
+                            rejecterRole = roleData.role
+                        }
+                        console.log('🔍 USER-LOGS - Found rejection role from database:', {
+                          email: loan.approved_by,
+                          role: roleData.role,
+                          display_role: rejecterRole
+                        })
+                      } else {
+                        rejecterRole = '알 수 없는 역할'
+                        console.log('🔍 USER-LOGS - No role found in user_roles for rejection:', loan.approved_by)
+                      }
+                    } else {
+                      rejecterRole = '알 수 없는 역할'
+                      console.log('🔍 USER-LOGS - User not found in auth.users for rejection:', loan.approved_by)
+                    }
+                  } catch (roleError) {
+                    console.error('🔍 USER-LOGS - Error looking up rejection role:', roleError)
                     rejecterRole = '알 수 없는 역할'
                   }
-
-                  console.log('🔍 USER-LOGS - Rejection role estimation result:', {
-                    approved_by: loan.approved_by,
-                    estimated_role: rejecterRole
-                  })
                 }
               }
 
