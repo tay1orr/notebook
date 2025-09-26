@@ -108,7 +108,7 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
     const interval = setInterval(() => {
       loadLoans()
       loadPendingApprovals()
-    }, 2000)
+    }, 10000) // 10초로 변경하여 서버 부하 감소
     return () => clearInterval(interval)
   }, [user.email, user.className, user.studentNo, user.role, user.grade, user.class])
 
@@ -204,7 +204,6 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
       })
 
       if (response.ok) {
-        console.log('HelperDashboard - Successfully approved via API')
         // 로컬 상태 업데이트
         setLoans(prev => prev.map(l =>
           l.id === selectedLoan.id

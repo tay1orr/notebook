@@ -21,50 +21,36 @@ export interface AuthUser {
 // API 라우트에서만 사용할 getCurrentUser (리다이렉트 없음)
 export async function getCurrentUserForAPI(): Promise<AuthUser | null> {
   try {
-    console.log('🔍 API AUTH - Getting user for API - Environment:', process.env.NODE_ENV)
-
-    const cookieStore = cookies()
     const supabase = createServerClient()
     const adminSupabase = createAdminClient()
 
     const { data: { user }, error } = await supabase.auth.getUser()
-    console.log('🔍 API AUTH - Supabase user check:', { hasUser: !!user, error })
 
     if (!user || error) {
-      console.log('🔍 API AUTH - No user found or error:', error)
       return null
     }
 
-    // Get user role from user_roles table using admin client
     let role: UserRole | '' = ''
     let grade: string | undefined
     let className: string | undefined
     let studentNo: string | undefined
 
-    console.log('🔍 API AUTH - Checking role for user:', user.email, 'ID:', user.id)
-
     try {
-      const { data: roleData, error: roleSelectError } = await adminSupabase
+      const { data: roleData } = await adminSupabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .single()
 
-      console.log('🔍 API AUTH - Role query result:', roleData, 'Error:', roleSelectError)
-
       if (roleData?.role) {
         role = roleData.role
-        console.log('🔍 API AUTH - Found role:', role)
       } else {
-        // Check if admin email
         const adminEmail = process.env.ADMIN_EMAIL || 'taylorr@gclass.ice.go.kr'
         if (user.email === adminEmail) {
           role = 'admin'
-          console.log('🔍 API AUTH - Setting admin role for:', user.email)
         }
       }
 
-      // Get class info from metadata
       if (user.user_metadata?.class_info) {
         const classInfo = user.user_metadata.class_info
         if (classInfo.grade) grade = classInfo.grade.toString()
@@ -72,26 +58,16 @@ export async function getCurrentUserForAPI(): Promise<AuthUser | null> {
         if (classInfo.student_no) studentNo = classInfo.student_no.toString()
       }
     } catch (roleError) {
-      console.error('🔍 API AUTH - Role lookup error:', roleError)
-      // Fallback to admin check
       const adminEmail = process.env.ADMIN_EMAIL || 'taylorr@gclass.ice.go.kr'
       if (user.email === adminEmail) {
         role = 'admin'
       }
     }
 
-    console.log('🔍 API AUTH - Final user for API:', {
-      email: user.email,
-      role,
-      hasClassInfo: !!(grade || className || studentNo)
-    })
-
-    // 승인 상태 확인 (API용)
     const pendingHomeroom = user.user_metadata?.pending_homeroom?.status === 'pending'
     const pendingHelper = user.user_metadata?.pending_helper?.status === 'pending'
     const approvedHomeroom = user.user_metadata?.approved_homeroom === true
 
-    // 승인 대기 중인 역할 확인
     let pendingApproval = false
     let pendingRole = undefined
 
@@ -118,7 +94,7 @@ export async function getCurrentUserForAPI(): Promise<AuthUser | null> {
       isApprovedHomeroom: approvedHomeroom
     }
   } catch (error) {
-    console.error('🔍 API AUTH - Error getting user for API:', error)
+    console.error('Error getting user for API:', error)
     return null
   }
 }
@@ -134,77 +110,47 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       return null
     }
 
-    // Get user role and class info from user_roles table using admin client
     let role: UserRole | '' = ''
     let grade: string | undefined
     let className: string | undefined
     let studentNo: string | undefined
-    console.log('🔍 AUTH DEBUG - Checking user:', user.email, 'ID:', user.id)
 
     try {
-      // 먼저 기본 role만 조회
-      const { data: roleData, error: roleSelectError } = await adminSupabase
+      const { data: roleData } = await adminSupabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .single()
 
-      console.log('🔍 AUTH DEBUG - Role data from DB:', roleData, 'Error:', roleSelectError)
-
       if (roleData?.role) {
         role = roleData.role
-        console.log('🔍 AUTH DEBUG - Found existing role:', roleData.role, 'for user:', user.email)
       } else {
-        console.log('🔍 AUTH DEBUG - No existing role found for:', user.email)
-        // Default admin for specific email
         const adminEmail = process.env.ADMIN_EMAIL || 'taylorr@gclass.ice.go.kr'
         if (user.email === adminEmail) {
           role = 'admin'
-          console.log('🔍 AUTH DEBUG - Setting admin role for:', user.email)
-          // 관리자 역할 생성
-          const { error: insertError } = await adminSupabase
+          await adminSupabase
             .from('user_roles')
             .insert({ user_id: user.id, role: 'admin' })
-          console.log('🔍 AUTH DEBUG - Admin insert result:', insertError)
         }
       }
 
-      // 학급 정보를 user 메타데이터에서 가져오기 (역할과 상관없이 항상 체크)
-      console.log('🔍 AUTH DEBUG - Full user metadata:', JSON.stringify(user.user_metadata, null, 2))
-
       if (user.user_metadata?.class_info) {
         const classInfo = user.user_metadata.class_info
-        console.log('🔍 AUTH DEBUG - Class info object:', JSON.stringify(classInfo, null, 2))
-
         if (classInfo.grade) grade = classInfo.grade.toString()
         if (classInfo.class) className = classInfo.class.toString()
         if (classInfo.student_no) studentNo = classInfo.student_no.toString()
-        console.log('🔍 AUTH DEBUG - Found class info from metadata:', { grade, className, studentNo })
-      } else {
-        console.log('🔍 AUTH DEBUG - No class info found in user metadata')
-        console.log('🔍 AUTH DEBUG - Available metadata keys:', Object.keys(user.user_metadata || {}))
       }
     } catch (roleError) {
-      console.log('🔍 AUTH DEBUG - Role lookup failed:', roleError)
-      // Fallback to admin check
       const adminEmail = process.env.ADMIN_EMAIL || 'taylorr@gclass.ice.go.kr'
       if (user.email === adminEmail) {
         role = 'admin'
       }
     }
 
-    console.log('🔍 AUTH DEBUG - Final role for', user.email, ':', role, 'Class info:', {
-      grade,
-      class: className,
-      studentNo
-    })
-
-    // 승인 상태 확인
     const pendingHomeroom = user.user_metadata?.pending_homeroom?.status === 'pending'
     const pendingHelper = user.user_metadata?.pending_helper?.status === 'pending'
     const approvedHomeroom = user.user_metadata?.approved_homeroom === true
 
-    // 승인 대기 중인 역할 확인
     let pendingApproval = false
     let pendingRole = undefined
 
@@ -215,15 +161,6 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       pendingApproval = true
       pendingRole = 'helper'
     }
-
-    console.log('🔍 AUTH DEBUG - Approval status:', {
-      pendingHomeroom,
-      pendingHelper,
-      pendingApproval,
-      pendingRole,
-      approvedHomeroom,
-      metadata: user.user_metadata
-    })
 
     return {
       id: user.id,

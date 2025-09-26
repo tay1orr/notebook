@@ -5,25 +5,43 @@ import { Database } from '@/types/supabase'
 import { getCurrentKoreaTime, getCurrentKoreaDateTimeString } from '@/lib/utils'
 import { handleSupabaseError, logError } from '@/lib/error-handler'
 import { getCurrentUser } from '@/lib/auth'
+import { rateLimit } from '@/lib/rate-limiter'
+import { loanApplicationSchema, sanitizeInput } from '@/lib/validation'
+import { monitoring } from '@/lib/monitoring'
 
 // GET: 모든 대여 신청 조회
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const startTime = Date.now()
+
   try {
+    monitoring.recordMetric('api_request', 1, { endpoint: 'GET /api/loans' })
+
     const supabase = createServerComponentClient<Database>({ cookies })
+
+    // URL 파라미터에서 limit과 offset 가져오기 (기본값: 최근 100개)
+    const { searchParams } = new URL(request.url)
+    const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 500) // 최대 500개 제한
+    const offset = parseInt(searchParams.get('offset') || '0')
 
     const { data: loans, error } = await supabase
       .from('loan_applications')
       .select('*')
       .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
 
     if (error) {
       const appError = handleSupabaseError(error)
+      monitoring.recordError(new Error(error.message), 'GET /api/loans')
       logError(error, 'GET /api/loans')
       return NextResponse.json({ error: appError.message }, { status: appError.status || 500 })
     }
 
+    monitoring.recordMetric('api_request_duration', Date.now() - startTime, { endpoint: 'GET /api/loans' })
+    monitoring.recordMetric('loans_fetched', loans.length)
+
     return NextResponse.json({ loans })
   } catch (error) {
+    monitoring.recordError(error as Error, 'GET /api/loans')
     logError(error, 'GET /api/loans - Unexpected error')
     return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 })
   }
@@ -32,9 +50,35 @@ export async function GET() {
 // POST: 새로운 대여 신청 생성
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerComponentClient<Database>({ cookies })
+    const clientIP = request.headers.get('x-forwarded-for') || 'unknown'
+    const rateLimitResult = rateLimit(`loans_${clientIP}`, 10, 60000)
 
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': '10',
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString()
+          }
+        }
+      )
+    }
+
+    const supabase = createServerComponentClient<Database>({ cookies })
     const body = await request.json()
+
+    // 입력 데이터 검증 및 정리
+    const validationResult = loanApplicationSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({
+        error: '입력 데이터가 올바르지 않습니다.',
+        details: validationResult.error.issues.map(issue => issue.message)
+      }, { status: 400 })
+    }
+
     const {
       student_name,
       student_no,
@@ -49,12 +93,7 @@ export async function POST(request: NextRequest) {
       device_tag,
       signature,
       notes
-    } = body
-
-    // 필수 필드 검증
-    if (!student_name || !student_no || !class_name || !email || !purpose || !return_date) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    } = validationResult.data
 
     // device_tag가 없으면 학생의 학급 정보로 기본 기기 할당
     let assignedDeviceTag = device_tag
@@ -72,19 +111,19 @@ export async function POST(request: NextRequest) {
       .from('loan_applications')
       .insert([
         {
-          student_name,
+          student_name: sanitizeInput(student_name),
           student_no,
           class_name,
           email,
-          student_contact,
+          student_contact: student_contact ? sanitizeInput(student_contact) : null,
           purpose,
-          purpose_detail,
+          purpose_detail: purpose_detail ? sanitizeInput(purpose_detail) : null,
           return_date,
           return_time,
           due_date,
           device_tag: assignedDeviceTag,
           signature,
-          notes,
+          notes: notes ? sanitizeInput(notes) : null,
           status: 'requested',
           created_at: getCurrentKoreaTime()
         }
@@ -93,12 +132,20 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
+      monitoring.recordError(new Error(error.message), 'POST /api/loans')
       console.error('Database error:', error)
       return NextResponse.json({ error: 'Failed to create loan application' }, { status: 500 })
     }
 
+    monitoring.recordMetric('loan_created', 1, {
+      purpose,
+      class: class_name,
+      device_assigned: assignedDeviceTag ? 'true' : 'false'
+    })
+
     return NextResponse.json({ loan }, { status: 201 })
   } catch (error) {
+    monitoring.recordError(error as Error, 'POST /api/loans')
     console.error('Unexpected error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -152,12 +199,6 @@ export async function PATCH(request: NextRequest) {
       // 현재 사용자의 역할도 저장
       updateData.approved_by_role = currentUser.role
 
-      console.log('🔍 LOANS API - Approval data being saved:', {
-        approved_by: updateData.approved_by,
-        approved_by_role: updateData.approved_by_role,
-        currentUser: currentUser.email,
-        currentUserRole: currentUser.role
-      })
 
     } else if (status === 'picked_up') {
       updateData.picked_up_at = getCurrentKoreaTime()
@@ -173,12 +214,6 @@ export async function PATCH(request: NextRequest) {
       updateData.approved_by_role = currentUser.role
       // 거절 시간은 updated_at으로 추적
 
-      console.log('🔍 LOANS API - Rejection data being saved:', {
-        approved_by: updateData.approved_by,
-        approved_by_role: updateData.approved_by_role,
-        currentUser: currentUser.email,
-        currentUserRole: currentUser.role
-      })
     }
 
     const { data: loan, error } = await supabase

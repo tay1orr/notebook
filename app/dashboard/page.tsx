@@ -13,11 +13,6 @@ import { HelperDashboard } from '@/components/helper/helper-dashboard'
 export default async function DashboardPage() {
   const user = await requireAuth()
 
-  console.log('🔍 DASHBOARD DEBUG - User data:', {
-    email: user.email,
-    role: user.role,
-    id: user.id
-  })
 
   // 학생용 임시 데이터 - 모두 제거
   const studentCurrentLoans: any[] = []
