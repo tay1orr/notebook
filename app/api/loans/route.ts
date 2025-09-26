@@ -185,14 +185,14 @@ export async function PATCH(request: NextRequest) {
     if (device_tag) {
       try {
         let deviceStatus = 'available'
-        let currentUser = null
+        let deviceCurrentUser = null
 
         if (status === 'approved' || status === 'picked_up') {
           deviceStatus = 'loaned'
-          currentUser = loan.student_name
+          deviceCurrentUser = loan.student_name
         } else if (status === 'returned') {
           deviceStatus = 'available'
-          currentUser = null
+          deviceCurrentUser = null
         }
 
         // 기기 상태 업데이트 API 호출
@@ -203,7 +203,7 @@ export async function PATCH(request: NextRequest) {
           body: JSON.stringify({
             deviceTag: device_tag,
             status: deviceStatus,
-            currentUser: currentUser,
+            currentUser: deviceCurrentUser,
             notes: notes || ''
           })
         })
