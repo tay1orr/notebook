@@ -150,6 +150,13 @@ export async function PATCH(request: NextRequest) {
       updateData.approved_by_role = currentUser.role
       // approved_by는 요청에서 온 값 사용하거나 현재 사용자 이메일
       updateData.approved_by = approved_by || currentUser.email
+
+      console.log('🔍 LOANS API - Setting approval data:', {
+        loanId: id,
+        approved_by_role: currentUser.role,
+        approved_by: updateData.approved_by,
+        currentUserEmail: currentUser.email
+      })
     } else if (status === 'picked_up') {
       updateData.picked_up_at = getCurrentKoreaTime()
       // picked_up 상태일 때 승인 시간이 없으면 지금 시간으로 설정
@@ -165,6 +172,13 @@ export async function PATCH(request: NextRequest) {
       updateData.approved_by_role = currentUser.role
       updateData.approved_by = approved_by || currentUser.email
       // 거절 시간은 updated_at으로 추적
+
+      console.log('🔍 LOANS API - Setting rejection data:', {
+        loanId: id,
+        approved_by_role: currentUser.role,
+        approved_by: updateData.approved_by,
+        currentUserEmail: currentUser.email
+      })
     }
 
     const { data: loan, error } = await supabase

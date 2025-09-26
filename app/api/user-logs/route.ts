@@ -188,7 +188,7 @@ export async function GET(request: Request) {
                   } else if (loan.approved_by.includes('helper')) {
                     approverRole = '노트북 관리 도우미'
                   } else {
-                    approverRole = `${loan.approved_by}에 의해`
+                    approverRole = '알 수 없는 역할'
                   }
                 }
               }
@@ -274,7 +274,7 @@ export async function GET(request: Request) {
                   } else if (loan.approved_by.includes('helper')) {
                     rejecterRole = '노트북 관리 도우미'
                   } else {
-                    rejecterRole = `${loan.approved_by}에 의해`
+                    rejecterRole = '알 수 없는 역할'
                   }
                 }
               }
