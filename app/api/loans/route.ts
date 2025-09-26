@@ -161,12 +161,10 @@ export async function PATCH(request: NextRequest) {
 
     } else if (status === 'picked_up') {
       updateData.picked_up_at = getCurrentKoreaTime()
-      // picked_up 상태일 때 승인 시간이 없으면 지금 시간으로 설정
-      if (!updateData.approved_at) {
-        updateData.approved_at = getCurrentKoreaTime()
-        updateData.approved_by = approved_by || currentUser.email
-        updateData.approved_by_role = currentUser.role
-      }
+      // picked_up 상태일 때 승인 시간 설정 (승인과 수령이 동시에 일어남)
+      updateData.approved_at = approved_at || getCurrentKoreaTime()
+      updateData.approved_by = approved_by || currentUser.email
+      updateData.approved_by_role = currentUser.role
     } else if (status === 'returned') {
       updateData.returned_at = getCurrentKoreaTime()
     } else if (status === 'rejected') {
