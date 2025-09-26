@@ -353,8 +353,31 @@ export async function GET(request: Request) {
         ip_address: "192.168.1.100"
       })
 
-      // 시간순 정렬
-      fallbackLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      // 시간순으로 정렬 (최신순) + 같은 시간일 때 논리적 순서 적용 (fallback)
+      fallbackLogs.sort((a, b) => {
+        const timeA = new Date(a.timestamp).getTime()
+        const timeB = new Date(b.timestamp).getTime()
+
+        // 시간이 다르면 시간순 정렬 (최신순)
+        if (timeA !== timeB) {
+          return timeB - timeA
+        }
+
+        // 시간이 같으면 논리적 순서로 정렬 (request → approved → pickup → return)
+        const actionOrder: Record<string, number> = {
+          '대여 신청': 1,
+          '대여 승인됨': 2,
+          '기기 수령': 3,
+          '기기 반납': 4,
+          '대여 거절됨': 5,
+          '대여 취소 (본인)': 6
+        }
+
+        const orderA = actionOrder[a.action] || 999
+        const orderB = actionOrder[b.action] || 999
+
+        return orderB - orderA // 최신순이므로 역순
+      })
 
       // 승인 로그가 포함되어 있는지 최종 확인 (fallback)
       const fallbackApprovalLogs = fallbackLogs.filter(log => log.action === "대여 승인됨")
@@ -722,8 +745,31 @@ export async function GET(request: Request) {
       })
     }
 
-    // 시간순으로 정렬 (최신순)
-    userLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    // 시간순으로 정렬 (최신순) + 같은 시간일 때 논리적 순서 적용
+    userLogs.sort((a, b) => {
+      const timeA = new Date(a.timestamp).getTime()
+      const timeB = new Date(b.timestamp).getTime()
+
+      // 시간이 다르면 시간순 정렬 (최신순)
+      if (timeA !== timeB) {
+        return timeB - timeA
+      }
+
+      // 시간이 같으면 논리적 순서로 정렬 (request → approved → pickup → return)
+      const actionOrder: Record<string, number> = {
+        '대여 신청': 1,
+        '대여 승인됨': 2,
+        '기기 수령': 3,
+        '기기 반납': 4,
+        '대여 거절됨': 5,
+        '대여 취소 (본인)': 6
+      }
+
+      const orderA = actionOrder[a.action] || 999
+      const orderB = actionOrder[b.action] || 999
+
+      return orderB - orderA // 최신순이므로 역순
+    })
 
     // 승인 로그가 포함되어 있는지 최종 확인
     const approvalLogs = userLogs.filter(log => log.action === "대여 승인됨")
