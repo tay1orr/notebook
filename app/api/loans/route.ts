@@ -127,6 +127,7 @@ export async function PATCH(request: NextRequest) {
       updated_at: string
       device_tag?: string
       approved_by?: string
+      approved_by_role?: string
       approved_at?: string
       notes?: string
       picked_up_at?: string
@@ -148,6 +149,15 @@ export async function PATCH(request: NextRequest) {
       updateData.approved_at = getCurrentKoreaTime()
       // approved_by는 요청에서 온 값 사용하거나 현재 사용자 이메일
       updateData.approved_by = approved_by || currentUser.email
+      // 현재 사용자의 역할도 저장
+      updateData.approved_by_role = currentUser.role
+
+      console.log('🔍 LOANS API - Approval data being saved:', {
+        approved_by: updateData.approved_by,
+        approved_by_role: updateData.approved_by_role,
+        currentUser: currentUser.email,
+        currentUserRole: currentUser.role
+      })
 
     } else if (status === 'picked_up') {
       updateData.picked_up_at = getCurrentKoreaTime()
@@ -155,14 +165,22 @@ export async function PATCH(request: NextRequest) {
       if (!updateData.approved_at) {
         updateData.approved_at = getCurrentKoreaTime()
         updateData.approved_by = approved_by || currentUser.email
+        updateData.approved_by_role = currentUser.role
       }
     } else if (status === 'returned') {
       updateData.returned_at = getCurrentKoreaTime()
     } else if (status === 'rejected') {
       // 거절 시에도 승인자 정보 저장
       updateData.approved_by = approved_by || currentUser.email
+      updateData.approved_by_role = currentUser.role
       // 거절 시간은 updated_at으로 추적
 
+      console.log('🔍 LOANS API - Rejection data being saved:', {
+        approved_by: updateData.approved_by,
+        approved_by_role: updateData.approved_by_role,
+        currentUser: currentUser.email,
+        currentUserRole: currentUser.role
+      })
     }
 
     const { data: loan, error } = await supabase

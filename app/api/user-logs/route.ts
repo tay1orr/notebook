@@ -179,9 +179,18 @@ export async function GET(request: Request) {
             })
 
             if (loan.approved_at) {
+              console.log('🔍 USER-LOGS - Processing approval for loan:', {
+                loanId: loan.id,
+                approved_by: loan.approved_by,
+                approved_by_role: loan.approved_by_role,
+                approved_at: loan.approved_at,
+                device_tag: loan.device_tag
+              })
+
               let approverRole = '알 수 없는 역할'
 
               if (loan.approved_by_role) {
+                console.log('🔍 USER-LOGS - Using approved_by_role:', loan.approved_by_role)
                 switch (loan.approved_by_role) {
                   case 'admin': approverRole = '관리자'; break
                   case 'manager': approverRole = '관리팀'; break
@@ -190,15 +199,13 @@ export async function GET(request: Request) {
                   default: approverRole = loan.approved_by_role || '알 수 없는 역할'
                 }
               } else {
+                console.log('🔍 USER-LOGS - No approved_by_role, looking up role for:', loan.approved_by)
                 // approved_by_role이 없으면 실시간 역할 조회
                 approverRole = await getRoleFromEmail(loan.approved_by)
+                console.log('🔍 USER-LOGS - Dynamic role lookup result:', approverRole)
               }
 
-              console.log('🔍 USER-LOGS - Approval timestamp:', {
-                loanId: loan.id,
-                approved_at: loan.approved_at,
-                created_at: loan.created_at
-              })
+              console.log('🔍 USER-LOGS - Final approver role:', approverRole)
 
               fallbackLogs.push({
                 id: `loan_${loan.id}_approved`,
@@ -371,9 +378,18 @@ export async function GET(request: Request) {
 
             // 승인 로그 (관리자/담임/도우미에 의한)
             if (loan.approved_at) {
+              console.log('🔍 USER-LOGS - Processing approval for regular user loan:', {
+                loanId: loan.id,
+                approved_by: loan.approved_by,
+                approved_by_role: loan.approved_by_role,
+                approved_at: loan.approved_at,
+                device_tag: loan.device_tag
+              })
+
               let approverRole = '알 수 없는 역할'
 
               if (loan.approved_by_role) {
+                console.log('🔍 USER-LOGS - Regular user - Using approved_by_role:', loan.approved_by_role)
                 switch (loan.approved_by_role) {
                   case 'admin':
                     approverRole = '관리자'
@@ -391,9 +407,13 @@ export async function GET(request: Request) {
                     approverRole = loan.approved_by_role
                 }
               } else {
+                console.log('🔍 USER-LOGS - Regular user - No approved_by_role, looking up role for:', loan.approved_by)
                 // approved_by_role이 없으면 실시간 역할 조회
                 approverRole = await getRoleFromEmail(loan.approved_by)
+                console.log('🔍 USER-LOGS - Regular user - Dynamic role lookup result:', approverRole)
               }
+
+              console.log('🔍 USER-LOGS - Regular user - Final approver role:', approverRole)
 
               userLogs.push({
                 id: `loan_${loan.id}_approved`,
@@ -436,9 +456,18 @@ export async function GET(request: Request) {
                 ip_address: "192.168.1.100"
               })
             } else if (loan.status === 'rejected') {
+              console.log('🔍 USER-LOGS - Processing rejection for regular user loan:', {
+                loanId: loan.id,
+                approved_by: loan.approved_by,
+                approved_by_role: loan.approved_by_role,
+                status: loan.status,
+                device_tag: loan.device_tag
+              })
+
               let rejecterRole = '알 수 없는 역할'
 
               if (loan.approved_by_role) {
+                console.log('🔍 USER-LOGS - Regular user rejection - Using approved_by_role:', loan.approved_by_role)
                 switch (loan.approved_by_role) {
                   case 'admin':
                     rejecterRole = '관리자'
@@ -456,9 +485,13 @@ export async function GET(request: Request) {
                     rejecterRole = loan.approved_by_role
                 }
               } else {
+                console.log('🔍 USER-LOGS - Regular user rejection - No approved_by_role, looking up role for:', loan.approved_by)
                 // approved_by_role이 없으면 실시간 역할 조회
                 rejecterRole = await getRoleFromEmail(loan.approved_by)
+                console.log('🔍 USER-LOGS - Regular user rejection - Dynamic role lookup result:', rejecterRole)
               }
+
+              console.log('🔍 USER-LOGS - Regular user rejection - Final rejecter role:', rejecterRole)
 
               userLogs.push({
                 id: `loan_${loan.id}_admin_reject`,
