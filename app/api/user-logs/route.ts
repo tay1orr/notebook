@@ -195,6 +195,12 @@ export async function GET(request: Request) {
 
               // 승인자 이름은 제거하고 역할만 사용
 
+              console.log('🔍 USER-LOGS - Approval timestamp:', {
+                loanId: loan.id,
+                approved_at: loan.approved_at,
+                created_at: loan.created_at
+              })
+
               fallbackLogs.push({
                 id: `loan_${loan.id}_approved`,
                 timestamp: loan.approved_at,
@@ -289,9 +295,19 @@ export async function GET(request: Request) {
                   : loan.approved_by
               }
 
+              // 거절 시간 결정: approved_at이 있으면 사용, 없으면 updated_at 사용
+              const rejectionTime = loan.approved_at || loan.updated_at
+
+              console.log('🔍 USER-LOGS - Rejection timestamp logic:', {
+                loanId: loan.id,
+                approved_at: loan.approved_at,
+                updated_at: loan.updated_at,
+                selected_time: rejectionTime
+              })
+
               fallbackLogs.push({
                 id: `loan_${loan.id}_admin_reject`,
-                timestamp: loan.updated_at,
+                timestamp: rejectionTime,
                 action: "대여 거절됨",
                 details: `${loan.device_tag} 기기 대여가 ${rejecterRole}에 의해 거절되었습니다.`,
                 ip_address: "192.168.1.100"
