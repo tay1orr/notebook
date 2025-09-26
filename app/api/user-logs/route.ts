@@ -148,8 +148,14 @@ export async function GET(request: Request) {
             })
 
             if (loan.approved_at) {
-              let approverRole = '관리자'
+              let approverRole = '알 수 없음'
               let approverName = '알 수 없음'
+
+              console.log('🔍 USER-LOGS - Processing approval for loan:', {
+                loanId: loan.id,
+                approved_by_role: loan.approved_by_role,
+                approved_by: loan.approved_by
+              })
 
               if (loan.approved_by_role) {
                 switch (loan.approved_by_role) {
@@ -166,7 +172,24 @@ export async function GET(request: Request) {
                     approverRole = '노트북 관리 도우미'
                     break
                   default:
+                    console.log('🔍 USER-LOGS - Unknown role, using approved_by_role as is:', loan.approved_by_role)
+                    approverRole = loan.approved_by_role || '알 수 없는 역할'
+                }
+              } else {
+                console.log('🔍 USER-LOGS - No approved_by_role found, checking approved_by:', loan.approved_by)
+                // approved_by_role이 없으면 approved_by에서 추정
+                if (loan.approved_by) {
+                  if (loan.approved_by.includes('admin') || loan.approved_by === 'taylorr@gclass.ice.go.kr') {
                     approverRole = '관리자'
+                  } else if (loan.approved_by.includes('manager')) {
+                    approverRole = '관리팀'
+                  } else if (loan.approved_by.includes('homeroom') || loan.approved_by.includes('coding')) {
+                    approverRole = '담임교사'
+                  } else if (loan.approved_by.includes('helper')) {
+                    approverRole = '노트북 관리 도우미'
+                  } else {
+                    approverRole = `${loan.approved_by}에 의해`
+                  }
                 }
               }
 
@@ -211,8 +234,14 @@ export async function GET(request: Request) {
                 ip_address: "192.168.1.100"
               })
             } else if (loan.status === 'rejected') {
-              let rejecterRole = '관리자'
+              let rejecterRole = '알 수 없음'
               let rejecterName = '알 수 없음'
+
+              console.log('🔍 USER-LOGS - Processing rejection for loan:', {
+                loanId: loan.id,
+                approved_by_role: loan.approved_by_role,
+                approved_by: loan.approved_by
+              })
 
               if (loan.approved_by_role) {
                 switch (loan.approved_by_role) {
@@ -229,7 +258,24 @@ export async function GET(request: Request) {
                     rejecterRole = '노트북 관리 도우미'
                     break
                   default:
+                    console.log('🔍 USER-LOGS - Unknown rejection role, using approved_by_role as is:', loan.approved_by_role)
+                    rejecterRole = loan.approved_by_role || '알 수 없는 역할'
+                }
+              } else {
+                console.log('🔍 USER-LOGS - No approved_by_role for rejection, checking approved_by:', loan.approved_by)
+                // approved_by_role이 없으면 approved_by에서 추정
+                if (loan.approved_by) {
+                  if (loan.approved_by.includes('admin') || loan.approved_by === 'taylorr@gclass.ice.go.kr') {
                     rejecterRole = '관리자'
+                  } else if (loan.approved_by.includes('manager')) {
+                    rejecterRole = '관리팀'
+                  } else if (loan.approved_by.includes('homeroom') || loan.approved_by.includes('coding')) {
+                    rejecterRole = '담임교사'
+                  } else if (loan.approved_by.includes('helper')) {
+                    rejecterRole = '노트북 관리 도우미'
+                  } else {
+                    rejecterRole = `${loan.approved_by}에 의해`
+                  }
                 }
               }
 
