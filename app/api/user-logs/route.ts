@@ -162,11 +162,29 @@ export async function GET(request: Request) {
       // fallback 사용자도 실제 대여 기록 조회 시도
       const fallbackLogs: any[] = []
       try {
+        console.log('🔍 USER-LOGS - Querying loans for fallback user:', {
+          email: fallbackUser.email,
+          extractedGrade: extractedGrade,
+          extractedClass: extractedClass
+        })
+
         const { data: userLoans } = await adminSupabase
           .from('loan_applications')
           .select('*')
           .eq('email', fallbackUser.email)
           .order('created_at', { ascending: false })
+
+        console.log('🔍 USER-LOGS - Fallback user loans query result:', {
+          email: fallbackUser.email,
+          loansFound: userLoans?.length || 0,
+          sampleLoan: userLoans?.[0] ? {
+            id: userLoans[0].id,
+            status: userLoans[0].status,
+            class_name: userLoans[0].class_name,
+            approved_at: userLoans[0].approved_at,
+            picked_up_at: userLoans[0].picked_up_at
+          } : null
+        })
 
         if (userLoans && userLoans.length > 0) {
           for (const loan of userLoans) {
@@ -379,11 +397,30 @@ export async function GET(request: Request) {
 
     try {
       // 1. 사용자의 대여 신청 기록 조회 (조인 없이 간단하게)
+      console.log('🔍 USER-LOGS - Querying loans for regular user:', {
+        email: targetUser.email,
+        grade: targetUser.grade,
+        class: targetUser.class
+      })
+
       const { data: userLoans, error: loansError } = await adminSupabase
         .from('loan_applications')
         .select('*')
         .eq('email', targetUser.email)
         .order('created_at', { ascending: false })
+
+      console.log('🔍 USER-LOGS - Regular user loans query result:', {
+        email: targetUser.email,
+        loansFound: userLoans?.length || 0,
+        sampleLoan: userLoans?.[0] ? {
+          id: userLoans[0].id,
+          status: userLoans[0].status,
+          class_name: userLoans[0].class_name,
+          approved_at: userLoans[0].approved_at,
+          picked_up_at: userLoans[0].picked_up_at
+        } : null,
+        error: loansError?.message
+      })
 
       if (loansError) {
         console.error('사용자 대여 기록 조회 실패:', loansError)
