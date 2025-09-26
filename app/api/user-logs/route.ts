@@ -320,6 +320,18 @@ export async function GET(request: Request) {
       // 시간순 정렬
       fallbackLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
+      // 승인 로그가 포함되어 있는지 최종 확인 (fallback)
+      const fallbackApprovalLogs = fallbackLogs.filter(log => log.action === "대여 승인됨")
+      console.log('🔍 USER-LOGS - FALLBACK FINAL CHECK - Approval logs in response:', {
+        totalLogs: fallbackLogs.length,
+        approvalLogsCount: fallbackApprovalLogs.length,
+        approvalLogsDetails: fallbackApprovalLogs.map(log => ({
+          id: log.id,
+          timestamp: log.timestamp,
+          details: log.details
+        }))
+      })
+
       // fallback 사용자에 대해서도 담임교사 권한 검사 수행
       if (user.role === "homeroom" && user.isApprovedHomeroom) {
         const teacherClass = `${user.grade}-${user.class}`
@@ -639,6 +651,18 @@ export async function GET(request: Request) {
 
     // 시간순으로 정렬 (최신순)
     userLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+
+    // 승인 로그가 포함되어 있는지 최종 확인
+    const approvalLogs = userLogs.filter(log => log.action === "대여 승인됨")
+    console.log('🔍 USER-LOGS - FINAL CHECK - Approval logs in response:', {
+      totalLogs: userLogs.length,
+      approvalLogsCount: approvalLogs.length,
+      approvalLogsDetails: approvalLogs.map(log => ({
+        id: log.id,
+        timestamp: log.timestamp,
+        details: log.details
+      }))
+    })
 
     return NextResponse.json({
       userId,
