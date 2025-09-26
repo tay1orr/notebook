@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getStatusColor, getStatusText, formatDateTime, getPurposeText, getCurrentKoreaTime, getLoanStatus, getOverdueDays, isLoanOverdue } from '@/lib/utils'
+import { getStatusColor, getStatusText, formatDateTime, getPurposeText, getCurrentKoreaTime, getLoanStatus, getOverdueDays, isLoanOverdue, getRoleText } from '@/lib/utils'
 import { ApprovalSignatureModal } from '@/components/forms/approval-signature-modal'
 import { ReturnConfirmationModal } from '@/components/forms/return-confirmation-modal'
 
@@ -575,6 +575,11 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
                         {(loan.approved_by || loan.approverName) && (
                           <span className="ml-2 text-blue-600">
                             • 승인자: {loan.approved_by || loan.approverName}
+                            {(loan.approved_by_role || loan.approverRole) && (
+                              <span className="ml-1 text-sm">
+                                ({getRoleText(loan.approved_by_role || loan.approverRole)})
+                              </span>
+                            )}
                           </span>
                         )}
                       </div>

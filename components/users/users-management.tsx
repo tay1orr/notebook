@@ -378,7 +378,7 @@ export function UsersManagement({ users: initialUsers, onModalStateChange }: Use
                       {loan.approved_at && (
                         <div className={loan.activityType === 'processed' ? 'font-medium text-blue-700' : ''}>
                           승인일: {formatDateTime(loan.approved_at)}
-                          {loan.approved_by && ` (승인자: ${loan.approved_by})`}
+                          {loan.approved_by && ` (승인자: ${loan.approved_by}${loan.approved_by_role ? ` - ${getRoleText(loan.approved_by_role)}` : ''})`}
                         </div>
                       )}
                       {loan.picked_up_at && (
