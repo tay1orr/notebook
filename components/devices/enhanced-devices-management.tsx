@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CSVUpload } from '@/components/forms/csv-upload'
-import { ReturnSignatureModal } from '@/components/forms/return-signature-modal'
+import { ReturnConfirmationModal } from '@/components/forms/return-confirmation-modal'
 
 interface EnhancedDevicesManagementProps {
   devices: any[]
@@ -814,21 +814,17 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
         </DialogContent>
       </Dialog>
 
-      {/* 반납 서명 모달 */}
-      {selectedLoan && (
-        <ReturnSignatureModal
-          open={showReturnModal}
+      {/* 반납 확인 모달 */}
+      {selectedLoan && showReturnModal && (
+        <ReturnConfirmationModal
+          isOpen={showReturnModal}
           onClose={() => {
             setShowReturnModal(false)
             setSelectedLoan(null)
           }}
           onConfirm={handleReturnSignature}
-          loanInfo={{
-            studentName: selectedLoan.student_name || selectedLoan.studentName,
-            className: selectedLoan.class_name || selectedLoan.className,
-            deviceTag: selectedLoan.device_tag || selectedLoan.deviceTag,
-            loanDate: selectedLoan.created_at || selectedLoan.requestedAt
-          }}
+          loanData={selectedLoan}
+          receiverName="담당자"
         />
       )}
 

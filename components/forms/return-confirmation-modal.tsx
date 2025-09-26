@@ -174,9 +174,9 @@ export function ReturnConfirmationModal({
                 <Label>담당자 서명 *</Label>
                 <SignaturePad
                   ref={signaturePadRef}
-                  width={400}
-                  height={120}
-                  className="w-full"
+                  width={450}
+                  height={150}
+                  className="w-full h-32 sm:h-36 md:h-40 border-2 border-gray-300"
                   onSignatureChange={setSignatureEmpty}
                 />
                 <div className="flex justify-end">
