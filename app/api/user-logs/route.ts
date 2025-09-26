@@ -188,7 +188,17 @@ export async function GET(request: Request) {
               ip_address: "192.168.1.100"
             })
 
-            if (loan.approved_at) {
+            // 승인 로그 (관리자/담임/도우미에 의한) - fallback user
+            const fallbackHasApprovalData = loan.approved_at || (loan.status === 'picked_up' && loan.picked_up_at)
+            console.log('🔍 USER-LOGS - Fallback approval check:', {
+              loanId: loan.id,
+              approved_at: loan.approved_at,
+              status: loan.status,
+              picked_up_at: loan.picked_up_at,
+              fallbackHasApprovalData: fallbackHasApprovalData
+            })
+
+            if (fallbackHasApprovalData) {
               console.log('🔍 USER-LOGS - Processing approval for loan:', {
                 loanId: loan.id,
                 approved_by: loan.approved_by,
@@ -217,9 +227,12 @@ export async function GET(request: Request) {
 
               console.log('🔍 USER-LOGS - Final approver role:', approverRole)
 
+              // 승인 시간: approved_at이 있으면 사용, 없으면 picked_up_at 사용 (fallback)
+              const fallbackApprovalTime = loan.approved_at || loan.picked_up_at
+
               fallbackLogs.push({
                 id: `loan_${loan.id}_approved`,
-                timestamp: loan.approved_at,
+                timestamp: fallbackApprovalTime,
                 action: "대여 승인됨",
                 details: `${loan.device_tag} 기기 대여가 ${approverRole}에 의해 승인되었습니다.`,
                 ip_address: "192.168.1.100"
@@ -397,7 +410,17 @@ export async function GET(request: Request) {
             })
 
             // 승인 로그 (관리자/담임/도우미에 의한)
-            if (loan.approved_at) {
+            // picked_up 상태이면서 approved_at이 없는 경우도 승인으로 간주
+            const hasApprovalData = loan.approved_at || (loan.status === 'picked_up' && loan.picked_up_at)
+            console.log('🔍 USER-LOGS - Approval check:', {
+              loanId: loan.id,
+              approved_at: loan.approved_at,
+              status: loan.status,
+              picked_up_at: loan.picked_up_at,
+              hasApprovalData: hasApprovalData
+            })
+
+            if (hasApprovalData) {
               console.log('🔍 USER-LOGS - Processing approval for regular user loan:', {
                 loanId: loan.id,
                 approved_by: loan.approved_by,
@@ -435,9 +458,12 @@ export async function GET(request: Request) {
 
               console.log('🔍 USER-LOGS - Regular user - Final approver role:', approverRole)
 
+              // 승인 시간: approved_at이 있으면 사용, 없으면 picked_up_at 사용
+              const approvalTime = loan.approved_at || loan.picked_up_at
+
               userLogs.push({
                 id: `loan_${loan.id}_approved`,
-                timestamp: loan.approved_at,
+                timestamp: approvalTime,
                 action: "대여 승인됨",
                 details: `${loan.device_tag} 기기 대여가 ${approverRole}에 의해 승인되었습니다.`,
                 ip_address: "192.168.1.100"
