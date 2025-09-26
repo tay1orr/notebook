@@ -107,27 +107,18 @@ export async function POST(request: NextRequest) {
 // PATCH: 대여 신청 상태 업데이트
 export async function PATCH(request: NextRequest) {
   try {
-    console.log('🔍 LOANS API PATCH - Starting request')
     const supabase = createServerComponentClient<Database>({ cookies })
 
     // 현재 사용자 정보 가져오기 (역할 추적을 위해)
     const currentUser = await getCurrentUser()
-    console.log('🔍 LOANS API PATCH - Current user:', {
-      email: currentUser?.email,
-      role: currentUser?.role
-    })
-
     if (!currentUser) {
-      console.log('🔍 LOANS API PATCH - No current user, returning 401')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
-    console.log('🔍 LOANS API PATCH - Request body:', body)
     const { id, status, device_tag, approved_by, approved_at, notes } = body
 
     if (!id || !status) {
-      console.log('🔍 LOANS API PATCH - Missing required fields:', { id, status })
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -160,12 +151,6 @@ export async function PATCH(request: NextRequest) {
       // approved_by는 요청에서 온 값 사용하거나 현재 사용자 이메일
       updateData.approved_by = approved_by || currentUser.email
 
-      console.log('🔍 LOANS API - Setting approval data:', {
-        loanId: id,
-        approved_by_role: currentUser?.role,
-        approved_by: updateData.approved_by,
-        currentUserEmail: currentUser?.email
-      })
     } else if (status === 'picked_up') {
       updateData.picked_up_at = getCurrentKoreaTime()
       // picked_up 상태일 때 승인 시간이 없으면 지금 시간으로 설정
@@ -182,12 +167,6 @@ export async function PATCH(request: NextRequest) {
       updateData.approved_by = approved_by || currentUser.email
       // 거절 시간은 updated_at으로 추적
 
-      console.log('🔍 LOANS API - Setting rejection data:', {
-        loanId: id,
-        approved_by_role: currentUser?.role,
-        approved_by: updateData.approved_by,
-        currentUserEmail: currentUser?.email
-      })
     }
 
     const { data: loan, error } = await supabase
@@ -241,21 +220,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ loan })
   } catch (error) {
-    console.error('🚨 LOANS API PATCH - Unexpected error:', error)
-    console.error('🚨 LOANS API PATCH - Error type:', typeof error)
-    console.error('🚨 LOANS API PATCH - Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-
-    let errorMessage = 'Internal server error'
-    if (error instanceof Error) {
-      errorMessage = error.message
-      console.error('🚨 LOANS API PATCH - Error message:', error.message)
-    }
-
-    return NextResponse.json({
-      error: 'Internal server error',
-      details: errorMessage,
-      type: typeof error,
-      timestamp: new Date().toISOString()
-    }, { status: 500 })
+    console.error('Unexpected error in PATCH /api/loans:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
