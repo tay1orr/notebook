@@ -179,17 +179,34 @@ export async function GET(request: Request) {
                 console.log('🔍 USER-LOGS - No approved_by_role found, checking approved_by:', loan.approved_by)
                 // approved_by_role이 없으면 approved_by에서 추정
                 if (loan.approved_by) {
-                  if (loan.approved_by.includes('admin') || loan.approved_by === 'taylorr@gclass.ice.go.kr') {
+                  // 관리자 계정 체크
+                  if (loan.approved_by === 'taylorr@gclass.ice.go.kr' || loan.approved_by.includes('admin')) {
                     approverRole = '관리자'
-                  } else if (loan.approved_by.includes('manager')) {
-                    approverRole = '관리팀'
-                  } else if (loan.approved_by.includes('homeroom') || loan.approved_by.includes('coding')) {
+                  }
+                  // 담임교사 계정 체크 (coding으로 시작하는 계정들)
+                  else if (loan.approved_by.includes('coding') || loan.approved_by.includes('kko92-coding')) {
                     approverRole = '담임교사'
-                  } else if (loan.approved_by.includes('helper')) {
+                  }
+                  // 관리팀 계정 체크
+                  else if (loan.approved_by.includes('manager')) {
+                    approverRole = '관리팀'
+                  }
+                  // 노트북 관리 도우미 계정 체크
+                  else if (loan.approved_by.includes('helper')) {
                     approverRole = '노트북 관리 도우미'
-                  } else {
+                  }
+                  // gclass.ice.go.kr 도메인이면 일반적으로 담임교사로 추정
+                  else if (loan.approved_by.includes('@gclass.ice.go.kr')) {
+                    approverRole = '담임교사'
+                  }
+                  else {
                     approverRole = '알 수 없는 역할'
                   }
+
+                  console.log('🔍 USER-LOGS - Role estimation result:', {
+                    approved_by: loan.approved_by,
+                    estimated_role: approverRole
+                  })
                 }
               }
 
@@ -271,17 +288,34 @@ export async function GET(request: Request) {
                 console.log('🔍 USER-LOGS - No approved_by_role for rejection, checking approved_by:', loan.approved_by)
                 // approved_by_role이 없으면 approved_by에서 추정
                 if (loan.approved_by) {
-                  if (loan.approved_by.includes('admin') || loan.approved_by === 'taylorr@gclass.ice.go.kr') {
+                  // 관리자 계정 체크
+                  if (loan.approved_by === 'taylorr@gclass.ice.go.kr' || loan.approved_by.includes('admin')) {
                     rejecterRole = '관리자'
-                  } else if (loan.approved_by.includes('manager')) {
-                    rejecterRole = '관리팀'
-                  } else if (loan.approved_by.includes('homeroom') || loan.approved_by.includes('coding')) {
+                  }
+                  // 담임교사 계정 체크 (coding으로 시작하는 계정들)
+                  else if (loan.approved_by.includes('coding') || loan.approved_by.includes('kko92-coding')) {
                     rejecterRole = '담임교사'
-                  } else if (loan.approved_by.includes('helper')) {
+                  }
+                  // 관리팀 계정 체크
+                  else if (loan.approved_by.includes('manager')) {
+                    rejecterRole = '관리팀'
+                  }
+                  // 노트북 관리 도우미 계정 체크
+                  else if (loan.approved_by.includes('helper')) {
                     rejecterRole = '노트북 관리 도우미'
-                  } else {
+                  }
+                  // gclass.ice.go.kr 도메인이면 일반적으로 담임교사로 추정
+                  else if (loan.approved_by.includes('@gclass.ice.go.kr')) {
+                    rejecterRole = '담임교사'
+                  }
+                  else {
                     rejecterRole = '알 수 없는 역할'
                   }
+
+                  console.log('🔍 USER-LOGS - Rejection role estimation result:', {
+                    approved_by: loan.approved_by,
+                    estimated_role: rejecterRole
+                  })
                 }
               }
 
