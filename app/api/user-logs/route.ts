@@ -35,6 +35,38 @@ export async function GET(request: Request) {
 
     const adminSupabase = createAdminClient()
 
+    // 역할 조회 함수 정의
+    const getRoleFromEmail = async (email: string): Promise<string> => {
+      if (!email) return '알 수 없는 역할'
+
+      try {
+        const { data: authUser } = await adminSupabase.auth.admin.listUsers()
+        const user = authUser?.users.find(u => u.email === email)
+
+        if (user) {
+          const { data: roleData } = await adminSupabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .single()
+
+          if (roleData?.role) {
+            switch (roleData.role) {
+              case 'admin': return '관리자'
+              case 'manager': return '관리팀'
+              case 'homeroom': return '담임교사'
+              case 'helper': return '노트북 관리 도우미'
+              case 'student': return '학생'
+              default: return roleData.role
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Role lookup error:', error)
+      }
+      return '알 수 없는 역할'
+    }
+
     // 사용자 정보 조회 (여러 테이블 확인)
     console.log('🔍 USER-LOGS - Looking up user in user_profiles:', userId)
 
@@ -127,7 +159,6 @@ export async function GET(request: Request) {
         class: extractedClass
       })
 
-
       // fallback 사용자도 실제 대여 기록 조회 시도
       const fallbackLogs: any[] = []
       try {
@@ -138,7 +169,7 @@ export async function GET(request: Request) {
           .order('created_at', { ascending: false })
 
         if (userLoans && userLoans.length > 0) {
-          userLoans.forEach((loan) => {
+          for (const loan of userLoans) {
             fallbackLogs.push({
               id: `loan_${loan.id}_request`,
               timestamp: loan.created_at,
@@ -148,91 +179,20 @@ export async function GET(request: Request) {
             })
 
             if (loan.approved_at) {
-              let approverRole = '알 수 없음'
-              let approverName = '알 수 없음'
-
-              console.log('🔍 USER-LOGS - Processing approval for loan:', {
-                loanId: loan.id,
-                approved_by_role: loan.approved_by_role,
-                approved_by: loan.approved_by
-              })
+              let approverRole = '알 수 없는 역할'
 
               if (loan.approved_by_role) {
                 switch (loan.approved_by_role) {
-                  case 'admin':
-                    approverRole = '관리자'
-                    break
-                  case 'manager':
-                    approverRole = '관리팀'
-                    break
-                  case 'homeroom':
-                    approverRole = '담임교사'
-                    break
-                  case 'helper':
-                    approverRole = '노트북 관리 도우미'
-                    break
-                  default:
-                    console.log('🔍 USER-LOGS - Unknown role, using approved_by_role as is:', loan.approved_by_role)
-                    approverRole = loan.approved_by_role || '알 수 없는 역할'
+                  case 'admin': approverRole = '관리자'; break
+                  case 'manager': approverRole = '관리팀'; break
+                  case 'homeroom': approverRole = '담임교사'; break
+                  case 'helper': approverRole = '노트북 관리 도우미'; break
+                  default: approverRole = loan.approved_by_role || '알 수 없는 역할'
                 }
               } else {
-                console.log('🔍 USER-LOGS - No approved_by_role found, looking up current role for:', loan.approved_by)
-                // approved_by_role이 없으면 데이터베이스에서 실시간 역할 조회
-                if (loan.approved_by) {
-                  try {
-                    // 먼저 auth.users에서 사용자 찾기
-                    const { data: authUser } = await adminSupabase.auth.admin.listUsers()
-                    const user = authUser?.users.find(u => u.email === loan.approved_by)
-
-                    if (user) {
-                      // user_roles에서 역할 조회
-                      const { data: roleData } = await adminSupabase
-                        .from('user_roles')
-                        .select('role')
-                        .eq('user_id', user.id)
-                        .single()
-
-                      if (roleData?.role) {
-                        switch (roleData.role) {
-                          case 'admin':
-                            approverRole = '관리자'
-                            break
-                          case 'manager':
-                            approverRole = '관리팀'
-                            break
-                          case 'homeroom':
-                            approverRole = '담임교사'
-                            break
-                          case 'helper':
-                            approverRole = '노트북 관리 도우미'
-                            break
-                          case 'student':
-                            approverRole = '학생'
-                            break
-                          default:
-                            approverRole = roleData.role
-                        }
-                        console.log('🔍 USER-LOGS - Found role from database:', {
-                          email: loan.approved_by,
-                          role: roleData.role,
-                          display_role: approverRole
-                        })
-                      } else {
-                        approverRole = '알 수 없는 역할'
-                        console.log('🔍 USER-LOGS - No role found in user_roles for:', loan.approved_by)
-                      }
-                    } else {
-                      approverRole = '알 수 없는 역할'
-                      console.log('🔍 USER-LOGS - User not found in auth.users:', loan.approved_by)
-                    }
-                  } catch (roleError) {
-                    console.error('🔍 USER-LOGS - Error looking up role:', roleError)
-                    approverRole = '알 수 없는 역할'
-                  }
-                }
+                // approved_by_role이 없으면 실시간 역할 조회
+                approverRole = await getRoleFromEmail(loan.approved_by)
               }
-
-              // 승인자 이름은 제거하고 역할만 사용
 
               console.log('🔍 USER-LOGS - Approval timestamp:', {
                 loanId: loan.id,
@@ -279,98 +239,19 @@ export async function GET(request: Request) {
                 ip_address: "192.168.1.100"
               })
             } else if (loan.status === 'rejected') {
-              let rejecterRole = '알 수 없음'
-              let rejecterName = '알 수 없음'
-
-              console.log('🔍 USER-LOGS - Processing rejection for loan:', {
-                loanId: loan.id,
-                approved_by_role: loan.approved_by_role,
-                approved_by: loan.approved_by
-              })
+              let rejecterRole = '알 수 없는 역할'
 
               if (loan.approved_by_role) {
                 switch (loan.approved_by_role) {
-                  case 'admin':
-                    rejecterRole = '관리자'
-                    break
-                  case 'manager':
-                    rejecterRole = '관리팀'
-                    break
-                  case 'homeroom':
-                    rejecterRole = '담임교사'
-                    break
-                  case 'helper':
-                    rejecterRole = '노트북 관리 도우미'
-                    break
-                  default:
-                    console.log('🔍 USER-LOGS - Unknown rejection role, using approved_by_role as is:', loan.approved_by_role)
-                    rejecterRole = loan.approved_by_role || '알 수 없는 역할'
+                  case 'admin': rejecterRole = '관리자'; break
+                  case 'manager': rejecterRole = '관리팀'; break
+                  case 'homeroom': rejecterRole = '담임교사'; break
+                  case 'helper': rejecterRole = '노트북 관리 도우미'; break
+                  default: rejecterRole = loan.approved_by_role || '알 수 없는 역할'
                 }
               } else {
-                console.log('🔍 USER-LOGS - No approved_by_role for rejection, looking up current role for:', loan.approved_by)
-                // approved_by_role이 없으면 데이터베이스에서 실시간 역할 조회
-                if (loan.approved_by) {
-                  try {
-                    // 먼저 auth.users에서 사용자 찾기
-                    const { data: authUser } = await adminSupabase.auth.admin.listUsers()
-                    const user = authUser?.users.find(u => u.email === loan.approved_by)
-
-                    if (user) {
-                      // user_roles에서 역할 조회
-                      const { data: roleData } = await adminSupabase
-                        .from('user_roles')
-                        .select('role')
-                        .eq('user_id', user.id)
-                        .single()
-
-                      if (roleData?.role) {
-                        switch (roleData.role) {
-                          case 'admin':
-                            rejecterRole = '관리자'
-                            break
-                          case 'manager':
-                            rejecterRole = '관리팀'
-                            break
-                          case 'homeroom':
-                            rejecterRole = '담임교사'
-                            break
-                          case 'helper':
-                            rejecterRole = '노트북 관리 도우미'
-                            break
-                          case 'student':
-                            rejecterRole = '학생'
-                            break
-                          default:
-                            rejecterRole = roleData.role
-                        }
-                        console.log('🔍 USER-LOGS - Found rejection role from database:', {
-                          email: loan.approved_by,
-                          role: roleData.role,
-                          display_role: rejecterRole
-                        })
-                      } else {
-                        rejecterRole = '알 수 없는 역할'
-                        console.log('🔍 USER-LOGS - No role found in user_roles for rejection:', loan.approved_by)
-                      }
-                    } else {
-                      rejecterRole = '알 수 없는 역할'
-                      console.log('🔍 USER-LOGS - User not found in auth.users for rejection:', loan.approved_by)
-                    }
-                  } catch (roleError) {
-                    console.error('🔍 USER-LOGS - Error looking up rejection role:', roleError)
-                    rejecterRole = '알 수 없는 역할'
-                  }
-                }
-              }
-
-              // 거절자 이름 가져오기 (approved_by 필드 사용 - 실제로는 rejected_by 역할)
-              if (loan.approver && loan.approver.name) {
-                rejecterName = loan.approver.name
-              } else if (loan.approved_by) {
-                // approved_by가 이메일인 경우 이메일에서 이름 추출
-                rejecterName = loan.approved_by.includes('@')
-                  ? loan.approved_by.split('@')[0]
-                  : loan.approved_by
+                // approved_by_role이 없으면 실시간 역할 조회
+                rejecterRole = await getRoleFromEmail(loan.approved_by)
               }
 
               // 거절 시간 결정: approved_at이 있으면 사용, 없으면 updated_at 사용
@@ -391,7 +272,7 @@ export async function GET(request: Request) {
                 ip_address: "192.168.1.100"
               })
             }
-          })
+          }
         }
       } catch (error) {
         // Silently handle fallback loan fetch errors
@@ -451,7 +332,6 @@ export async function GET(request: Request) {
       }
     }
 
-
     // 실제 사용자 활동 로그 데이터 생성
     const userLogs: any[] = []
 
@@ -479,7 +359,7 @@ export async function GET(request: Request) {
             updated_at: userLoans[0]?.updated_at
           })
 
-          userLoans.forEach((loan, index) => {
+          for (const loan of userLoans) {
             // 대여 신청 로그
             userLogs.push({
               id: `loan_${loan.id}_request`,
@@ -491,11 +371,8 @@ export async function GET(request: Request) {
 
             // 승인 로그 (관리자/담임/도우미에 의한)
             if (loan.approved_at) {
-              let approverRole = '관리자'
-              let approverName = '알 수 없음'
+              let approverRole = '알 수 없는 역할'
 
-
-              // 역할 결정
               if (loan.approved_by_role) {
                 switch (loan.approved_by_role) {
                   case 'admin':
@@ -511,11 +388,12 @@ export async function GET(request: Request) {
                     approverRole = '노트북 관리 도우미'
                     break
                   default:
-                    approverRole = '관리자'
+                    approverRole = loan.approved_by_role
                 }
+              } else {
+                // approved_by_role이 없으면 실시간 역할 조회
+                approverRole = await getRoleFromEmail(loan.approved_by)
               }
-
-              // 승인자 이름은 제거하고 역할만 사용
 
               userLogs.push({
                 id: `loan_${loan.id}_approved`,
@@ -550,7 +428,6 @@ export async function GET(request: Request) {
 
             // 본인 취소 vs 관리자 거절 구분
             if (loan.status === 'cancelled') {
-              // 본인이 취소한 경우 (사용자 자신이 취소)
               userLogs.push({
                 id: `loan_${loan.id}_self_cancel`,
                 timestamp: loan.updated_at,
@@ -559,12 +436,8 @@ export async function GET(request: Request) {
                 ip_address: "192.168.1.100"
               })
             } else if (loan.status === 'rejected') {
-              // 관리자/담임/도우미가 거절한 경우
-              let rejecterRole = '관리자'
-              let rejecterName = '알 수 없음'
+              let rejecterRole = '알 수 없는 역할'
 
-
-              // 역할 결정
               if (loan.approved_by_role) {
                 switch (loan.approved_by_role) {
                   case 'admin':
@@ -580,18 +453,11 @@ export async function GET(request: Request) {
                     rejecterRole = '노트북 관리 도우미'
                     break
                   default:
-                    rejecterRole = '관리자'
+                    rejecterRole = loan.approved_by_role
                 }
-              }
-
-              // 거절자 이름 가져오기 (approved_by 필드 사용 - 실제로는 rejected_by 역할)
-              if (loan.approver && loan.approver.name) {
-                rejecterName = loan.approver.name
-              } else if (loan.approved_by) {
-                // approved_by가 이메일인 경우 이메일에서 이름 추출
-                rejecterName = loan.approved_by.includes('@')
-                  ? loan.approved_by.split('@')[0]
-                  : loan.approved_by
+              } else {
+                // approved_by_role이 없으면 실시간 역할 조회
+                rejecterRole = await getRoleFromEmail(loan.approved_by)
               }
 
               userLogs.push({
@@ -602,7 +468,7 @@ export async function GET(request: Request) {
                 ip_address: "192.168.1.100"
               })
             }
-          })
+          }
         }
 
         // 2. 사용자가 관리자/담임/도우미 역할로 수행한 작업들 조회 (승인, 거절 등)
@@ -617,7 +483,7 @@ export async function GET(request: Request) {
             .neq('email', targetUser.email) // 본인 대여는 제외
 
           if (approvedLoans && approvedLoans.length > 0) {
-            approvedLoans.forEach(loan => {
+            for (const loan of approvedLoans) {
               userLogs.push({
                 id: `admin_approve_${loan.id}`,
                 timestamp: loan.approved_at,
@@ -625,7 +491,7 @@ export async function GET(request: Request) {
                 details: `${loan.student_name}의 ${loan.device_tag} 기기 대여를 승인했습니다.`,
                 ip_address: "192.168.1.100"
               })
-            })
+            }
           }
 
           // 사용자가 거절한 대여 신청들 (본인 대여가 아닌 경우만)
@@ -637,7 +503,7 @@ export async function GET(request: Request) {
             .neq('email', targetUser.email) // 본인 대여는 제외
 
           if (rejectedLoans && rejectedLoans.length > 0) {
-            rejectedLoans.forEach(loan => {
+            for (const loan of rejectedLoans) {
               userLogs.push({
                 id: `admin_reject_${loan.id}`,
                 timestamp: loan.updated_at,
@@ -645,7 +511,7 @@ export async function GET(request: Request) {
                 details: `${loan.student_name}의 ${loan.device_tag} 기기 대여를 거절했습니다.`,
                 ip_address: "192.168.1.100"
               })
-            })
+            }
           }
 
           // 기기 반납 처리 작업들 (본인 대여가 아닌 경우만)
@@ -657,7 +523,7 @@ export async function GET(request: Request) {
             .neq('email', targetUser.email) // 본인 대여는 제외
 
           if (returnProcessed && returnProcessed.length > 0) {
-            returnProcessed.forEach(loan => {
+            for (const loan of returnProcessed) {
               userLogs.push({
                 id: `admin_return_${loan.id}`,
                 timestamp: loan.returned_at,
@@ -665,7 +531,7 @@ export async function GET(request: Request) {
                 details: `${loan.student_name}의 ${loan.device_tag} 기기 반납을 처리했습니다.`,
                 ip_address: "192.168.1.100"
               })
-            })
+            }
           }
         }
       }
@@ -694,7 +560,6 @@ export async function GET(request: Request) {
 
     // 시간순으로 정렬 (최신순)
     userLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-
 
     return NextResponse.json({
       userId,
