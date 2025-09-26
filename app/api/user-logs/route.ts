@@ -245,8 +245,26 @@ export async function GET(request: Request) {
 
               console.log('🔍 USER-LOGS - Final approver role:', approverRole)
 
-              // 승인 시간: approved_at이 있으면 사용, 없으면 picked_up_at 사용 (fallback)
-              const fallbackApprovalTime = loan.approved_at || loan.picked_up_at
+              // 승인 시간 로직: approved_at이 created_at보다 이전이면 picked_up_at 사용 (fallback)
+              let fallbackApprovalTime = loan.approved_at
+
+              // approved_at이 대여 신청 시간보다 이전인 경우 (타임존 이슈 등) picked_up_at 사용
+              if (loan.approved_at && loan.created_at &&
+                  new Date(loan.approved_at).getTime() < new Date(loan.created_at).getTime()) {
+                fallbackApprovalTime = loan.picked_up_at
+                console.log('🔍 USER-LOGS - Fallback using picked_up_at as approval time due to invalid approved_at:', {
+                  loanId: loan.id,
+                  approved_at: loan.approved_at,
+                  created_at: loan.created_at,
+                  picked_up_at: loan.picked_up_at,
+                  selected: fallbackApprovalTime
+                })
+              }
+
+              // fallback: approved_at이 없으면 picked_up_at 사용
+              if (!fallbackApprovalTime) {
+                fallbackApprovalTime = loan.picked_up_at
+              }
 
               fallbackLogs.push({
                 id: `loan_${loan.id}_approved`,
@@ -507,8 +525,26 @@ export async function GET(request: Request) {
 
               console.log('🔍 USER-LOGS - Regular user - Final approver role:', approverRole)
 
-              // 승인 시간: approved_at이 있으면 사용, 없으면 picked_up_at 사용
-              const approvalTime = loan.approved_at || loan.picked_up_at
+              // 승인 시간 로직: approved_at이 created_at보다 이전이면 picked_up_at 사용
+              let approvalTime = loan.approved_at
+
+              // approved_at이 대여 신청 시간보다 이전인 경우 (타임존 이슈 등) picked_up_at 사용
+              if (loan.approved_at && loan.created_at &&
+                  new Date(loan.approved_at).getTime() < new Date(loan.created_at).getTime()) {
+                approvalTime = loan.picked_up_at
+                console.log('🔍 USER-LOGS - Using picked_up_at as approval time due to invalid approved_at:', {
+                  loanId: loan.id,
+                  approved_at: loan.approved_at,
+                  created_at: loan.created_at,
+                  picked_up_at: loan.picked_up_at,
+                  selected: approvalTime
+                })
+              }
+
+              // fallback: approved_at이 없으면 picked_up_at 사용
+              if (!approvalTime) {
+                approvalTime = loan.picked_up_at
+              }
 
               userLogs.push({
                 id: `loan_${loan.id}_approved`,
