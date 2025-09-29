@@ -123,7 +123,7 @@ export function StudentDashboard({ student, currentLoans: initialCurrentLoans, l
             setCurrentLoans(prev => {
               const nonTempLoans = prev.filter(loan => !loan.id.startsWith('temp-'))
               // API에서 온 데이터와 중복되지 않는 로컬 데이터만 유지
-              const apiIds = (studentLoans || []).map(l => l.id)
+              const apiIds = (studentLoans || []).map((l: any) => l.id)
               const uniqueLocalLoans = nonTempLoans.filter(loan => !apiIds.includes(loan.id))
               // 데이터 정규화 적용
               const normalizedApiLoans = (studentLoans || []).map(normalizeLoanData)

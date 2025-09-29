@@ -192,7 +192,7 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                 className: classInfo.grade && classInfo.class ? `${classInfo.grade}-${classInfo.class}` : '',
                 phone: '',
                 parentPhone: '',
-                currentLoan: null,
+                currentLoan: undefined,
                 loanHistory: 0,
                 overdueCount: 0,
                 status: 'active',
@@ -519,14 +519,14 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                                   대여 중: {user.currentLoan}
                                 </Badge>
                               )}
-                              {user.overdueCount > 0 && (
+                              {(user.overdueCount ?? 0) > 0 && (
                                 <Badge variant="destructive" className="mb-1">
-                                  연체 {user.overdueCount}건
+                                  연체 {user.overdueCount ?? 0}건
                                 </Badge>
                               )}
-                              {user.loanHistory > 0 && (
+                              {(user.loanHistory ?? 0) > 0 && (
                                 <div className="text-xs text-muted-foreground">
-                                  총 {user.loanHistory}회 대여
+                                  총 {user.loanHistory ?? 0}회 대여
                                 </div>
                               )}
                             </div>

@@ -67,14 +67,14 @@ export function StudentsManagementWrapper() {
 
           // 사용자 역할 맵 생성
           const userRoles = new Map()
-          users.forEach(user => {
+          users.forEach((user: any) => {
             userRoles.set(user.email, user.role || '')
             console.log('StudentsManagement - User role mapping:', user.email, '->', user.role || '')
           })
 
           // 대여 데이터에서 학생 정보 추출 (이메일 기준으로 중복 제거)
           const studentMap = new Map()
-          loans.forEach(loan => {
+          loans.forEach((loan: any) => {
             const email = loan.email
             if (!studentMap.has(email)) {
               const userRole = userRoles.get(email) || ''
@@ -119,7 +119,7 @@ export function StudentsManagementWrapper() {
             const { pendingUsers } = await pendingResponse.json()
             console.log('StudentsManagement - Loaded pending users:', pendingUsers.length)
 
-            pendingUsers.forEach(pendingUser => {
+            pendingUsers.forEach((pendingUser: any) => {
               if (!studentMap.has(pendingUser.email)) {
                 const userRole = userRoles.get(pendingUser.email) || 'student'
                 const classInfo = pendingUser.class_info || {}

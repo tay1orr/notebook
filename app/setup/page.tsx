@@ -27,7 +27,8 @@ export default async function SetupPage() {
   }
 
   // 이미 역할이 설정된 사용자는 대시보드로
-  if (user.role && user.role !== '') {
+  const isEmpty = (role: string): role is '' => role === ''
+  if (user.role && !isEmpty(user.role)) {
     redirect('/dashboard')
   }
 

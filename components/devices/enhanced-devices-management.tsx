@@ -711,13 +711,9 @@ export function EnhancedDevicesManagement({ devices: initialDevices, stats: init
             </DialogDescription>
           </DialogHeader>
           <CSVUpload
+            type="devices"
             onUpload={handleCSVUpload}
             isUploading={isUploading}
-            expectedHeaders={['assetTag', 'model', 'serial', 'assignedClass']}
-            templateData={[
-              { assetTag: 'NB-001', model: 'MacBook Air', serial: 'ABC123', assignedClass: '1-1' },
-              { assetTag: 'NB-002', model: 'MacBook Air', serial: 'ABC124', assignedClass: '1-2' }
-            ]}
           />
         </DialogContent>
       </Dialog>

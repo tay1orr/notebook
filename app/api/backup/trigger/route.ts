@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       const { addBackupRecord } = await import('./backup-history-utils')
 
       const record = await addBackupRecord({
-        type: backupType,
+        type: backupType === 'scheduled' ? 'auto' : 'manual',
         status: 'success',
         table: 'all',
         size: Math.floor(Math.random() * 1000000),

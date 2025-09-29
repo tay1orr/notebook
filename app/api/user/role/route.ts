@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Supabase auth user 메타데이터에 학급 정보와 승인 상태 저장
-        const metadata = {
+        const metadata: any = {
           ...user.user_metadata,
           class_info: classInfo
         }

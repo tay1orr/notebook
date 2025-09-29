@@ -33,21 +33,24 @@ function validateEnvironmentVariables(): EnvironmentConfig {
     )
   }
 
+  // At this point, we know all required values exist (or we would have thrown above)
+  const config = required as EnvironmentConfig
+
   // Supabase URL 유효성 검사
-  if (!required.NEXT_PUBLIC_SUPABASE_URL.startsWith('https://')) {
+  if (!config.NEXT_PUBLIC_SUPABASE_URL.startsWith('https://')) {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL은 https://로 시작해야 합니다.')
   }
 
   // 키 길이 검증 (Supabase 키는 일반적으로 64자 이상)
-  if (required.NEXT_PUBLIC_SUPABASE_ANON_KEY.length < 64) {
+  if (config.NEXT_PUBLIC_SUPABASE_ANON_KEY.length < 64) {
     throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY가 올바르지 않습니다.')
   }
 
-  if (required.SUPABASE_SERVICE_ROLE_KEY.length < 64) {
+  if (config.SUPABASE_SERVICE_ROLE_KEY.length < 64) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY가 올바르지 않습니다.')
   }
 
-  return required as EnvironmentConfig
+  return config
 }
 
 // 앱 시작 시 환경변수 검증

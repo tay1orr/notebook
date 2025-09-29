@@ -10,7 +10,8 @@ export default async function HomePage() {
   // 로그인된 사용자
   if (user) {
     // 역할이 없는 사용자는 설정 페이지로
-    if (!user.role || user.role === '') {
+    const isEmpty = (role: string): role is '' => role === ''
+    if (!user.role || isEmpty(user.role)) {
       redirect('/setup')
     }
     // 역할이 있는 사용자는 대시보드로

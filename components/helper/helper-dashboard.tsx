@@ -85,11 +85,13 @@ export function HelperDashboard({ user }: HelperDashboardProps) {
 
             // 담임교사인 경우 자기 반 학생만 필터링
             if (user.role === 'homeroom' && user.grade && user.class) {
+              const userGrade = parseInt(user.grade)
+              const userClass = parseInt(user.class)
               const myClassPending = pendingUsers.filter((pendingUser: any) => {
                 const classInfo = pendingUser.class_info
                 return classInfo &&
-                       classInfo.grade === parseInt(user.grade) &&
-                       classInfo.class === parseInt(user.class)
+                       classInfo.grade === userGrade &&
+                       classInfo.class === userClass
               })
               setPendingApprovals(myClassPending)
             } else {

@@ -13,6 +13,22 @@ interface UserInfo {
   isApprovedHomeroom?: boolean
 }
 
+interface Loan {
+  id: string
+  status: string
+  device_tag: string | null
+  student_name: string
+}
+
+interface Device {
+  assetNumber: string
+  status: string
+  currentUser?: string
+  model?: string
+  serial?: string
+  assignedClass?: string
+}
+
 interface DevicesManagementWrapperProps {
   user?: UserInfo
 }
@@ -63,12 +79,12 @@ export function DevicesManagementWrapper({ user: propUser }: DevicesManagementWr
           const devicesData = await devicesResponse.json()
           const loansData = await loansResponse.json()
 
-          const deviceList = devicesData.devices || []
-          const loansList = loansData.loans || []
+          const deviceList: Device[] = devicesData.devices || []
+          const loansList: Loan[] = loansData.loans || []
 
           // 수령됨 상태인 대여 목록으로 기기 상태 업데이트
           const activeLoanDevices = new Set()
-          loansList.forEach(loan => {
+          loansList.forEach((loan: Loan) => {
             if (loan.status === 'picked_up' && loan.device_tag) {
               // device_tag "2-1-11"을 asset_tag "ICH-20111" 형식으로 변환
               const parts = loan.device_tag.split('-')
@@ -84,9 +100,9 @@ export function DevicesManagementWrapper({ user: propUser }: DevicesManagementWr
           })
 
           // 기기 상태 업데이트: 수령됨 상태인 대여가 있으면 대여중으로 표시
-          let updatedDeviceList = deviceList.map(device => {
+          let updatedDeviceList = deviceList.map((device: Device) => {
             if (activeLoanDevices.has(device.assetNumber)) {
-              const loan = loansList.find(l => {
+              const loan = loansList.find((l: Loan) => {
                 if (!l.device_tag) return false
                 const parts = l.device_tag.split('-')
                 if (parts.length === 3) {
@@ -113,7 +129,7 @@ export function DevicesManagementWrapper({ user: propUser }: DevicesManagementWr
               const userGrade = parseInt(currentUserInfo.grade)
               const userClass = parseInt(currentUserInfo.class)
 
-              updatedDeviceList = updatedDeviceList.filter(device => {
+              updatedDeviceList = updatedDeviceList.filter((device: Device) => {
                 // 기기 번호에서 학년과 반 추출 (예: ICH-20111 -> 2학년 1반)
                 const match = device.assetNumber.match(/ICH-(\d)(\d{2})(\d{2})/)
                 if (match) {
@@ -132,10 +148,10 @@ export function DevicesManagementWrapper({ user: propUser }: DevicesManagementWr
           // 통계 계산
           const newStats = {
             total: updatedDeviceList.length,
-            available: updatedDeviceList.filter(d => d.status === 'available').length,
-            loaned: updatedDeviceList.filter(d => d.status === 'loaned').length,
-            maintenance: updatedDeviceList.filter(d => d.status === 'maintenance').length,
-            retired: updatedDeviceList.filter(d => d.status === 'retired').length
+            available: updatedDeviceList.filter((d: Device) => d.status === 'available').length,
+            loaned: updatedDeviceList.filter((d: Device) => d.status === 'loaned').length,
+            maintenance: updatedDeviceList.filter((d: Device) => d.status === 'maintenance').length,
+            retired: updatedDeviceList.filter((d: Device) => d.status === 'retired').length
           }
           setStats(newStats)
           setError(null)

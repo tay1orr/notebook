@@ -153,17 +153,21 @@ export function handleSupabaseError(error: any): AppError {
   }
 }
 
-// 로그 기능
+// 로그 기능 (개인정보 보호 강화)
 export function logError(error: any, context?: string) {
+  // 개인정보 마스킹
+  const sanitizedMessage = maskPersonalInfo(error.message || error.toString())
+
   const errorInfo = {
-    message: error.message || error,
-    stack: error.stack,
+    message: sanitizedMessage,
+    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     context,
     timestamp: new Date().toISOString(),
-    userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server'
+    userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
+    severity: getErrorSeverity(error)
   }
 
-  console.error('[ERROR]', errorInfo)
+  console.error(`[${errorInfo.severity}]`, errorInfo)
 
   // 프로덕션 환경에서는 외부 로깅 서비스로 전송
   if (process.env.NODE_ENV === 'production') {
@@ -184,4 +188,23 @@ export function useErrorHandler() {
   }
 
   return { handleError }
+}
+
+// 개인정보 마스킹 함수
+function maskPersonalInfo(message: string): string {
+  if (!message) return message
+
+  return message
+    .replace(/[가-힣]{2,4}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '***@***.***') // 이메일 마스킹
+    .replace(/\b\d{5,}\b/g, '***') // 학번 등 숫자 마스킹
+    .replace(/[가-힣]{2,4}(?=\s|$)/g, '***') // 한글 이름 마스킹
+}
+
+// 에러 심각도 판단
+function getErrorSeverity(error: any): 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' {
+  if (error?.status >= 500) return 'CRITICAL'
+  if (error?.status >= 400) return 'HIGH'
+  if (error?.code === 'NETWORK_ERROR') return 'MEDIUM'
+  if (error?.name === 'ValidationError') return 'MEDIUM'
+  return 'LOW'
 }

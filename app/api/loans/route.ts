@@ -170,11 +170,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     interface LoanUpdateData {
-      status: string
+      status: 'requested' | 'approved' | 'picked_up' | 'returned' | 'overdue' | 'rejected'
       updated_at: string
       device_tag?: string
       approved_by?: string
-      approved_by_role?: string
+      approved_by_role?: 'admin' | 'manager' | 'homeroom' | 'helper'
       approved_at?: string
       notes?: string
       picked_up_at?: string
@@ -196,8 +196,10 @@ export async function PATCH(request: NextRequest) {
       updateData.approved_at = getCurrentKoreaTime()
       // approved_by는 요청에서 온 값 사용하거나 현재 사용자 이메일
       updateData.approved_by = approved_by || currentUser.email
-      // 현재 사용자의 역할도 저장
-      updateData.approved_by_role = currentUser.role
+      // 현재 사용자의 역할도 저장 (승인 권한이 있는 역할만)
+      if (currentUser.role && ['admin', 'manager', 'homeroom', 'helper'].includes(currentUser.role)) {
+        updateData.approved_by_role = currentUser.role as 'admin' | 'manager' | 'homeroom' | 'helper'
+      }
 
 
     } else if (status === 'picked_up') {
@@ -205,13 +207,17 @@ export async function PATCH(request: NextRequest) {
       // picked_up 상태일 때 승인 시간 설정 (승인과 수령이 동시에 일어남)
       updateData.approved_at = approved_at || getCurrentKoreaTime()
       updateData.approved_by = approved_by || currentUser.email
-      updateData.approved_by_role = currentUser.role
+      if (currentUser.role && ['admin', 'manager', 'homeroom', 'helper'].includes(currentUser.role)) {
+        updateData.approved_by_role = currentUser.role as 'admin' | 'manager' | 'homeroom' | 'helper'
+      }
     } else if (status === 'returned') {
       updateData.returned_at = getCurrentKoreaTime()
     } else if (status === 'rejected') {
       // 거절 시에도 승인자 정보 저장
       updateData.approved_by = approved_by || currentUser.email
-      updateData.approved_by_role = currentUser.role
+      if (currentUser.role && ['admin', 'manager', 'homeroom', 'helper'].includes(currentUser.role)) {
+        updateData.approved_by_role = currentUser.role as 'admin' | 'manager' | 'homeroom' | 'helper'
+      }
       // 거절 시간은 updated_at으로 추적
 
     }

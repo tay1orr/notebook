@@ -37,14 +37,14 @@ export function LoansManagement({ pendingLoans: initialPendingLoans, activeLoans
   // 탭 변경 핸들러 - URL 업데이트
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams?.toString() || '')
     params.set('tab', tab)
     router.push(`/loans?${params.toString()}`)
   }
 
   // URL 파라미터에서 tab 확인하고 초기 탭 설정
   useEffect(() => {
-    const tab = searchParams.get('tab')
+    const tab = searchParams?.get('tab')
     if (tab === 'active') {
       setActiveTab('active')
     } else if (tab === 'overdue') {

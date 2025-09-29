@@ -9,19 +9,52 @@ const nextConfig = {
     domains: ['lh3.googleusercontent.com'],
     formats: ['image/webp', 'image/avif']
   },
+  // 보안 헤더 설정
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https://lh3.googleusercontent.com",
+              "connect-src 'self' https://*.supabase.co",
+              "font-src 'self' data:",
+            ].join('; ')
+          }
+        ]
+      }
+    ]
+  },
   // Vercel 최적화
   compress: true,
   poweredByHeader: false,
-  // 환경별 설정 (TZ는 Vercel에서 지원하지 않으므로 코드에서 직접 처리)
-  // env: {
-  //   TZ: process.env.TZ || 'Asia/Seoul'
-  // },
-  // 시험 배포용 - 운영 전 타입 에러 수정 필요
+  // 타입스크립트 오류 수정 완료로 활성화
   typescript: {
-    ignoreBuildErrors: true
+    ignoreBuildErrors: false
   },
   eslint: {
-    ignoreDuringBuilds: true
+    ignoreDuringBuilds: false
   }
 }
 

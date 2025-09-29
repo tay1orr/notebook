@@ -2,6 +2,7 @@ import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { UserRole } from '@/types/common'
+import { isAdminEmail } from './admin-utils'
 
 export interface AuthUser {
   id: string
@@ -45,8 +46,8 @@ export async function getCurrentUserForAPI(): Promise<AuthUser | null> {
       if (roleData?.role) {
         role = roleData.role
       } else {
-        const adminEmail = process.env.ADMIN_EMAIL || 'taylorr@gclass.ice.go.kr'
-        if (user.email === adminEmail) {
+        // 관리자 이메일 확인 (환경변수 기반)
+        if (isAdminEmail(user.email)) {
           role = 'admin'
         }
       }
@@ -58,8 +59,7 @@ export async function getCurrentUserForAPI(): Promise<AuthUser | null> {
         if (classInfo.student_no) studentNo = classInfo.student_no.toString()
       }
     } catch (roleError) {
-      const adminEmail = process.env.ADMIN_EMAIL || 'taylorr@gclass.ice.go.kr'
-      if (user.email === adminEmail) {
+      if (isAdminEmail(user.email)) {
         role = 'admin'
       }
     }
@@ -141,8 +141,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
         if (classInfo.student_no) studentNo = classInfo.student_no.toString()
       }
     } catch (roleError) {
-      const adminEmail = process.env.ADMIN_EMAIL || 'taylorr@gclass.ice.go.kr'
-      if (user.email === adminEmail) {
+      if (isAdminEmail(user.email)) {
         role = 'admin'
       }
     }
@@ -190,7 +189,8 @@ export async function requireAuth(): Promise<AuthUser> {
   }
 
   // 역할이 없는 사용자는 역할 선택 페이지로 리다이렉트
-  if (!user.role || user.role === '') {
+  const isEmpty = (role: string): role is '' => role === ''
+  if (!user.role || isEmpty(user.role)) {
     redirect('/setup')
   }
 

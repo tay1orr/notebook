@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { UsersManagement } from './users-management'
-import { PageLoadingSpinner } from '@/components/ui/loading-spinner'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export function UsersManagementWrapper() {
   const [users, setUsers] = useState<any[]>([])
@@ -91,7 +91,7 @@ export function UsersManagementWrapper() {
   }, [isModalOpen])
 
   if (loading) {
-    return <PageLoadingSpinner text="사용자 목록을 불러오는 중..." />
+    return <LoadingSpinner message="사용자 목록을 불러오는 중..." />
   }
 
   if (error) {

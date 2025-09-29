@@ -73,7 +73,7 @@ export function HomeRoomApprovalWrapper() {
       setPendingUsers(prev => prev.filter(user => user.id !== userId))
 
       // 성공 메시지
-      alert(`${user.requested_role === 'homeroom' ? '담임교사' : '노트북 관리 도우미'} 권한이 ${action === 'approve' ? '승인' : '거절'}되었습니다.`)
+      alert(`담임교사 권한이 ${action === 'approve' ? '승인' : '거절'}되었습니다.`)
 
     } catch (err) {
       console.error(`Failed to ${action} homeroom user:`, err)
