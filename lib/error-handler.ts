@@ -112,7 +112,7 @@ export function handleSupabaseError(error: any): AppError {
   }
 
   let message = getUserFriendlyErrorMessage(error)
-  let code = error.code
+  const code = error.code
   let status = 500
 
   // Supabase 특정 에러 코드 처리

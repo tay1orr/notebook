@@ -428,7 +428,7 @@ export function DevicesManagement({ devices: initialDevices, stats: initialStats
           {/* 필터링 결과 요약 */}
           {searchTerm && (
             <div className="mt-4 text-sm text-muted-foreground">
-              "{searchTerm}" 검색 결과: {filteredDevices.length}개 기기
+              &ldquo;{searchTerm}&rdquo; 검색 결과: {filteredDevices.length}개 기기
             </div>
           )}
         </CardContent>
