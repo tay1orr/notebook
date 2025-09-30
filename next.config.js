@@ -2,7 +2,7 @@
 const nextConfig = {
   experimental: {
     serverActions: {
-      allowedOrigins: ["notebook-two-pink.vercel.app", "*.vercel.app", "*.gclass.ice.go.kr"]
+      allowedOrigins: ["notebook-loan-jungsan.vercel.app", "*.vercel.app", "*.gclass.ice.go.kr"]
     }
   },
   images: {

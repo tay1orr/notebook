@@ -2,7 +2,7 @@
 
 학급 노트북 가정 대여를 위한 디지털 관리 플랫폼입니다.
 
-> 새 Vercel 프로젝트로 배포 테스트 중 🚀 (v3 - TZ 문제 수정)
+> 프로덕션 배포 완료 🚀 (v4 - 안정성 강화 및 성능 최적화)
 
 ## 📋 개요
 
@@ -66,7 +66,7 @@ FEATURE_CALENDAR_ENABLED=false
 FEATURE_NOTIFICATIONS_ENABLED=false
 
 # 사이트 URL (배포 시)
-NEXT_PUBLIC_SITE_URL=https://your-domain.vercel.app
+NEXT_PUBLIC_SITE_URL=https://notebook-loan-jungsan.vercel.app
 ```
 
 ### 4. Supabase 설정

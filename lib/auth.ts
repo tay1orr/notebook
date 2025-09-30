@@ -294,7 +294,7 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://notebook-two-pink.vercel.app'}/auth/callback`,
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://notebook-loan-jungsan.vercel.app'}/auth/callback`,
       queryParams: {
         hd: process.env.NEXT_PUBLIC_ALLOWED_DOMAIN || 'gclass.ice.go.kr' // Google Workspace domain restriction
       }
