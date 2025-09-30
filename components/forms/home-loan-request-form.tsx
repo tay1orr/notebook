@@ -68,13 +68,11 @@ export function HomeLoanRequestForm({
     signaturePadRef.current?.clear()
   }
 
-  // 폼이 열릴 때마다 초기화 및 프로필 정보 자동 입력
+  // 폼이 열릴 때 프로필 정보 자동 입력 (제출 실패 시 데이터 유지)
   useEffect(() => {
     if (isOpen) {
-      resetForm()
-
-      // 프로필에서 학급 정보 자동 입력
-      if (studentInfo.className && studentInfo.studentNo) {
+      // 프로필에서 학급 정보 자동 입력 (최초 1회만)
+      if (studentInfo.className && studentInfo.studentNo && !formData.currentGrade) {
         const classParts = studentInfo.className.split('-') // "3-1" -> ["3", "1"]
         if (classParts.length === 2) {
           setFormData(prev => ({
@@ -87,7 +85,7 @@ export function HomeLoanRequestForm({
         }
       }
     }
-  }, [isOpen, studentInfo])
+  }, [isOpen, studentInfo, formData.currentGrade])
 
   // 전각 문자를 반각으로 변환하는 함수
   const convertToHalfWidth = (str: string) => {
@@ -179,45 +177,63 @@ export function HomeLoanRequestForm({
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!validateForm()) {
       return
     }
 
-    // 서명 데이터 가져오기
-    const signatureData = signaturePadRef.current?.toDataURL() || ''
+    try {
+      // 서명 데이터 가져오기
+      const signatureData = signaturePadRef.current?.toDataURL() || ''
 
-    // 학생이 입력한 정보로 기기 번호 생성
-    const paddedStudentNum = formData.currentStudentNumber.padStart(2, '0')
-    const currentClass = `${formData.currentGrade}-${formData.currentClassNumber}`
-    const deviceNumber = `${currentClass}-${paddedStudentNum}`
+      // 학생이 입력한 정보로 기기 번호 생성
+      const paddedStudentNum = formData.currentStudentNumber.padStart(2, '0')
+      const currentClass = `${formData.currentGrade}-${formData.currentClassNumber}`
+      const deviceNumber = `${currentClass}-${paddedStudentNum}`
 
-    const requestData = {
-      ...formData,
-      studentName: studentInfo.name,
-      studentNo: paddedStudentNum,
-      className: currentClass,
-      currentClass: currentClass,
-      email: studentInfo.email,
-      requestType: 'home_loan',
-      status: 'requested',
-      requestedAt: getCurrentKoreaDateTimeString(),
-      dueDate: getReturnDateTime(formData.returnDate + 'T09:00:00'), // 반납 시간을 오전 9시로 고정
-      device_tag: deviceNumber, // 수동 입력된 정보로 생성된 기기 번호
-      studentSignature: signatureData
+      const requestData = {
+        ...formData,
+        studentName: studentInfo.name,
+        studentNo: paddedStudentNum,
+        className: currentClass,
+        currentClass: currentClass,
+        email: studentInfo.email,
+        requestType: 'home_loan',
+        status: 'requested',
+        requestedAt: getCurrentKoreaDateTimeString(),
+        dueDate: getReturnDateTime(formData.returnDate + 'T09:00:00'), // 반납 시간을 오전 9시로 고정
+        device_tag: deviceNumber, // 수동 입력된 정보로 생성된 기기 번호
+        studentSignature: signatureData
+      }
+
+      await onSubmit(requestData)
+      // 제출 성공 시에만 폼 닫기
+      handleClose()
+    } catch (error) {
+      // 제출 실패 시 폼은 열린 상태로 유지하여 사용자가 다시 시도할 수 있도록 함
+      console.error('폼 제출 실패:', error)
     }
-
-    onSubmit(requestData)
   }
 
   const handleClose = () => {
     if (!isSubmitting) {
-      resetForm()
       onClose()
     }
   }
+
+  // 다이얼로그가 완전히 닫힐 때만 폼 초기화
+  useEffect(() => {
+    if (!isOpen) {
+      // 다이얼로그가 닫힌 후 약간의 지연을 두고 초기화 (애니메이션 완료 후)
+      const timeoutId = setTimeout(() => {
+        resetForm()
+      }, 200)
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [isOpen])
 
   const getTomorrowDate = () => {
     const tomorrow = new Date()

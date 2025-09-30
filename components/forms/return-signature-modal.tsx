@@ -18,6 +18,7 @@ interface ReturnSignatureModalProps {
     condition: string
     notes?: string
     damages: string[]
+    approverName: string
   }) => void
   loanData: {
     id: string
@@ -28,13 +29,15 @@ interface ReturnSignatureModalProps {
     pickedUpAt: string
     dueDate: string
   }
+  approverName: string
 }
 
 export function ReturnSignatureModal({
   isOpen,
   onClose,
   onConfirm,
-  loanData
+  loanData,
+  approverName
 }: ReturnSignatureModalProps) {
   const [signature, setSignature] = useState<string | null>(null)
   const [condition, setCondition] = useState('good')
@@ -73,7 +76,8 @@ export function ReturnSignatureModal({
         signatureData: signature,
         condition,
         notes,
-        damages
+        damages,
+        approverName
       })
       onClose()
       resetForm()
@@ -217,21 +221,30 @@ export function ReturnSignatureModal({
             </div>
           </div>
 
-          {/* 서명 영역 */}
+          {/* 담당자 서명 영역 */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium">확인자 서명</h4>
-              {signature && (
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                  서명 완료
-                </Badge>
-              )}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 className="font-medium text-green-900 mb-2">담당자 서명</h4>
+              <p className="text-sm text-green-800 mb-4">
+                학생 <strong>{loanData.studentName}</strong>로부터 기기 <strong>{loanData.deviceTag}</strong>의 반납을 확인했음을 증명합니다.
+                <br />
+                담당자: <strong>{approverName}</strong>
+              </p>
+
+              <div className="flex items-center justify-between mb-2">
+                <h5 className="font-medium">담당자 서명 *</h5>
+                {signature && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    서명 완료
+                  </Badge>
+                )}
+              </div>
+              <SignaturePad
+                onSignature={handleSignature}
+                title="반납 확인 서명"
+                description="기기 상태를 점검하였으며, 반납을 확인합니다."
+              />
             </div>
-            <SignaturePad
-              onSignature={handleSignature}
-              title="반납 확인 서명"
-              description="기기 상태를 점검하였으며, 반납을 확인합니다."
-            />
           </div>
 
           {/* 버튼 영역 */}
