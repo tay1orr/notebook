@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SignaturePad, SignaturePadRef } from '@/components/ui/signature-pad'
 import { CalendarIcon } from 'lucide-react'
-import { getCurrentKoreaTime, getCurrentKoreaDateTimeString, getReturnDateTime, isWeekend, getNextWeekday } from '@/lib/utils'
+import { getCurrentKoreaTime, getCurrentKoreaDateTimeString, getCurrentKoreaDateTime, getReturnDateTime, isWeekend, getNextWeekday } from '@/lib/utils'
 
 interface HomeLoanRequestFormProps {
   isOpen: boolean
@@ -241,9 +241,12 @@ export function HomeLoanRequestForm({
     return tomorrow.toISOString().split('T')[0]
   }
 
-  // 다음 등교일 (주말 제외)
+  // 다음 등교일 (주말 제외, 한국 시간 기준)
   const getNextSchoolDay = () => {
-    const date = new Date()
+    // 기존 한국 시간 함수 활용
+    const koreaTime = getCurrentKoreaDateTime()
+
+    const date = new Date(koreaTime)
     date.setDate(date.getDate() + 1) // 내일부터 시작
 
     // 주말이면 다음 월요일로 이동
@@ -255,7 +258,10 @@ export function HomeLoanRequestForm({
   }
 
   const getMaxDate = () => {
-    const maxDate = new Date()
+    // 기존 한국 시간 함수 활용
+    const koreaTime = getCurrentKoreaDateTime()
+
+    const maxDate = new Date(koreaTime)
     maxDate.setDate(maxDate.getDate() + 7)
     return maxDate.toISOString().split('T')[0]
   }
