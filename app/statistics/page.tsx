@@ -1,6 +1,6 @@
 import { requireRole } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase-server'
-import { StatisticsTabs } from '@/components/admin/statistics-tabs'
+import { StatisticsByCategory } from '@/components/admin/statistics-by-category'
 import { MainLayout } from '@/components/layout/main-layout'
 
 // Force dynamic rendering
@@ -39,13 +39,13 @@ export default async function StatisticsPage() {
     <MainLayout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">통계 및 관리</h1>
+          <h1 className="text-3xl font-bold tracking-tight">이용률 통계</h1>
           <p className="text-muted-foreground mt-2">
-            시스템 이용률, 감사 로그, 백업 현황 및 설정을 확인할 수 있습니다.
+            학급별 이용률, 월별 이용추이, 상세 통계를 탭별로 확인할 수 있습니다.
           </p>
         </div>
 
-        <StatisticsTabs loans={loans} />
+        <StatisticsByCategory loans={loans} />
       </div>
     </MainLayout>
   )
