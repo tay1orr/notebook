@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-client'
 import { AuthUser } from '@/lib/auth'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { getRoleText } from '@/lib/utils'
 import { ThemeToggleButton } from '@/components/ui/theme-toggle'
 
@@ -16,28 +14,21 @@ interface HeaderProps {
 
 export function Header({ user }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [notifications, setNotifications] = useState({
-    loans: 0,
-    admin: 0
-  })
+  const [notifications, setNotifications] = useState({ loans: 0, admin: 0 })
 
   const router = useRouter()
+  const pathname = usePathname()
   const supabase = createClient()
 
-  // 알림 데이터 로드
   useEffect(() => {
     const loadNotifications = async () => {
       try {
-        // 대여 관리 알림 (승인 대기 + 연체)
         const loansResponse = await fetch('/api/loans', { cache: 'no-store' })
         if (loansResponse.ok) {
           const { loans } = await loansResponse.json()
-
           let pendingCount = 0
-
           if (Array.isArray(loans)) {
             if (user.role === 'homeroom' && user.isApprovedHomeroom && user.grade && user.class) {
-              // 담임교사: 자신의 반 승인 대기 신청
               const teacherClass = `${user.grade}-${user.class}`
               pendingCount = loans.filter((loan: any) => {
                 const loanStatus = loan.status?.toLowerCase()
@@ -45,7 +36,6 @@ export function Header({ user }: HeaderProps) {
                 return loanStatus === 'requested' && loanClass === teacherClass
               }).length
             } else if (user.role === 'helper' && user.grade && user.class) {
-              // 노트북 관리 도우미: 자신의 반 승인 대기 신청만
               const helperClass = `${user.grade}-${user.class}`
               pendingCount = loans.filter((loan: any) => {
                 const loanStatus = loan.status?.toLowerCase()
@@ -53,42 +43,27 @@ export function Header({ user }: HeaderProps) {
                 return loanStatus === 'requested' && loanClass === helperClass
               }).length
             } else if (user.role === 'admin') {
-              // 관리자: 전체 승인 대기 신청
-              pendingCount = loans.filter((loan: any) => {
-                const loanStatus = loan.status?.toLowerCase()
-                return loanStatus === 'requested'
-              }).length
+              pendingCount = loans.filter((loan: any) => loan.status?.toLowerCase() === 'requested').length
             }
           }
-
           setNotifications(prev => ({ ...prev, loans: pendingCount }))
-        } else {
-          console.error('대여 정보 로드 실패:', loansResponse.status, loansResponse.statusText)
         }
 
-        // 사용자 관리 알림 (관리자 + 담임교사만)
         if (user.role === 'admin' || user.role === 'homeroom') {
-          try {
-            const adminResponse = await fetch('/api/admin/pending-approvals', { cache: 'no-store' })
-            if (adminResponse.ok) {
-              const data = await adminResponse.json()
-              let pendingCount = data.pendingUsers?.length || 0
-
-              // 담임교사인 경우 자신의 반 승인 요청만 카운트
-              if (user.role === 'homeroom' && user.grade && user.class) {
-                const teacherClass = `${user.grade}-${user.class}`
-                pendingCount = data.pendingUsers?.filter((pendingUser: any) => {
-                  const userClass = pendingUser.class_info?.grade && pendingUser.class_info?.class
-                    ? `${pendingUser.class_info.grade}-${pendingUser.class_info.class}`
-                    : ''
-                  return userClass === teacherClass
-                }).length || 0
-              }
-
-              setNotifications(prev => ({ ...prev, admin: pendingCount }))
+          const adminResponse = await fetch('/api/admin/pending-approvals', { cache: 'no-store' })
+          if (adminResponse.ok) {
+            const data = await adminResponse.json()
+            let pendingCount = data.pendingUsers?.length || 0
+            if (user.role === 'homeroom' && user.grade && user.class) {
+              const teacherClass = `${user.grade}-${user.class}`
+              pendingCount = data.pendingUsers?.filter((pendingUser: any) => {
+                const userClass = pendingUser.class_info?.grade && pendingUser.class_info?.class
+                  ? `${pendingUser.class_info.grade}-${pendingUser.class_info.class}`
+                  : ''
+                return userClass === teacherClass
+              }).length || 0
             }
-          } catch (adminError) {
-            console.error('Header admin notifications error:', adminError)
+            setNotifications(prev => ({ ...prev, admin: pendingCount }))
           }
         }
       } catch (error) {
@@ -97,9 +72,7 @@ export function Header({ user }: HeaderProps) {
     }
 
     loadNotifications()
-
-    // 5초마다 업데이트 (더 빠른 실시간 반영)
-    const interval = setInterval(loadNotifications, 5000)
+    const interval = setInterval(loadNotifications, 30000)
     return () => clearInterval(interval)
   }, [user])
 
@@ -109,176 +82,141 @@ export function Header({ user }: HeaderProps) {
   }, [supabase.auth, router])
 
   const navigationItems = useMemo(() => [
-    {
-      href: '/dashboard',
-      label: '대시보드',
-      roles: ['admin', 'homeroom', 'helper', 'manager', 'student'],
-      badge: 0
-    },
-    {
-      href: '/loans',
-      label: '대여 관리',
-      roles: ['admin', 'homeroom', 'helper'],
-      badge: notifications.loans
-    },
-    {
-      href: '/devices',
-      label: '기기 관리',
-      roles: ['admin', 'homeroom', 'helper'],
-      badge: 0
-    },
-    {
-      href: '/students',
-      label: '사용자 관리',
-      roles: ['admin', 'homeroom'], // helper 제거
-      badge: notifications.admin
-    },
-    {
-      href: '/statistics',
-      label: '통계',
-      roles: ['admin'],
-      badge: 0
-    },
-    {
-      href: '/admin',
-      label: '관리자',
-      roles: ['admin'],
-      badge: 0
-    }
+    { href: '/dashboard', label: '대시보드', roles: ['admin', 'homeroom', 'helper', 'student'], badge: 0 },
+    { href: '/loans', label: '대여 관리', roles: ['admin', 'homeroom', 'helper'], badge: notifications.loans },
+    { href: '/devices', label: '기기 관리', roles: ['admin', 'homeroom', 'helper'], badge: 0 },
+    { href: '/students', label: '사용자 관리', roles: ['admin', 'homeroom'], badge: notifications.admin },
+    { href: '/statistics', label: '통계', roles: ['admin'], badge: 0 },
+    { href: '/admin', label: '관리자', roles: ['admin'], badge: 0 },
   ], [notifications.loans, notifications.admin])
-
-  // 알림 배지 컴포넌트
-  const NotificationBadge = useCallback(({ count }: { count: number }) => {
-    // 숫자가 아니거나 0이면 표시하지 않음
-    if (!count || count === 0 || isNaN(count)) return null
-
-    // 음수 처리
-    const displayCount = Math.max(0, count)
-
-    return (
-      <span className="ml-1 inline-flex items-center justify-center text-xs font-bold text-white bg-red-500 rounded-full min-w-[20px] h-[20px] leading-none">
-        <span className="flex items-center justify-center w-full h-full">
-          {displayCount > 99 ? '99+' : displayCount}
-        </span>
-      </span>
-    )
-  }, [])
 
   const filteredNavigation = useMemo(() =>
     navigationItems.filter(item => user.role && item.roles.includes(user.role as any)),
     [navigationItems, user.role]
   )
 
+  const NotificationBadge = ({ count }: { count: number }) => {
+    if (!count || count === 0 || isNaN(count)) return null
+    return (
+      <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-rose-500 rounded-full leading-none">
+        {count > 99 ? '99+' : count}
+      </span>
+    )
+  }
+
+  const roleBadgeColor = user.role === 'admin'
+    ? 'bg-amber-400 text-slate-900'
+    : user.role === 'homeroom' || user.role === 'helper'
+    ? 'bg-blue-100 text-blue-800'
+    : 'bg-slate-200 text-slate-700'
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
-        <div className="mr-4 hidden md:flex">
-          <Link href="/dashboard" className="mr-6 flex items-center space-x-2">
-            <div className="h-6 w-6 bg-blue-600 rounded flex items-center justify-center">
-              <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <span className="hidden font-bold sm:inline-block">
-              노트북 관리
-            </span>
+    <header className="bg-slate-900 text-white sticky top-0 z-50">
+      {/* Top row: logo + user */}
+      <div className="container flex h-14 items-center justify-between">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center">
+            <span className="text-slate-900 font-bold text-sm">중산</span>
+          </div>
+          <div className="hidden sm:block">
+            <div className="font-semibold leading-tight text-sm">노트북 관리 시스템</div>
+            <div className="text-[11px] text-slate-400 leading-tight">인천중산고등학교</div>
+          </div>
+        </Link>
+
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className={`hidden sm:inline-block px-2.5 py-1 text-xs font-semibold rounded ${roleBadgeColor}`}>
+            {getRoleText(user.role)}
+          </span>
+          <span className="hidden md:inline text-sm text-slate-200">{user.name}</span>
+          <ThemeToggleButton />
+          <Link
+            href="/profile"
+            className="hidden sm:inline-flex px-3 py-1.5 text-sm rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            프로필
           </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
-            {filteredNavigation.map((item) => (
+          <button
+            onClick={handleSignOut}
+            className="hidden sm:inline-flex px-3 py-1.5 text-sm rounded-md border border-slate-700 text-slate-200 hover:bg-slate-800 transition-colors"
+          >
+            로그아웃
+          </button>
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="sm:hidden p-2 rounded-md hover:bg-slate-800"
+            aria-label="메뉴"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Bottom row: navigation */}
+      <nav className="border-t border-slate-800 hidden sm:block">
+        <div className="container flex gap-0">
+          {filteredNavigation.map((item) => {
+            const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+            return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center"
+                className={`px-4 py-3 text-sm border-b-2 transition-colors flex items-center ${
+                  isActive
+                    ? 'border-amber-400 text-white font-medium'
+                    : 'border-transparent text-slate-300 hover:text-white'
+                }`}
               >
                 {item.label}
                 <NotificationBadge count={item.badge} />
               </Link>
-            ))}
-          </nav>
+            )
+          })}
         </div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </Button>
-
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            <div className="hidden md:flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">
-                  {user.name}
-                </span>
-                <Badge variant="secondary" className="text-xs">
-                  {getRoleText(user.role)}
-                </Badge>
-              </div>
-              <ThemeToggleButton />
-              <Link href="/profile">
-                <Button variant="ghost" size="sm">
-                  프로필
-                </Button>
-              </Link>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                로그아웃
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      </nav>
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden">
-          <div className="space-y-1 px-2 pb-3 pt-2 shadow-lg">
-            {filteredNavigation.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="block rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 flex items-center justify-between"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <span>{item.label}</span>
-                <NotificationBadge count={item.badge} />
-              </Link>
-            ))}
-            <div className="border-t border-gray-200 pt-4">
-              <div className="flex items-center px-3">
-                <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                    <span className="text-sm font-medium text-gray-700">
-                      {user.name.charAt(0)}
-                    </span>
-                  </div>
-                </div>
-                <div className="ml-3">
-                  <div className="text-base font-medium text-gray-800">{user.name}</div>
-                  <div className="text-sm text-gray-500">{getRoleText(user.role)}</div>
-                </div>
-              </div>
-              <div className="mt-3 px-2 space-y-2">
-                <Link href="/profile" onClick={() => setIsMenuOpen(false)}>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                  >
-                    프로필
-                  </Button>
-                </Link>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={handleSignOut}
+        <div className="sm:hidden border-t border-slate-800 bg-slate-900">
+          <div className="container py-2 space-y-1">
+            {filteredNavigation.map((item) => {
+              const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-md text-sm ${
+                    isActive ? 'bg-slate-800 text-white font-medium' : 'text-slate-300 hover:bg-slate-800'
+                  }`}
                 >
-                  로그아웃
-                </Button>
+                  <span>{item.label}</span>
+                  <NotificationBadge count={item.badge} />
+                </Link>
+              )
+            })}
+            <div className="border-t border-slate-800 mt-2 pt-3 pb-2 px-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-slate-200">{user.name}</div>
+                <span className={`px-2 py-0.5 text-xs font-semibold rounded ${roleBadgeColor}`}>
+                  {getRoleText(user.role)}
+                </span>
               </div>
+              <Link
+                href="/profile"
+                onClick={() => setIsMenuOpen(false)}
+                className="block px-3 py-2 text-sm text-slate-300 rounded-md hover:bg-slate-800"
+              >
+                프로필
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="w-full text-left px-3 py-2 text-sm rounded-md border border-slate-700 text-slate-200 hover:bg-slate-800"
+              >
+                로그아웃
+              </button>
             </div>
           </div>
         </div>

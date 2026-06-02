@@ -1,9 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 import { getRoleText, getStatusColor, getStatusText, formatDateTime, getPurposeText, isLoanOverdue, getLoanStatus } from '@/lib/utils'
 
 interface AdminDashboardProps {
@@ -13,76 +11,67 @@ interface AdminDashboardProps {
   }
 }
 
+interface StatCardProps {
+  label: string
+  value: number | string
+  unit?: string
+  description: string
+  accent: 'slate' | 'blue' | 'emerald' | 'amber' | 'rose'
+  href?: string
+}
+
+const ACCENT_BORDER = {
+  slate: 'border-slate-300',
+  blue: 'border-blue-600',
+  emerald: 'border-emerald-600',
+  amber: 'border-amber-500',
+  rose: 'border-rose-600',
+} as const
+
+const ACCENT_VALUE = {
+  slate: 'text-slate-900',
+  blue: 'text-slate-900',
+  emerald: 'text-slate-900',
+  amber: 'text-slate-900',
+  rose: 'text-rose-700',
+} as const
+
+function StatCard({ label, value, unit, description, accent, href }: StatCardProps) {
+  const inner = (
+    <div className={`bg-white rounded-lg border-l-4 ${ACCENT_BORDER[accent]} border-y border-r border-slate-200 p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all`}>
+      <div className="text-sm font-medium text-slate-600 mb-2">{label}</div>
+      <div className={`text-3xl font-bold ${ACCENT_VALUE[accent]}`}>
+        {value}
+        {unit && <span className={`text-base font-normal ml-1 ${accent === 'rose' ? 'text-rose-500' : 'text-slate-500'}`}>{unit}</span>}
+      </div>
+      <div className={`text-xs mt-1 ${accent === 'rose' ? 'text-rose-600' : 'text-slate-500'}`}>{description}</div>
+    </div>
+  )
+  return href ? <Link href={href}>{inner}</Link> : inner
+}
+
 export function AdminDashboard({ user }: AdminDashboardProps) {
   const [loans, setLoans] = useState<any[]>([])
+  const [totalRegisteredUsers, setTotalRegisteredUsers] = useState<number>(0)
 
   useEffect(() => {
     const loadLoans = async () => {
-      // API 시도하되 실패하면 즉시 localStorage로 폴백
-      let useLocalStorage = false
-
       try {
         const response = await fetch('/api/loans')
         if (response.ok) {
           const { loans } = await response.json()
-          console.log('AdminDashboard - Loaded loans from API:', loans)
-          setLoans(loans)
-          return // API 성공 시 localStorage 실행 안함
-        } else {
-          console.error('AdminDashboard - API failed, using localStorage:', response.statusText)
-          useLocalStorage = true
+          setLoans(loans || [])
         }
       } catch (error) {
-        console.error('AdminDashboard - API error, using localStorage:', error)
-        useLocalStorage = true
-      }
-
-      // localStorage 폴백 (API 실패 시 또는 기본)
-      if (typeof window !== 'undefined') {
-        let storedLoans = localStorage.getItem('loanApplications')
-        if (!storedLoans) {
-          storedLoans = sessionStorage.getItem('loanApplications')
-          console.log('AdminDashboard - Trying sessionStorage fallback')
-        }
-        if (storedLoans) {
-          try {
-            const loans = JSON.parse(storedLoans)
-            setLoans(loans)
-            console.log('AdminDashboard - Using localStorage fallback', loans.length, 'loans')
-          } catch (error) {
-            console.error('Failed to parse fallback data:', error)
-          }
-        }
+        console.error('Failed to load loans:', error)
       }
     }
 
     loadLoans()
-
-    // BroadcastChannel 리스너 추가 (탭 간 동기화)
-    let channel: BroadcastChannel | null = null
-    try {
-      channel = new BroadcastChannel('loan-applications')
-      channel.onmessage = (event) => {
-        console.log('AdminDashboard - Received broadcast:', event.data)
-        if (event.data.type === 'NEW_LOAN_APPLICATION') {
-          setLoans(event.data.allLoans)
-        }
-      }
-    } catch (error) {
-      console.log('BroadcastChannel not supported:', error)
-    }
-
-    const interval = setInterval(loadLoans, 2000) // 2초마다
-
-    return () => {
-      clearInterval(interval)
-      if (channel) {
-        channel.close()
-      }
-    }
+    const interval = setInterval(loadLoans, 30000)
+    return () => clearInterval(interval)
   }, [])
 
-  // 사용자 수 로드
   useEffect(() => {
     const loadUserCount = async () => {
       try {
@@ -90,275 +79,190 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
         if (response.ok) {
           const { users } = await response.json()
           setTotalRegisteredUsers(users.length)
-          console.log('AdminDashboard - User count loaded:', users.length)
-        } else {
-          console.error('AdminDashboard - Failed to load user count')
         }
       } catch (error) {
-        console.error('AdminDashboard - Error loading user count:', error)
+        console.error('Failed to load user count:', error)
       }
     }
 
     loadUserCount()
-    const userInterval = setInterval(loadUserCount, 30000) // 30초마다
-
-    return () => clearInterval(userInterval)
+    const interval = setInterval(loadUserCount, 60000)
+    return () => clearInterval(interval)
   }, [])
 
-  // 통계 계산 (실시간 연체 판단 적용)
   const pendingLoans = loans.filter(loan => loan.status === 'requested').length
   const activeLoans = loans.filter(loan => loan.status === 'picked_up' && !isLoanOverdue(loan.due_date || loan.dueDate)).length
   const overdueLoans = loans.filter(loan => loan.status === 'picked_up' && isLoanOverdue(loan.due_date || loan.dueDate)).length
-  const totalLoans = loans.length
 
-  // 등록된 총 사용자 수 (실제 API에서 가져오기)
-  const [totalRegisteredUsers, setTotalRegisteredUsers] = useState(3)
-
-  console.log('AdminDashboard - Statistics:', {
-    total: loans.length,
-    pending: pendingLoans,
-    active: activeLoans,
-    overdue: overdueLoans,
-    totalRegisteredUsers: totalRegisteredUsers
-  }) // 디버깅용
-
-  // 최근 대여 현황 (최근 5개)
-  const recentLoans = loans
-    .sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime())
+  const recentLoans = [...loans]
+    .sort((a, b) => new Date(b.created_at || b.requestedAt).getTime() - new Date(a.created_at || a.requestedAt).getTime())
     .slice(0, 5)
+
+  const today = new Date()
+  const formattedDate = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Page header */}
+      <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">대시보드</h1>
-          <p className="text-muted-foreground">
-            안녕하세요, <strong>{user.name}</strong>님 ({getRoleText(user.role)})
+          <h1 className="text-2xl font-bold text-slate-900">대시보드</h1>
+          <p className="text-sm text-slate-600 mt-1">
+            {formattedDate} · 안녕하세요, <span className="font-medium text-slate-900">{user.name}</span>님 ({getRoleText(user.role)})
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant="secondary">
-            인천중산고등학교
-          </Badge>
-        </div>
+        <Link
+          href="/loans"
+          className="hidden sm:inline-flex items-center px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-sm font-medium transition-colors"
+        >
+          + 새 대여 신청
+        </Link>
       </div>
 
-      {/* 통계 카드 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card
-          className="cursor-pointer hover:bg-gray-50 transition-colors"
-          onClick={() => window.location.href = '/loans'}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">신청 대기</CardTitle>
-            <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingLoans}</div>
-            <p className="text-xs text-muted-foreground">처리 대기 중인 신청</p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="cursor-pointer hover:bg-gray-50 transition-colors"
-          onClick={() => window.location.href = '/loans?tab=active'}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">사용 중</CardTitle>
-            <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeLoans}</div>
-            <p className="text-xs text-muted-foreground">현재 대여 중</p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="cursor-pointer hover:bg-gray-50 transition-colors"
-          onClick={() => window.location.href = '/loans?tab=overdue'}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">연체</CardTitle>
-            <svg className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.081 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{overdueLoans}</div>
-            <p className="text-xs text-muted-foreground">즉시 확인 필요</p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="cursor-pointer hover:bg-gray-50 transition-colors"
-          onClick={() => window.location.href = '/students'}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">총 사용자</CardTitle>
-            <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{totalRegisteredUsers}</div>
-            <p className="text-xs text-muted-foreground">등록된 총 사용자</p>
-          </CardContent>
-        </Card>
+      {/* Stats grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="신청 대기"
+          value={pendingLoans}
+          unit="건"
+          description="처리 대기 중인 신청"
+          accent="amber"
+          href="/loans"
+        />
+        <StatCard
+          label="사용 중"
+          value={activeLoans}
+          unit="대"
+          description="현재 대여 중"
+          accent="blue"
+          href="/loans?tab=active"
+        />
+        <StatCard
+          label="연체"
+          value={overdueLoans}
+          unit="건"
+          description={overdueLoans > 0 ? '즉시 조치 필요' : '연체 없음'}
+          accent="rose"
+          href="/loans?tab=overdue"
+        />
+        <StatCard
+          label="총 사용자"
+          value={totalRegisteredUsers}
+          unit="명"
+          description="등록된 총 사용자"
+          accent="emerald"
+          href="/students"
+        />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* 최근 대여 현황 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>최근 대여 현황</CardTitle>
-            <CardDescription>
-              최근 대여 신청 및 진행 상황
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentLoans.map((loan) => (
-                <a
-                  key={loan.id}
-                  href={loan.status === 'picked_up' ? '/loans?tab=active' : '/loans'}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{loan.student_name || loan.studentName}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {loan.class_name || loan.className} {loan.student_no || loan.studentNo}번
+      {/* Two columns */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Recent loans */}
+        <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <div>
+              <h2 className="font-semibold text-slate-900">최근 대여 신청</h2>
+              <p className="text-xs text-slate-500 mt-0.5">최근 5건의 신청 및 진행 상황</p>
+            </div>
+            <Link href="/loans" className="text-sm font-medium text-slate-700 hover:text-slate-900">
+              전체 보기 →
+            </Link>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {recentLoans.length === 0 ? (
+              <div className="text-center py-12 text-sm text-slate-500">
+                최근 대여 기록이 없습니다.
+              </div>
+            ) : (
+              recentLoans.map((loan) => {
+                const status = getLoanStatus(loan)
+                const studentName = loan.student_name || loan.studentName || ''
+                const className = loan.class_name || loan.className || ''
+                const studentNo = loan.student_no || loan.studentNo || ''
+                const isCancelled = loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
+                const statusColorClass = isCancelled
+                  ? 'bg-orange-100 text-orange-800'
+                  : getStatusColor(status, loan.notes)
+
+                return (
+                  <Link
+                    key={loan.id}
+                    href={loan.status === 'picked_up' ? '/loans?tab=active' : '/loans'}
+                    className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-sm font-semibold text-slate-700 shrink-0">
+                        {studentName.charAt(0) || '?'}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-900 truncate">{studentName}</div>
+                        <div className="text-xs text-slate-500 truncate">
+                          {className} {studentNo && `· ${studentNo}번`} · {getPurposeText(loan.purpose)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 ml-3">
+                      <span className="hidden sm:inline text-xs text-slate-500">
+                        {formatDateTime(loan.created_at || loan.requestedAt)}
+                      </span>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold ${statusColorClass}`}>
+                        {getStatusText(status, loan.notes)}
                       </span>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {getPurposeText(loan.purpose)} • 신청: {formatDateTime(loan.created_at || loan.requestedAt)}
-                    </div>
-                    {(loan.due_date || loan.dueDate) && (
-                      <div className="text-sm text-muted-foreground">
-                        반납 예정: {loan.due_date || loan.dueDate}
-                      </div>
-                    )}
-                  </div>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    loan.status === 'rejected' && loan.notes === 'STUDENT_CANCELLED'
-                      ? 'bg-orange-100 text-orange-800 border border-orange-200'
-                      : getStatusColor(getLoanStatus(loan), loan.notes)
-                  }`}>
-                    {getStatusText(getLoanStatus(loan), loan.notes)}
-                  </span>
-                </a>
-              ))}
-              {recentLoans.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  최근 대여 기록이 없습니다.
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                  </Link>
+                )
+              })
+            )}
+          </div>
+        </div>
 
-        {/* 빠른 작업 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>빠른 작업</CardTitle>
-            <CardDescription>
-              자주 사용하는 기능들
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3">
-              {(user.role === 'admin' || user.role === 'helper' || user.role === 'homeroom') && (
-                <>
-                  <Button className="w-full justify-start" variant="outline" asChild>
-                    <a href="/loans">
-                      <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      대여 승인 처리
-                    </a>
-                  </Button>
-                  <Button className="w-full justify-start" variant="outline" asChild>
-                    <a href="/devices">
-                      <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      기기 관리
-                    </a>
-                  </Button>
-                  <Button className="w-full justify-start" variant="outline" asChild>
-                    <a href="/students">
-                      <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V7a2 2 0 012-2h4a2 2 0 012 2v0M8 7v10a2 2 0 002 2h4a2 2 0 002-2V7" />
-                      </svg>
-                      학생 관리
-                    </a>
-                  </Button>
-                  {user.role === 'admin' && (
-                    <>
-                      <Button className="w-full justify-start" variant="outline" asChild>
-                        <a href="/statistics">
-                          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                          </svg>
-                          이용률 통계
-                        </a>
-                      </Button>
-                      <Button className="w-full justify-start" variant="outline" asChild>
-                        <a href="/admin">
-                          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                          </svg>
-                          사용자 관리
-                        </a>
-                      </Button>
-                      <Button className="w-full justify-start" variant="outline" onClick={async () => {
-                        try {
-                          const response = await fetch('/api/admin/setup-database', { method: 'POST' })
-                          const result = await response.json()
-                          if (response.ok) {
-                            alert('데이터베이스 설정이 완료되었습니다.')
-                          } else {
-                            alert('설정 실패: ' + result.error)
-                            if (result.sql) {
-                              console.log('수동으로 실행할 SQL:', result.sql)
-                            }
-                          }
-                        } catch (error) {
-                          alert('설정 중 오류가 발생했습니다.')
-                        }
-                      }}>
-                        <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
-                        </svg>
-                        데이터베이스 설정
-                      </Button>
-                      <Button className="w-full justify-start" variant="destructive" asChild>
-                        <a href="/reset-roles">
-                          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          역할 초기화 도구
-                        </a>
-                      </Button>
-                    </>
-                  )}
-                </>
-              )}
-              <Button className="w-full justify-start" variant="outline">
-                <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                학생/기기 검색
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Quick actions */}
+        <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <h2 className="font-semibold text-slate-900 mb-4">빠른 작업</h2>
+          <div className="space-y-2">
+            <Link
+              href="/loans"
+              className="block w-full px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-sm font-semibold text-left transition-colors"
+            >
+              + 새 대여 신청
+            </Link>
+            <Link
+              href="/loans"
+              className="block w-full px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 rounded-md text-sm font-medium text-left transition-colors"
+            >
+              대여 승인 처리
+            </Link>
+            <Link
+              href="/devices"
+              className="block w-full px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 rounded-md text-sm font-medium text-left transition-colors"
+            >
+              기기 관리
+            </Link>
+            <Link
+              href="/students"
+              className="block w-full px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 rounded-md text-sm font-medium text-left transition-colors"
+            >
+              사용자 관리
+            </Link>
+            {user.role === 'admin' && (
+              <>
+                <Link
+                  href="/statistics"
+                  className="block w-full px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 rounded-md text-sm font-medium text-left transition-colors"
+                >
+                  이용률 통계
+                </Link>
+                <Link
+                  href="/admin"
+                  className="block w-full px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 rounded-md text-sm font-medium text-left transition-colors"
+                >
+                  관리자 설정
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
       </div>
-
     </div>
   )
 }
