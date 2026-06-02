@@ -64,3 +64,6 @@ temp/
 # Cache
 .cache/
 .eslintcache
+
+# Design previews (local only)
+/design_preview/
