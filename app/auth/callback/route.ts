@@ -2,63 +2,69 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { isAllowedDomain } from '@/lib/auth'
+import { isAdminEmail } from '@/lib/admin-utils'
+import { createAdminClient } from '@/lib/supabase-server'
 
-// Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
 
-  if (code) {
-    const supabase = createRouteHandlerClient({ cookies })
-
-    try {
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-
-      if (error) {
-        console.error('Auth callback error:', error)
-        return NextResponse.redirect(`${requestUrl.origin}/auth?error=auth_failed`)
-      }
-
-      if (data.user?.email && !isAllowedDomain(data.user.email)) {
-        // 허용되지 않은 도메인이면 로그아웃하고 에러 페이지로
-        await supabase.auth.signOut()
-        return NextResponse.redirect(`${requestUrl.origin}/auth?error=domain_not_allowed`)
-      }
-
-      // 사용자 정보를 users 테이블에 업서트
-      if (data.user) {
-        console.log('Auth callback - user:', data.user.email)
-        // 관리자 계정 자동 설정
-        const isAdmin = data.user.email === 'taylorr@gclass.ice.go.kr'
-        console.log('Is admin:', isAdmin)
-
-        const { error: upsertError } = await supabase
-          .from('users')
-          .upsert({
-            id: data.user.id,
-            email: data.user.email!,
-            name: data.user.user_metadata?.name || data.user.email!.split('@')[0],
-            role: isAdmin ? 'admin' : 'student', // taylorr@gclass.ice.go.kr은 자동으로 admin
-          }, {
-            onConflict: 'id'
-          })
-
-        if (upsertError) {
-          console.error('User upsert error:', upsertError)
-        }
-      }
-
-      // 로그인 성공, 대시보드로 리다이렉트
-      return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
-
-    } catch (error) {
-      console.error('Unexpected error in auth callback:', error)
-      return NextResponse.redirect(`${requestUrl.origin}/auth?error=unexpected_error`)
-    }
+  if (!code) {
+    return NextResponse.redirect(`${requestUrl.origin}/auth`)
   }
 
-  // 코드가 없으면 로그인 페이지로
-  return NextResponse.redirect(`${requestUrl.origin}/auth`)
+  const supabase = createRouteHandlerClient({ cookies })
+
+  try {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (error) {
+      console.error('Auth callback - exchangeCodeForSession error:', error)
+      return NextResponse.redirect(`${requestUrl.origin}/auth?error=auth_failed`)
+    }
+
+    if (data.user?.email && !isAllowedDomain(data.user.email)) {
+      await supabase.auth.signOut()
+      return NextResponse.redirect(`${requestUrl.origin}/auth?error=domain_not_allowed`)
+    }
+
+    // RLS를 우회하기 위해 admin client 사용
+    if (data.user) {
+      const adminSupabase = createAdminClient()
+      const isAdmin = isAdminEmail(data.user.email)
+
+      // public.users에 행 보장 (RLS 우회)
+      const { error: usersUpsertError } = await adminSupabase
+        .from('users')
+        .upsert({
+          id: data.user.id,
+          email: data.user.email!,
+          name: data.user.user_metadata?.name || data.user.email!.split('@')[0],
+          role: isAdmin ? 'admin' : 'student',
+        }, { onConflict: 'id' })
+
+      if (usersUpsertError) {
+        console.error('Auth callback - users upsert error:', usersUpsertError)
+      }
+
+      // 관리자라면 user_roles에도 admin 보장
+      if (isAdmin) {
+        const { error: roleUpsertError } = await adminSupabase
+          .from('user_roles')
+          .upsert({ user_id: data.user.id, role: 'admin' }, { onConflict: 'user_id' })
+
+        if (roleUpsertError) {
+          console.error('Auth callback - user_roles upsert error:', roleUpsertError)
+        }
+      }
+    }
+
+    return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
+
+  } catch (error) {
+    console.error('Auth callback - unexpected error:', error)
+    return NextResponse.redirect(`${requestUrl.origin}/auth?error=unexpected_error`)
+  }
 }
