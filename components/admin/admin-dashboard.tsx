@@ -21,11 +21,11 @@ interface StatCardProps {
 }
 
 const ACCENT_BORDER = {
-  slate: 'border-slate-300',
-  blue: 'border-blue-600',
-  emerald: 'border-emerald-600',
-  amber: 'border-amber-500',
-  rose: 'border-rose-600',
+  slate: 'border-l-slate-400',
+  blue: 'border-l-blue-600',
+  emerald: 'border-l-emerald-600',
+  amber: 'border-l-amber-500',
+  rose: 'border-l-rose-600',
 } as const
 
 const ACCENT_VALUE = {
@@ -38,7 +38,7 @@ const ACCENT_VALUE = {
 
 function StatCard({ label, value, unit, description, accent, href }: StatCardProps) {
   const inner = (
-    <div className={`bg-white rounded-lg border-l-4 ${ACCENT_BORDER[accent]} border-y border-r border-slate-200 p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all`}>
+    <div className={`bg-white rounded-lg border border-slate-200 border-l-4 ${ACCENT_BORDER[accent]} p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all`}>
       <div className="text-sm font-medium text-slate-600 mb-2">{label}</div>
       <div className={`text-3xl font-bold ${ACCENT_VALUE[accent]}`}>
         {value}
