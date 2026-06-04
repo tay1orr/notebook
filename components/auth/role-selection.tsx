@@ -1,12 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 
 interface RoleSelectionProps {
   user: {
@@ -28,20 +22,23 @@ export function RoleSelection({ user, onComplete }: RoleSelectionProps) {
   const [classNo, setClassNo] = useState('')
   const [studentNo, setStudentNo] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const classOptions = Array.from({ length: 13 }, (_, i) => (i + 1).toString())
 
   const handleSubmit = async () => {
     if (!selectedRole) return
 
     if (selectedRole === 'student' && (!grade || !classNo || !studentNo)) {
-      alert('모든 정보를 입력해주세요.')
+      setError('학년, 반, 번호를 모두 입력해주세요.')
       return
     }
-
     if (selectedRole === 'homeroom' && (!grade || !classNo)) {
-      alert('담당 학년과 반을 입력해주세요.')
+      setError('담당 학년과 반을 입력해주세요.')
       return
     }
 
+    setError(null)
     setIsSubmitting(true)
 
     try {
@@ -50,207 +47,178 @@ export function RoleSelection({ user, onComplete }: RoleSelectionProps) {
         grade,
         class: classNo,
         studentNo: selectedRole === 'student' ? studentNo : undefined,
-        pendingApproval: selectedRole === 'homeroom'
+        pendingApproval: selectedRole === 'homeroom',
       }
 
       if (onComplete) {
         await onComplete(userData)
-      } else {
-        // 기본 처리: API로 역할 저장하고 대시보드로 이동
-        console.log('🔍 ROLE SELECTION - 역할 설정 완료:', userData)
-
-        // API 호출로 역할 저장 (현재는 localStorage 사용)
-        const response = await fetch('/api/user/role', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(userData)
-        })
-
-        if (response.ok) {
-          console.log('🔍 ROLE SELECTION - API 호출 성공, 페이지 새로고침 후 대시보드로 이동')
-          if (typeof window !== 'undefined') {
-            // 역할 설정 완료 후 페이지를 새로고침해서 업데이트된 사용자 정보 반영
-            window.location.reload()
-          }
-        } else {
-          console.error('🔍 ROLE SELECTION - API 호출 실패:', await response.text())
-          throw new Error('역할 저장 실패')
-        }
+        return
       }
-    } catch (error) {
-      console.error('역할 설정 실패:', error)
-      alert('역할 설정 중 오류가 발생했습니다.')
-    } finally {
+
+      const response = await fetch('/api/user/role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      })
+
+      if (!response.ok) {
+        throw new Error('역할 저장에 실패했습니다.')
+      }
+
+      window.location.reload()
+    } catch (err: any) {
+      setError(err.message || '역할 설정 중 오류가 발생했습니다.')
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">역할 선택</CardTitle>
-          <CardDescription>
-            안녕하세요, {user.name}님!<br />
-            처음 로그인하시는군요. 역할을 선택해주세요.
-          </CardDescription>
-        </CardHeader>
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-900 mb-4 shadow-lg">
+            <span className="text-white font-bold text-sm">중산</span>
+          </div>
+          <h1 className="text-xl font-semibold text-slate-900">역할 선택</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            안녕하세요, <span className="font-medium text-slate-700">{user.name}</span>님!
+            처음 로그인하셨네요.
+          </p>
+        </div>
 
-        <CardContent className="space-y-6">
-          {/* 역할 선택 */}
+        {/* Card */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+          {/* Role cards */}
           <div className="space-y-3">
-            <Label className="text-base font-medium">역할을 선택해주세요</Label>
+            <label className="text-sm font-medium text-slate-700">역할을 선택해주세요</label>
 
-            <div className="grid gap-3">
-              <Card
-                className={`cursor-pointer transition-colors ${
-                  selectedRole === 'student'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'hover:bg-gray-50'
-                }`}
-                onClick={() => setSelectedRole('student')}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-4 h-4 rounded-full border-2 ${
-                      selectedRole === 'student'
-                        ? 'bg-blue-500 border-blue-500'
-                        : 'border-gray-300'
-                    }`} />
-                    <div>
-                      <div className="font-medium">학생</div>
-                      <div className="text-sm text-gray-600">노트북 대여를 신청하는 학생</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <button
+              type="button"
+              onClick={() => setSelectedRole('student')}
+              className={`w-full text-left rounded-lg border-2 transition-all p-4 ${
+                selectedRole === 'student'
+                  ? 'border-slate-900 bg-slate-50'
+                  : 'border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${
+                  selectedRole === 'student' ? 'bg-slate-900 border-slate-900' : 'border-slate-300'
+                }`} />
+                <div>
+                  <div className="font-semibold text-slate-900">학생</div>
+                  <div className="text-xs text-slate-500 mt-0.5">노트북 대여를 신청하는 학생</div>
+                </div>
+              </div>
+            </button>
 
-              <Card
-                className={`cursor-pointer transition-colors ${
-                  selectedRole === 'homeroom'
-                    ? 'border-green-500 bg-green-50'
-                    : 'hover:bg-gray-50'
-                }`}
-                onClick={() => setSelectedRole('homeroom')}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-4 h-4 rounded-full border-2 ${
-                      selectedRole === 'homeroom'
-                        ? 'bg-green-500 border-green-500'
-                        : 'border-gray-300'
-                    }`} />
-                    <div>
-                      <div className="font-medium">담임교사</div>
-                      <div className="text-sm text-gray-600">
-                        담당반 학생들의 대여를 관리하는 교사
-                        <Badge variant="outline" className="ml-2 text-xs">승인 필요</Badge>
-                      </div>
-                    </div>
+            <button
+              type="button"
+              onClick={() => setSelectedRole('homeroom')}
+              className={`w-full text-left rounded-lg border-2 transition-all p-4 ${
+                selectedRole === 'homeroom'
+                  ? 'border-slate-900 bg-slate-50'
+                  : 'border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${
+                  selectedRole === 'homeroom' ? 'bg-slate-900 border-slate-900' : 'border-slate-300'
+                }`} />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-900">담임교사</span>
+                    <span className="px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded">승인 필요</span>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                  <div className="text-xs text-slate-500 mt-0.5">담당반 학생들의 대여를 관리하는 교사</div>
+                </div>
+              </div>
+            </button>
           </div>
 
-          {/* 학생 정보 입력 */}
+          {/* Student fields */}
           {selectedRole === 'student' && (
-            <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-medium text-blue-900">학생 정보 입력</h4>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label htmlFor="grade">학년</Label>
-                  <Select value={grade} onValueChange={setGrade}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="학년" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1학년</SelectItem>
-                      <SelectItem value="2">2학년</SelectItem>
-                      <SelectItem value="3">3학년</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="class">반</Label>
-                  <Select value={classNo} onValueChange={setClassNo}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="반" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 13 }, (_, i) => i + 1).map(num => (
-                        <SelectItem key={num} value={num.toString()}>{num}반</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="studentNo">번호</Label>
-                  <Input
-                    id="studentNo"
-                    type="number"
-                    placeholder="번호"
-                    value={studentNo}
-                    onChange={(e) => setStudentNo(e.target.value)}
-                    min="1"
-                    max="40"
-                  />
-                </div>
+            <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+              <div className="text-sm font-medium text-slate-700">학생 정보</div>
+              <div className="grid grid-cols-3 gap-2">
+                <select
+                  value={grade}
+                  onChange={(e) => setGrade(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                >
+                  <option value="">학년</option>
+                  <option value="1">1학년</option>
+                  <option value="2">2학년</option>
+                  <option value="3">3학년</option>
+                </select>
+                <select
+                  value={classNo}
+                  onChange={(e) => setClassNo(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                >
+                  <option value="">반</option>
+                  {classOptions.map(n => <option key={n} value={n}>{n}반</option>)}
+                </select>
+                <input
+                  type="number"
+                  min={1}
+                  max={40}
+                  placeholder="번호"
+                  value={studentNo}
+                  onChange={(e) => setStudentNo(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                />
               </div>
             </div>
           )}
 
-          {/* 담임교사 정보 입력 */}
+          {/* Homeroom fields */}
           {selectedRole === 'homeroom' && (
-            <div className="space-y-4 p-4 bg-green-50 rounded-lg">
-              <h4 className="font-medium text-green-900">담임 정보 입력</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="teacher-grade">담당 학년</Label>
-                  <Select value={grade} onValueChange={setGrade}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="학년" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1학년</SelectItem>
-                      <SelectItem value="2">2학년</SelectItem>
-                      <SelectItem value="3">3학년</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="teacher-class">담당 반</Label>
-                  <Select value={classNo} onValueChange={setClassNo}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="반" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 13 }, (_, i) => i + 1).map(num => (
-                        <SelectItem key={num} value={num.toString()}>{num}반</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+              <div className="text-sm font-medium text-slate-700">담임 정보</div>
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={grade}
+                  onChange={(e) => setGrade(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                >
+                  <option value="">학년</option>
+                  <option value="1">1학년</option>
+                  <option value="2">2학년</option>
+                  <option value="3">3학년</option>
+                </select>
+                <select
+                  value={classNo}
+                  onChange={(e) => setClassNo(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                >
+                  <option value="">반</option>
+                  {classOptions.map(n => <option key={n} value={n}>{n}반</option>)}
+                </select>
               </div>
-              <div className="text-sm text-green-700 bg-green-100 p-3 rounded">
-                ⚠️ 담임교사 권한은 관리자 승인 후 활성화됩니다.<br />
-                승인 전까지는 임시로 학생 권한으로 시스템을 이용할 수 있습니다.
-              </div>
+              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2.5 leading-relaxed">
+                담임교사 권한은 관리자 승인 후 활성화됩니다. 승인 전까지는 학생 권한으로 시스템을 이용할 수 있습니다.
+              </p>
             </div>
           )}
 
-          {/* 제출 버튼 */}
-          <Button
-            className="w-full"
+          {error && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-md">
+              <p className="text-rose-700 text-sm">{error}</p>
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
             onClick={handleSubmit}
             disabled={!selectedRole || isSubmitting}
+            className="w-full px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? '설정 중...' : '역할 설정 완료'}
-          </Button>
-        </CardContent>
-      </Card>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

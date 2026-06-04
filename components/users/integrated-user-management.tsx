@@ -460,26 +460,54 @@ export function IntegratedUserManagement({ currentUser }: IntegratedUserManageme
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
-                              {currentUser.role === 'admin' ? (
-                                <Select
-                                  value={user.role}
-                                  onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
-                                >
-                                  <SelectTrigger className="w-32">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="student">학생</SelectItem>
-                                    <SelectItem value="helper">노트북 관리 도우미</SelectItem>
-                                    <SelectItem value="homeroom">담임교사</SelectItem>
-                                    <SelectItem value="admin">관리자</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                                  {getRoleText(user.role)}
-                                </Badge>
-                              )}
+                              {(() => {
+                                const isOwnClass = currentUser.role === 'homeroom'
+                                  && user.className === `${currentUser.grade}-${currentUser.class}`
+                                const canHomeroomToggleHelper = isOwnClass
+                                  && (user.role === 'student' || user.role === 'helper')
+
+                                if (currentUser.role === 'admin') {
+                                  return (
+                                    <Select
+                                      value={user.role}
+                                      onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
+                                    >
+                                      <SelectTrigger className="w-32">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="student">학생</SelectItem>
+                                        <SelectItem value="helper">노트북 관리 도우미</SelectItem>
+                                        <SelectItem value="homeroom">담임교사</SelectItem>
+                                        <SelectItem value="admin">관리자</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )
+                                }
+
+                                if (canHomeroomToggleHelper) {
+                                  return (
+                                    <Select
+                                      value={user.role}
+                                      onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
+                                    >
+                                      <SelectTrigger className="w-32">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="student">학생</SelectItem>
+                                        <SelectItem value="helper">노트북 관리 도우미</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )
+                                }
+
+                                return (
+                                  <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                                    {getRoleText(user.role)}
+                                  </Badge>
+                                )
+                              })()}
                               {user.pendingApproval && user.requestedRole && (
                                 <Badge variant="outline" className="text-orange-600">
                                   {getRoleText(user.requestedRole)} 승인 대기

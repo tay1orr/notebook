@@ -159,18 +159,43 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 관리자와 관리팀만 역할 수정 가능
-    if (!['admin'].includes(currentUser.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-    }
-
     if (!userId || !role) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    console.log('🔍 USERS API - PATCH - Updating role:', userId, '->', role)
+    // admin: 모든 역할 변경 가능
+    // homeroom: 본인 반 학생에 한해 student ↔ helper 토글만 가능
+    if (currentUser.role !== 'admin') {
+      if (currentUser.role !== 'homeroom' || !['student', 'helper'].includes(role)) {
+        return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      }
 
-    // Update or insert user role using admin client
+      // 대상 학생이 본인 반 소속인지 확인
+      const { data: targetUser } = await adminSupabase.auth.admin.getUserById(userId)
+      const targetClassInfo = targetUser?.user?.user_metadata?.class_info
+      const targetClass = targetClassInfo?.grade && targetClassInfo?.class
+        ? `${targetClassInfo.grade}-${targetClassInfo.class}`
+        : null
+      const teacherClass = currentUser.grade && currentUser.class
+        ? `${currentUser.grade}-${currentUser.class}`
+        : null
+
+      if (!teacherClass || targetClass !== teacherClass) {
+        return NextResponse.json({ error: '본인 반 학생만 지정할 수 있습니다.' }, { status: 403 })
+      }
+
+      // 현재 역할이 student 또는 helper가 아니면 변경 불가
+      const { data: existingRole } = await adminSupabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .single()
+      const currentRole = existingRole?.role || 'student'
+      if (!['student', 'helper'].includes(currentRole)) {
+        return NextResponse.json({ error: '대상 사용자의 역할을 변경할 수 없습니다.' }, { status: 403 })
+      }
+    }
+
     const { error } = await adminSupabase
       .from('user_roles')
       .upsert({ user_id: userId, role }, { onConflict: 'user_id' })
