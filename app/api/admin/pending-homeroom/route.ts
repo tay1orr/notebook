@@ -1,5 +1,6 @@
 import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { isAdminEmail } from '@/lib/admin-utils'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -24,7 +25,7 @@ export async function GET() {
       .single()
 
     const currentRole = userRole?.role || 'student'
-    const isAdmin = user.email === 'taylorr@gclass.ice.go.kr'
+    const isAdmin = isAdminEmail(user.email)
     const isHomeroom = currentRole === 'homeroom'
 
     if (!isAdmin && !isHomeroom) {
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
       .single()
 
     const currentRole = userRole?.role || 'student'
-    const isAdmin = user.email === 'taylorr@gclass.ice.go.kr'
+    const isAdmin = isAdminEmail(user.email)
     const isHomeroom = currentRole === 'homeroom'
 
     if (!isAdmin && !isHomeroom) {

@@ -306,7 +306,7 @@ export async function PATCH(request: NextRequest) {
     console.log('PATCH devices - User role:', user.role)
 
     // 관리자, 관리팀, 담임교사, 노트북 관리 도우미만 기기 상태 변경 가능
-    if (!['admin', 'manager', 'homeroom', 'helper'].includes(user.role)) {
+    if (!['admin', 'homeroom', 'helper'].includes(user.role)) {
       console.error('Insufficient permissions:', user.role)
       return NextResponse.json({
         error: 'Unauthorized - Only admin, managers, homeroom teachers, and helpers can change device status'
@@ -355,7 +355,6 @@ export async function PATCH(request: NextRequest) {
 
     // 권한 체크 완료 후 changerInfo 설정
     const roleText = user.role === 'admin' ? '관리자' :
-                     user.role === 'manager' ? '관리팀' :
                      user.role === 'homeroom' ? '담임교사' :
                      user.role === 'helper' ? '도우미' : '사용자'
     const changerInfo = `${user.name || user.email?.split('@')[0] || '알 수 없음'} (${roleText})`

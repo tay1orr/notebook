@@ -18,7 +18,7 @@ export async function GET() {
     console.log('🔍 USERS API - Request from:', currentUser.email, 'Role:', currentUser.role)
 
     // 권한 확인: 관리자, 관리팀, 담임교사만 사용자 목록 조회 가능
-    if (!['admin', 'manager', 'homeroom'].includes(currentUser.role)) {
+    if (!['admin', 'homeroom'].includes(currentUser.role)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
@@ -50,16 +50,11 @@ export async function GET() {
           roleError: roleError?.message
         })
 
-        // Get profile information (grade, class)
-        const { data: profileData } = await adminSupabase
-          .from('user_profiles')
-          .select('grade, class')
-          .eq('user_id', authUser.id)
-          .single()
-
+        // 학년/반 정보는 user_metadata.class_info에서 가져옴
+        const classInfo = authUser.user_metadata?.class_info
         const role = roleData?.role || ''
-        const grade = profileData?.grade || null
-        const classNum = profileData?.class || null
+        const grade = classInfo?.grade ?? null
+        const classNum = classInfo?.class ?? null
 
         return {
           id: authUser.id,
@@ -165,7 +160,7 @@ export async function PATCH(request: Request) {
     }
 
     // 관리자와 관리팀만 역할 수정 가능
-    if (!['admin', 'manager'].includes(currentUser.role)) {
+    if (!['admin'].includes(currentUser.role)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 

@@ -1,5 +1,6 @@
 import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { isAdminEmail } from '@/lib/admin-utils'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -24,7 +25,7 @@ export async function GET() {
       .single()
 
     const currentRole = userRole?.role || 'student'
-    const isAdmin = user.email === 'taylorr@gclass.ice.go.kr'
+    const isAdmin = isAdminEmail(user.email)
     const isHomeroom = currentRole === 'homeroom'
 
     if (!isAdmin && !isHomeroom) {
@@ -41,39 +42,18 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
     }
 
-    // 승인 대기 중인 사용자들 필터링 (담임교사 + 노트북 관리 도우미)
-    const pendingUsers = allUsers.users.filter(user => {
-      const homeroomPending = user.user_metadata?.pending_homeroom?.status === 'pending'
-      const helperPending = user.user_metadata?.pending_helper?.status === 'pending'
-      return homeroomPending || helperPending
-    }).map(user => {
-      const homeroomPending = user.user_metadata?.pending_homeroom?.status === 'pending'
-      const helperPending = user.user_metadata?.pending_helper?.status === 'pending'
-
-      let requestedRole = 'student'
-      let classInfo = {}
-      let requestedAt = null
-
-      if (homeroomPending) {
-        requestedRole = 'homeroom'
-        classInfo = user.user_metadata?.class_info || {}
-        requestedAt = user.user_metadata?.pending_homeroom?.requested_at
-      } else if (helperPending) {
-        requestedRole = 'helper'
-        classInfo = user.user_metadata?.class_info || {}
-        requestedAt = user.user_metadata?.pending_helper?.requested_at
-      }
-
-      return {
-        id: user.id,
-        email: user.email,
-        name: user.user_metadata?.name || user.email?.split('@')[0] || '',
-        class_info: classInfo,
-        requested_role: requestedRole,
-        requested_at: requestedAt,
-        created_at: user.created_at
-      }
-    })
+    // 승인 대기 중인 담임교사 신청 필터링 (helper는 지정 방식이라 신청 흐름 없음)
+    const pendingUsers = allUsers.users
+      .filter(u => u.user_metadata?.pending_homeroom?.status === 'pending')
+      .map(u => ({
+        id: u.id,
+        email: u.email,
+        name: u.user_metadata?.name || u.email?.split('@')[0] || '',
+        class_info: u.user_metadata?.class_info || {},
+        requested_role: 'homeroom',
+        requested_at: u.user_metadata?.pending_homeroom?.requested_at,
+        created_at: u.created_at,
+      }))
 
     // 담임교사인 경우 자신의 반 승인 요청만 필터링
     let filteredUsers = pendingUsers
@@ -127,7 +107,7 @@ export async function POST(request: Request) {
       .single()
 
     const currentRole = userRole?.role || 'student'
-    const isAdmin = user.email === 'taylorr@gclass.ice.go.kr'
+    const isAdmin = isAdminEmail(user.email)
     const isHomeroom = currentRole === 'homeroom'
 
     if (!isAdmin && !isHomeroom) {
@@ -151,20 +131,13 @@ export async function POST(request: Request) {
 
     const userData = targetUser.user
     const homeroomPending = userData.user_metadata?.pending_homeroom?.status === 'pending'
-    const helperPending = userData.user_metadata?.pending_helper?.status === 'pending'
 
-    let targetRole = 'student'
-    let metadataKey = ''
-
-    if (homeroomPending) {
-      targetRole = 'homeroom'
-      metadataKey = 'pending_homeroom'
-    } else if (helperPending) {
-      targetRole = 'helper'
-      metadataKey = 'pending_helper'
-    } else {
+    if (!homeroomPending) {
       return NextResponse.json({ error: 'No pending approval found' }, { status: 400 })
     }
+
+    const targetRole = 'homeroom'
+    const metadataKey = 'pending_homeroom'
 
     if (action === 'approve') {
       // 승인: 역할을 변경하고 승인 상태 업데이트

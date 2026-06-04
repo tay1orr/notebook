@@ -21,7 +21,7 @@ export default function AuthPage() {
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
-            hd: 'gclass.ice.go.kr', // Google Workspace domain restriction
+            hd: process.env.NEXT_PUBLIC_ALLOWED_DOMAIN || 'gclass.ice.go.kr', // Google Workspace domain restriction
             prompt: 'select_account' // 계정 선택 강제
           }
         }

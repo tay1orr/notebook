@@ -27,7 +27,7 @@ export const deviceUpdateSchema = z.object({
 
 export const userUpdateSchema = z.object({
   name: z.string().min(1, '이름을 입력해주세요').max(50, '이름이 너무 깁니다'),
-  role: z.enum(['student', 'helper', 'homeroom', 'manager', 'admin']).optional(),
+  role: z.enum(['student', 'helper', 'homeroom', 'admin']).optional(),
   grade: z.string().regex(/^[1-3]$/, '1-3학년 중 선택해주세요').optional(),
   class: z.string().regex(/^\d{1,2}$/, '올바른 반 번호를 입력해주세요').optional(),
   studentNo: z.string().regex(/^\d{1,2}$/, '올바른 번호를 입력해주세요').optional()

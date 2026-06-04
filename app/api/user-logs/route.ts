@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     }
 
     // 관리자, 관리팀, 담임교사만 사용자 로그 조회 가능
-    if (!["admin", "manager", "homeroom"].includes(user.role)) {
+    if (!["admin", "homeroom"].includes(user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -45,7 +45,6 @@ export async function GET(request: Request) {
           if (roleData?.role) {
             switch (roleData.role) {
               case 'admin': return '관리자'
-              case 'manager': return '관리팀'
               case 'homeroom': return '담임교사'
               case 'helper': return '노트북 관리 도우미'
               case 'student': return '학생'
@@ -214,7 +213,6 @@ export async function GET(request: Request) {
                 console.log('🔍 USER-LOGS - Using approved_by_role:', loan.approved_by_role)
                 switch (loan.approved_by_role) {
                   case 'admin': approverRole = '관리자'; break
-                  case 'manager': approverRole = '관리팀'; break
                   case 'homeroom': approverRole = '담임교사'; break
                   case 'helper': approverRole = '노트북 관리 도우미'; break
                   default: approverRole = loan.approved_by_role || '알 수 없는 역할'
@@ -293,7 +291,6 @@ export async function GET(request: Request) {
               if (loan.approved_by_role) {
                 switch (loan.approved_by_role) {
                   case 'admin': rejecterRole = '관리자'; break
-                  case 'manager': rejecterRole = '관리팀'; break
                   case 'homeroom': rejecterRole = '담임교사'; break
                   case 'helper': rejecterRole = '노트북 관리 도우미'; break
                   default: rejecterRole = loan.approved_by_role || '알 수 없는 역할'
@@ -510,9 +507,6 @@ export async function GET(request: Request) {
                   case 'admin':
                     approverRole = '관리자'
                     break
-                  case 'manager':
-                    approverRole = '관리팀'
-                    break
                   case 'homeroom':
                     approverRole = '담임교사'
                     break
@@ -608,9 +602,6 @@ export async function GET(request: Request) {
                 switch (loan.approved_by_role) {
                   case 'admin':
                     rejecterRole = '관리자'
-                    break
-                  case 'manager':
-                    rejecterRole = '관리팀'
                     break
                   case 'homeroom':
                     rejecterRole = '담임교사'

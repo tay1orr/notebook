@@ -124,14 +124,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
       if (roleData?.role) {
         role = roleData.role
-      } else {
-        const adminEmail = process.env.ADMIN_EMAIL || 'taylorr@gclass.ice.go.kr'
-        if (user.email === adminEmail) {
-          role = 'admin'
-          await adminSupabase
-            .from('user_roles')
-            .insert({ user_id: user.id, role: 'admin' })
-        }
+      } else if (isAdminEmail(user.email)) {
+        role = 'admin'
+        await adminSupabase
+          .from('user_roles')
+          .upsert({ user_id: user.id, role: 'admin' }, { onConflict: 'user_id' })
       }
 
       if (user.user_metadata?.class_info) {
@@ -262,17 +259,6 @@ export function hasPermission(userRole: UserRole | '', action: string, resource?
       'devices:read',
       'dashboard:read'
     ],
-    manager: [
-      'users:write',
-      'loans:write',
-      'devices:write',
-      'students:write',
-      'approvals:write',
-      'loans:read',
-      'students:read',
-      'devices:read',
-      'dashboard:read'
-    ],
     student: [
       'loans:read_own',
       'dashboard:read_limited'
@@ -331,16 +317,12 @@ export function isHelper(user: AuthUser): boolean {
   return user.role === 'helper'
 }
 
-export function isManager(user: AuthUser): boolean {
-  return user.role === 'manager'
-}
-
 export function isStudent(user: AuthUser): boolean {
   return user.role === 'student'
 }
 
 export function isStaff(user: AuthUser): boolean {
-  return ['admin', 'manager', 'homeroom', 'helper'].includes(user.role)
+  return ['admin', 'homeroom', 'helper'].includes(user.role)
 }
 
 export function canApproveLoans(user: AuthUser): boolean {

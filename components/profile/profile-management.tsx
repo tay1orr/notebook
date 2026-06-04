@@ -136,7 +136,7 @@ export function ProfileManagement({ user }: ProfileManagementProps) {
     return roleMap[role as keyof typeof roleMap] || role
   }
 
-  const isAdmin = user.email === 'taylorr@gclass.ice.go.kr'
+  const isAdmin = user.role === 'admin'
 
   return (
     <div className="space-y-6">
